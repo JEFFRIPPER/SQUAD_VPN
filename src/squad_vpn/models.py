@@ -47,3 +47,22 @@ class ValidationResult:
     country: str | None = None
     asn: str | None = None
     error: str | None = None
+
+
+@dataclass(slots=True)
+class RankedNode:
+    node: ProxyNode
+    alive: bool | None = None
+    latency_ms: float | None = None
+    quality_score: float = 0.0
+    last_checked: str | None = None
+    exit_ip: str | None = None
+    country: str | None = None
+    asn: str | None = None
+    success_count: int = 0
+    failure_count: int = 0
+    validation_error: str | None = None
+
+    @property
+    def attempts(self) -> int:
+        return self.success_count + self.failure_count
