@@ -1,0 +1,49 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from hashlib import sha256
+from urllib.parse import urlencode
+
+
+@dataclass(slots=True)
+class ProxyNode:
+    protocol: str
+    host: str
+    port: int
+    userinfo: str = ""
+    params: dict[str, str] = field(default_factory=dict)
+    name: str = ""
+    source: str = ""
+    raw_uri: str = ""
+
+    def canonical_items(self) -> list[tuple[str, str]]:
+        ignored = {"name", "remark", "remarks", "ps"}
+        return sorted(
+            (str(k).lower(), str(v))
+            for k, v in self.params.items()
+            if str(k).lower() not in ignored
+        )
+
+    def canonical_string(self) -> str:
+        params = urlencode(self.canonical_items(), doseq=True)
+        return "|".join(
+            [self.protocol.lower(), self.host.lower(), str(self.port), self.userinfo, params]
+        )
+
+    @property
+    def fingerprint(self) -> str:
+        return sha256(self.canonical_string().encode("utf-8")).hexdigest()
+
+    def display_name(self) -> str:
+        return self.name or f"{self.protocol.upper()} {self.host}:{self.port}"
+
+
+@dataclass(slots=True)
+class ValidationResult:
+    fingerprint: str
+    alive: bool
+    latency_ms: float | None = None
+    exit_ip: str | None = None
+    country: str | None = None
+    asn: str | None = None
+    error: str | None = None
