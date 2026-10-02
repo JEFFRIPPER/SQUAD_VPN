@@ -54,3 +54,11 @@ def test_base64_subscription():
     nodes = parse_subscription(encoded, source="memory")
     assert [node.protocol for node in nodes] == ["vless", "trojan"]
     assert all(node.source == "memory" for node in nodes)
+
+
+def test_broken_ipv6_line_does_not_break_subscription():
+    broken = "vless://user@[broken-ipv6:443?security=tls"
+    valid = "trojan://secret@example.com:443?security=tls"
+    nodes = parse_subscription(broken + "\n" + valid)
+    assert len(nodes) == 1
+    assert nodes[0].protocol == "trojan"

@@ -1,0 +1,43 @@
+sources:
+  - name: morpheus-mini
+    url: https://raw.githubusercontent.com/morpheusadam/v2ray-config/main/subs/bundles/mini.txt
+    enabled: true
+    priority: 10
+    max_nodes: 100
+    tags: [github, measured, compact]
+
+  - name: mrdevmohamed
+    url: https://raw.githubusercontent.com/mrdevmohamed/v2ray-configs/main/All_Configs_Sub.txt
+    enabled: true
+    priority: 20
+    max_nodes: 250
+    tags: [github, aggregate]
+
+  - name: epodonios
+    url: https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt
+    enabled: true
+    priority: 30
+    max_nodes: 250
+    tags: [github, aggregate]
+
+  - name: matin-sub1
+    url: https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/subs/sub1.txt
+    enabled: true
+    priority: 40
+    max_nodes: 200
+    tags: [github, rotating]
+
+  - name: delta-kronecker
+    url: https://raw.githubusercontent.com/Delta-Kronecker/V2ray-Config/main/config/all_configs.txt
+    enabled: true
+    priority: 50
+    max_nodes: 250
+    tags: [github, tested]
+
+  # Оставлен только как контрольный источник; по умолчанию выключен.
+  - name: akres-control
+    url: https://gitverse.ru/api/repos/Akres/VPN/raw/branch/master/all
+    enabled: false
+    priority: 900
+    max_nodes: 100
+    tags: [control, gitverse]

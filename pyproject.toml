@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "squad-vpn"
-version = "0.2.0"
-description = "SQUAD VPN aggregator, validator, scorer and subscription generator"
+version = "0.3.0"
+description = "SQUAD VPN multi-source aggregator, validator and smart subscription engine"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

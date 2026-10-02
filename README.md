@@ -1,138 +1,248 @@
 # SQUAD VPN
 
-SQUAD VPN — агрегатор и активный валидатор публичных VPN/proxy-конфигураций.
-Проект собирает узлы, нормализует их, удаляет дубли, реально проверяет через
-Mihomo, хранит историю и выдаёт лучшие конфиги по измеренному качеству.
+SQUAD VPN — самостоятельный агрегатор публичных VPN/proxy-конфигураций.
+Он собирает данные из нескольких независимых источников, нормализует и
+дедуплицирует узлы, проверяет их через Mihomo, хранит историю качества и
+генерирует smart-подписки только из актуальных результатов.
 
-## Статус
+## Текущая версия
 
-Текущая версия: **0.2.0 / Active Validation MVP**.
+**0.3.0 — Multi-source + Smart Subscriptions**
 
-Работает:
+Уже работает:
 
-- параллельный сбор URL-источников;
-- plain и base64 подписки;
 - VLESS, VMess, Trojan, Shadowsocks, Hysteria2/HY2;
-- канонический fingerprint и дедупликация;
-- SQLite с `first_seen` / `last_seen`;
-- автоматическая миграция базы v0.1 -> v0.2;
-- официальный Mihomo как внешний validator engine;
-- Reality, TLS, WS, gRPC, XHTTP и базовые transport-параметры;
-- реальный HTTP health-check каждого узла;
-- latency и состояние alive/dead;
-- история всех проверок в `health_checks`;
-- success/failure counters и Quality Score;
-- определение exit IP, страны и ASN для живых узлов;
-- plain и Clash/Mihomo YAML подписки.
+- Reality, TLS, TCP, WebSocket, gRPC, XHTTP;
+- YAML-реестр независимых источников;
+- приоритет, tags и лимит узлов для каждого источника;
+- равномерная выборка из больших фидов;
+- устойчивость к отдельным битым URI;
+- fingerprint и дедупликация;
+- SQLite с автоматической миграцией старых баз;
+- активный health-check через Mihomo;
+- latency, exit IP, country и ASN;
+- история проверок;
+- recent success rate;
+- jitter по последним успешным проверкам;
+- stability score и quality score;
+- smart-подписки;
+- периодический режим `watch`.
+
+## Источники
+
+Основной реестр: `config/sources.yaml`.
+
+Каждая запись поддерживает:
+
+```yaml
+- name: example
+  url: https://example.com/sub.txt
+  enabled: true
+  priority: 20
+  max_nodes: 250
+  tags: [github, aggregate]
+```
+
+По умолчанию проект использует несколько независимых публичных GitHub-фидов.
+Akres оставлен в конфигурации только как выключенный контрольный источник и
+не участвует в штатном сборе.
+
+Статистика каждого источника сохраняется в SQLite: количество запросов,
+успехи/ошибки, число найденных и выбранных узлов, длительность последней
+загрузки и текст последней ошибки.
+
+Посмотреть состояние:
+
+```powershell
+squad-vpn sources
+```
 
 ## Установка
 
-Требуется Windows 10/11 x64 и Python 3.11+.
+Требуется Python 3.11+.
 
 ```powershell
 cd "D:\CODE PROECTS\SQUAD_VPN"
 python -m venv .venv
 .\.venv\Scripts\python -m pip install -e ".[dev]"
-```
-
-Установить актуальный официальный Mihomo:
-
-```powershell
 squad-vpn setup-mihomo
 ```
 
-Команда скачивает latest stable `windows-amd64-compatible` из официального
-репозитория MetaCubeX. Бинарник хранится локально в `tools/mihomo/` и не
-коммитится в Git.
+На старых x64 CPU установщик автоматически использует совместимую сборку
+Mihomo (`windows-amd64-compatible`). Бинарник хранится локально в
+`tools/mihomo/` и не коммитится в Git.
 
 ## Основной цикл
 
-Добавьте URL подписок в `config/sources.txt`, по одному на строку.
-
-```powershell
-squad-vpn collect
-squad-vpn validate
-squad-vpn export
-```
-
-Или одним запуском:
+Один полный проход:
 
 ```powershell
 squad-vpn run
 ```
 
-### Проверка
+Он выполняет:
 
-По умолчанию используется HTTP 204 endpoint и до 16 параллельных проверок:
-
-```powershell
-squad-vpn validate --timeout-ms 5000 --concurrency 16 --geo-limit 10
+```text
+sources.yaml
+    -> collect
+    -> parse / normalize / deduplicate
+    -> SQLite
+    -> validation candidates
+    -> Mihomo health-check
+    -> Geo / ASN
+    -> jitter / stability / quality
+    -> export
+    -> smart subscriptions
 ```
 
-`--geo-limit` определяет, для скольких самых быстрых живых узлов за проход
-нужно дополнительно получить реальный exit IP, страну и ASN.
+По умолчанию за один цикл проверяется до 200 узлов. Сначала выбираются
+непроверенные узлы случайно по всему пулу, затем — самые давно проверенные.
+Это позволяет постепенно покрывать большой каталог без полного перебора
+каждый час.
 
-### Экспорт
+## Периодический режим
+
+Запуск цикла раз в час:
 
 ```powershell
+squad-vpn watch --interval-minutes 60
+```
+
+Или просто:
+
+```text
+scripts\start-watch.cmd
+```
+
+`start-watch.cmd` проверяет наличие локального Mihomo и при необходимости
+устанавливает его автоматически.
+
+Для тестового одного цикла:
+
+```powershell
+squad-vpn watch --cycles 1 --limit 20 --geo-limit 0
+```
+
+## Smart-подписки
+
+После `run` или `export` каталог `data/output/smart/` содержит:
+
+```text
+smart/
+├── balanced
+├── balanced.yaml
+├── fast
+├── fast.yaml
+├── stable
+├── stable.yaml
+├── country/
+│   ├── DE
+│   ├── DE.yaml
+│   └── ...
+├── protocol/
+│   ├── vless
+│   ├── vless.yaml
+│   └── ...
+└── index.json
+```
+
+Профили:
+
+- `balanced` — общий баланс доступности, скорости и стабильности;
+- `fast` — свежие живые узлы с низкой задержкой;
+- `stable` — узлы с высокой стабильностью по истории;
+- `country/*` — подписки по реальному exit country;
+- `protocol/*` — подписки по протоколу.
+
+Собственная выборка по фильтрам:
+
+```powershell
+squad-vpn smart --country DE --protocol vless --max-latency 200 `
+  --min-score 70 --min-stability 60 --limit 100
+```
+
+## Выходные файлы
+
+```text
+data/output/
+├── all
+├── all.yaml
+├── best
+├── best.yaml
+├── health.json
+├── main.json
+├── sources.json
+├── protocols/
+└── smart/
+```
+
+`health.json` содержит для каждого узла текущие метрики без изменения
+исходного URI: alive, latency, jitter, recent success rate, stability,
+quality score, exit IP, country, ASN и счётчики проверок.
+
+## Скоринг
+
+Quality Score учитывает:
+
+- недавнюю долю успешных проверок;
+- latency;
+- jitter;
+- количество накопленных проверок;
+- текущий статус alive/dead.
+
+Stability Score сильнее ориентирован на recent success rate и jitter.
+Один удачный health-check не даёт узлу максимального доверия.
+
+## Полезные команды
+
+```powershell
+squad-vpn collect
+squad-vpn validate --limit 200
 squad-vpn export
+squad-vpn sources
+squad-vpn run
+squad-vpn watch --interval-minutes 60
 ```
 
-В `data/output/` создаются:
-
-```text
-all               все известные URI
-all.yaml          все узлы в формате Mihomo/Clash
-best              только узлы с последним alive=true
-best.yaml         только живые узлы для Mihomo/Clash
-protocols/        разрез всех узлов по протоколам
-health.json       измерения без секретов конфигов
-main.json         агрегированная статистика + top-20
-```
-
-Можно ограничить экспорт:
+Повторная проверка только после заданного интервала:
 
 ```powershell
-squad-vpn export --alive-only --min-score 70 --limit 100
+squad-vpn validate --recheck-minutes 60
 ```
-
-## Quality Score
-
-Текущий score 0..100 учитывает:
-
-- 65% — исторический success rate;
-- 30% — последнюю измеренную latency;
-- 5% — confidence по количеству накопленных проверок;
-- последний `alive=false` дополнительно штрафует рейтинг.
-
-Формула намеренно консервативная: один успешный тест не делает новый узел
-автоматически «идеальным».
-
-## Архитектура
-
-```text
-Sources -> Collector -> Parser -> Fingerprint/Dedup -> SQLite
-                                                   -> Mihomo Validator
-                                                   -> Health History
-                                                   -> Exit IP / Geo / ASN
-                                                   -> Quality Score
-                                                   -> best / YAML / JSON
-```
-
-Mihomo используется как внешний сетевой движок. SQUAD VPN отвечает за сбор,
-данные, историю, анализ, ranking и публикацию подписок.
-
-## Следующие этапы
-
-1. Jitter, packet-loss и bandwidth probes.
-2. Smart subscriptions по стране, ping, протоколу и score.
-3. Несколько probe-агентов для проверки из разных сетей/регионов.
-4. BWL status по реальным probe-результатам, а не только ASN-эвристике.
-5. Web UI + JSON API.
-6. Windows-клиент с автоматическим выбором и failover.
 
 ## Тесты
 
 ```powershell
-pytest
+pytest -q
+```
+
+## Дальше
+
+План после v0.3:
+
+1. собственный HTTP API для динамических подписок;
+2. удалённые probe-агенты для разных сетей/операторов;
+3. реальный BWL-check вместо ASN-эвристики;
+4. web dashboard с историей latency/stability;
+5. Windows-клиент с auto-select и failover.
+
+SQUAD VPN не поднимает собственные VPN-серверы. Проект агрегирует и
+проверяет публично доступные конфигурации; сами сетевые соединения выполняет
+Mihomo. Доступность публичного узла может измениться в любой момент.
+
+### Планировщик Windows
+
+Для фонового запуска раз в час без открытого терминала:
+
+```text
+scripts\install-hourly-task.cmd
+```
+
+Задача запускает `scripts\run-once.cmd`, который сам переходит в корень
+проекта, проверяет Mihomo и выполняет полный `squad-vpn run`.
+
+Удалить задачу:
+
+```text
+scripts\remove-hourly-task.cmd
 ```

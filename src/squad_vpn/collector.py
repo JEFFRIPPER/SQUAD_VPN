@@ -7,6 +7,7 @@ import httpx
 
 from .models import ProxyNode
 from .parser import deduplicate, parse_subscription
+from .sources import SourceReport, SourceSpec, SourceTimer, load_source_specs
 
 
 DEFAULT_TIMEOUT = 20.0
@@ -14,26 +15,67 @@ DEFAULT_CONCURRENCY = 12
 
 
 def load_sources(path: str | Path) -> list[str]:
-    lines = Path(path).read_text(encoding="utf-8").splitlines()
-    return [
-        line.strip()
-        for line in lines
-        if line.strip() and not line.lstrip().startswith("#")
-    ]
+    """Backward-compatible URL-only loader."""
+    return [spec.url for spec in load_source_specs(path)]
 
 
-async def _fetch_one(
+def _spread_limit(nodes: list[ProxyNode], limit: int | None) -> list[ProxyNode]:
+    if limit is None or limit >= len(nodes):
+        return nodes
+    if limit <= 0:
+        return []
+    step = len(nodes) / limit
+    return [nodes[min(int(index * step), len(nodes) - 1)] for index in range(limit)]
+
+
+async def _fetch_spec(
     client: httpx.AsyncClient,
-    url: str,
+    spec: SourceSpec,
     semaphore: asyncio.Semaphore,
-) -> tuple[str, str | None, str | None]:
+) -> tuple[list[ProxyNode], SourceReport]:
+    timer = SourceTimer()
     async with semaphore:
         try:
-            response = await client.get(url, follow_redirects=True)
+            response = await client.get(spec.url, follow_redirects=True)
             response.raise_for_status()
-            return url, response.text, None
-        except Exception as exc:  # network errors are recorded per source
-            return url, None, str(exc)
+            parsed = parse_subscription(response.text, source=spec.url)
+            selected = _spread_limit(parsed, spec.max_nodes)
+            report = SourceReport(
+                source=spec,
+                ok=True,
+                nodes_found=len(parsed),
+                nodes_selected=len(selected),
+                duration_ms=timer.elapsed_ms(),
+            )
+            return selected, report
+        except Exception as exc:  # source failures must not abort the whole cycle
+            return [], SourceReport(
+                source=spec,
+                ok=False,
+                duration_ms=timer.elapsed_ms(),
+                error=str(exc)[:1000],
+            )
+
+
+async def collect_source_specs(
+    specs: list[SourceSpec],
+    *,
+    timeout: float = DEFAULT_TIMEOUT,
+    concurrency: int = DEFAULT_CONCURRENCY,
+) -> tuple[list[ProxyNode], list[SourceReport]]:
+    semaphore = asyncio.Semaphore(max(1, concurrency))
+    headers = {"User-Agent": "SQUAD-VPN/0.3"}
+    async with httpx.AsyncClient(timeout=timeout, headers=headers) as client:
+        results = await asyncio.gather(
+            *[_fetch_spec(client, spec, semaphore) for spec in specs]
+        )
+
+    nodes: list[ProxyNode] = []
+    reports: list[SourceReport] = []
+    for batch, report in results:
+        nodes.extend(batch)
+        reports.append(report)
+    return deduplicate(nodes), reports
 
 
 async def collect_sources(
@@ -42,20 +84,14 @@ async def collect_sources(
     timeout: float = DEFAULT_TIMEOUT,
     concurrency: int = DEFAULT_CONCURRENCY,
 ) -> tuple[list[ProxyNode], dict[str, str]]:
-    semaphore = asyncio.Semaphore(max(1, concurrency))
-    errors: dict[str, str] = {}
-    nodes: list[ProxyNode] = []
-
-    headers = {"User-Agent": "SQUAD-VPN/0.1"}
-    async with httpx.AsyncClient(timeout=timeout, headers=headers) as client:
-        results = await asyncio.gather(
-            *[_fetch_one(client, url, semaphore) for url in urls]
-        )
-
-    for url, text, error in results:
-        if error is not None:
-            errors[url] = error
-            continue
-        nodes.extend(parse_subscription(text or "", source=url))
-
-    return deduplicate(nodes), errors
+    """Backward-compatible v0.2 API used by external callers/tests."""
+    specs = [SourceSpec(name=f"source-{i}", url=url) for i, url in enumerate(urls, 1)]
+    nodes, reports = await collect_source_specs(
+        specs, timeout=timeout, concurrency=concurrency
+    )
+    errors = {
+        report.source.url: report.error or "unknown error"
+        for report in reports
+        if not report.ok
+    }
+    return nodes, errors

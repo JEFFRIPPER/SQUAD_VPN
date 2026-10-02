@@ -54,8 +54,12 @@ class RankedNode:
     node: ProxyNode
     alive: bool | None = None
     latency_ms: float | None = None
+    jitter_ms: float | None = None
+    recent_success_rate: float = 0.0
+    stability_score: float = 0.0
     quality_score: float = 0.0
     last_checked: str | None = None
+    last_seen: str | None = None
     exit_ip: str | None = None
     country: str | None = None
     asn: str | None = None

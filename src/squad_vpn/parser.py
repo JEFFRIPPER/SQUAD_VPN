@@ -121,11 +121,14 @@ def parse_uri(uri: str, source: str = "") -> ProxyNode | None:
     if not uri or "://" not in uri:
         return None
     scheme = uri.split("://", 1)[0].lower()
-    if scheme == "vmess":
-        return _parse_vmess(uri, source)
-    if scheme == "ss":
-        return _parse_ss(uri, source)
-    return _parse_standard(uri, source)
+    try:
+        if scheme == "vmess":
+            return _parse_vmess(uri, source)
+        if scheme == "ss":
+            return _parse_ss(uri, source)
+        return _parse_standard(uri, source)
+    except (ValueError, UnicodeError):
+        return None
 
 
 def parse_subscription(text: str, source: str = "") -> list[ProxyNode]:

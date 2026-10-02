@@ -83,3 +83,47 @@ def test_v01_database_migrates_without_delete(tmp_path):
         ).fetchone() is not None
     finally:
         store.close()
+
+
+def test_recent_history_calculates_jitter_and_stability(tmp_path):
+    from squad_vpn.models import ValidationResult
+
+    store = NodeStore(tmp_path / "jitter.sqlite3")
+    try:
+        node = ProxyNode(
+            protocol="vless", host="stable.example", port=443,
+            userinfo="11111111-1111-1111-1111-111111111111",
+            raw_uri="vless://example",
+        )
+        store.upsert_many([node])
+        for latency in (100, 120, 80):
+            store.record_validation(
+                ValidationResult(node.fingerprint, True, latency_ms=latency)
+            )
+        ranked = store.list_ranked(alive_only=True)
+        assert len(ranked) == 1
+        assert ranked[0].jitter_ms is not None
+        assert ranked[0].jitter_ms > 0
+        assert ranked[0].recent_success_rate == 1.0
+        assert ranked[0].stability_score > 70
+    finally:
+        store.close()
+
+
+def test_validation_candidates_skip_recently_checked_nodes(tmp_path):
+    from squad_vpn.models import ValidationResult
+
+    store = NodeStore(tmp_path / "candidates.sqlite3")
+    try:
+        checked = ProxyNode("vless", "checked.example", 443, raw_uri="a")
+        fresh = ProxyNode("vless", "fresh.example", 443, raw_uri="b")
+        store.upsert_many([checked, fresh])
+        store.record_validation(
+            ValidationResult(checked.fingerprint, True, latency_ms=100)
+        )
+        candidates = store.list_validation_candidates(recheck_after_minutes=60)
+        fingerprints = {node.fingerprint for node in candidates}
+        assert fresh.fingerprint in fingerprints
+        assert checked.fingerprint not in fingerprints
+    finally:
+        store.close()

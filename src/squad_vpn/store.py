@@ -3,9 +3,11 @@ from __future__ import annotations
 import json
 import sqlite3
 from pathlib import Path
+from statistics import pstdev
 
 from .models import ProxyNode, RankedNode, ValidationResult
-from .scoring import HealthStats, quality_score
+from .scoring import HealthStats, quality_score, stability_score
+from .sources import SourceReport
 
 
 SCHEMA = """
@@ -23,6 +25,9 @@ CREATE TABLE IF NOT EXISTS nodes (
     last_seen TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     alive INTEGER,
     latency_ms REAL,
+    jitter_ms REAL,
+    recent_success_rate REAL NOT NULL DEFAULT 0,
+    stability_score REAL NOT NULL DEFAULT 0,
     quality_score REAL NOT NULL DEFAULT 0,
     last_checked TEXT,
     exit_ip TEXT,
@@ -49,12 +54,31 @@ CREATE TABLE IF NOT EXISTS health_checks (
 );
 CREATE INDEX IF NOT EXISTS idx_health_fingerprint ON health_checks(fingerprint);
 CREATE INDEX IF NOT EXISTS idx_health_checked_at ON health_checks(checked_at);
+
+CREATE TABLE IF NOT EXISTS sources (
+    name TEXT PRIMARY KEY,
+    url TEXT NOT NULL,
+    tags_json TEXT NOT NULL DEFAULT '[]',
+    priority INTEGER NOT NULL DEFAULT 100,
+    fetch_count INTEGER NOT NULL DEFAULT 0,
+    success_count INTEGER NOT NULL DEFAULT 0,
+    failure_count INTEGER NOT NULL DEFAULT 0,
+    nodes_found INTEGER NOT NULL DEFAULT 0,
+    nodes_selected INTEGER NOT NULL DEFAULT 0,
+    duration_ms REAL,
+    last_fetch TEXT,
+    last_ok TEXT,
+    last_error TEXT
+);
 """
 
 
 MIGRATION_COLUMNS = {
     "alive": "INTEGER",
     "latency_ms": "REAL",
+    "jitter_ms": "REAL",
+    "recent_success_rate": "REAL NOT NULL DEFAULT 0",
+    "stability_score": "REAL NOT NULL DEFAULT 0",
     "quality_score": "REAL NOT NULL DEFAULT 0",
     "last_checked": "TEXT",
     "exit_ip": "TEXT",
@@ -75,6 +99,12 @@ class NodeStore:
         self.connection.execute("PRAGMA foreign_keys = ON")
         self.connection.executescript(SCHEMA)
         self._migrate_nodes()
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_nodes_quality ON nodes(quality_score DESC)"
+        )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_nodes_stability ON nodes(stability_score DESC)"
+        )
         self.connection.commit()
 
     def _migrate_nodes(self) -> None:
@@ -143,6 +173,47 @@ class NodeStore:
         ).fetchall()
         return [self._row_to_node(row) for row in rows]
 
+    def record_source_report(self, report: SourceReport) -> None:
+        spec = report.source
+        self.connection.execute(
+            """
+            INSERT INTO sources (
+                name, url, tags_json, priority, fetch_count, success_count,
+                failure_count, nodes_found, nodes_selected, duration_ms,
+                last_fetch, last_ok, last_error
+            ) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP,
+                CASE WHEN ? = 1 THEN CURRENT_TIMESTAMP ELSE NULL END, ?)
+            ON CONFLICT(name) DO UPDATE SET
+                url=excluded.url,
+                tags_json=excluded.tags_json,
+                priority=excluded.priority,
+                fetch_count=sources.fetch_count + 1,
+                success_count=sources.success_count + excluded.success_count,
+                failure_count=sources.failure_count + excluded.failure_count,
+                nodes_found=excluded.nodes_found,
+                nodes_selected=excluded.nodes_selected,
+                duration_ms=excluded.duration_ms,
+                last_fetch=CURRENT_TIMESTAMP,
+                last_ok=CASE WHEN excluded.success_count = 1
+                    THEN CURRENT_TIMESTAMP ELSE sources.last_ok END,
+                last_error=excluded.last_error
+            """,
+            (
+                spec.name,
+                spec.url,
+                json.dumps(spec.tags, ensure_ascii=False),
+                spec.priority,
+                int(report.ok),
+                int(not report.ok),
+                report.nodes_found,
+                report.nodes_selected,
+                report.duration_ms,
+                int(report.ok),
+                report.error,
+            ),
+        )
+        self.connection.commit()
+
     def record_validation(self, result: ValidationResult) -> float:
         self.connection.execute(
             """
@@ -169,26 +240,55 @@ class NodeStore:
             """,
             (result.fingerprint,),
         ).fetchone()
+        recent = self.connection.execute(
+            """
+            SELECT alive, latency_ms FROM health_checks
+            WHERE fingerprint = ? ORDER BY id DESC LIMIT 10
+            """,
+            (result.fingerprint,),
+        ).fetchall()
+        recent_successes = sum(int(row["alive"]) for row in recent)
+        recent_rate = recent_successes / len(recent) if recent else 0.0
+        recent_latencies = [
+            float(row["latency_ms"])
+            for row in recent
+            if row["alive"] and row["latency_ms"] is not None
+        ]
+        jitter = pstdev(recent_latencies) if len(recent_latencies) >= 2 else None
         stats = HealthStats(
             attempts=int(counts["attempts"] or 0),
             successes=int(counts["successes"] or 0),
             failures=int(counts["failures"] or 0),
             latency_ms=result.latency_ms,
+            jitter_ms=jitter,
+            recent_success_rate=recent_rate,
         )
         score = quality_score(stats, alive=result.alive)
+        stable = stability_score(stats)
         self.connection.execute(
             """
             UPDATE nodes SET
-                alive=?, latency_ms=?, quality_score=?, last_checked=CURRENT_TIMESTAMP,
+                alive=?, latency_ms=?, jitter_ms=?, recent_success_rate=?,
+                stability_score=?, quality_score=?, last_checked=CURRENT_TIMESTAMP,
                 exit_ip=COALESCE(?, exit_ip), country=COALESCE(?, country),
                 asn=COALESCE(?, asn), validation_error=?,
                 success_count=?, failure_count=?
             WHERE fingerprint=?
             """,
             (
-                int(result.alive), result.latency_ms, score,
-                result.exit_ip, result.country, result.asn, result.error,
-                stats.successes, stats.failures, result.fingerprint,
+                int(result.alive),
+                result.latency_ms,
+                jitter,
+                recent_rate,
+                stable,
+                score,
+                result.exit_ip,
+                result.country,
+                result.asn,
+                result.error,
+                stats.successes,
+                stats.failures,
+                result.fingerprint,
             ),
         )
         self.connection.commit()
@@ -199,14 +299,39 @@ class NodeStore:
         *,
         alive_only: bool = False,
         min_score: float = 0.0,
+        min_stability: float = 0.0,
+        max_latency: float | None = None,
+        country: str | None = None,
+        protocol: str | None = None,
+        checked_within_hours: int | None = None,
+        seen_within_hours: int | None = None,
         limit: int | None = None,
     ) -> list[RankedNode]:
-        where = ["quality_score >= ?"]
-        params: list[object] = [float(min_score)]
+        where = ["quality_score >= ?", "stability_score >= ?"]
+        params: list[object] = [float(min_score), float(min_stability)]
         if alive_only:
             where.append("alive = 1")
+        if max_latency is not None:
+            where.append("latency_ms IS NOT NULL AND latency_ms <= ?")
+            params.append(float(max_latency))
+        if country:
+            where.append("UPPER(country) = ?")
+            params.append(country.upper())
+        if protocol:
+            where.append("LOWER(protocol) = ?")
+            params.append(protocol.lower())
+        if checked_within_hours is not None:
+            where.append("last_checked >= datetime('now', ?)")
+            params.append(f"-{int(checked_within_hours)} hours")
+        if seen_within_hours is not None:
+            where.append("last_seen >= datetime('now', ?)")
+            params.append(f"-{int(seen_within_hours)} hours")
+
         sql = "SELECT * FROM nodes WHERE " + " AND ".join(where)
-        sql += " ORDER BY alive DESC, quality_score DESC, latency_ms ASC"
+        sql += (
+            " ORDER BY alive DESC, quality_score DESC, stability_score DESC, "
+            "latency_ms ASC"
+        )
         if limit is not None:
             sql += " LIMIT ?"
             params.append(int(limit))
@@ -218,8 +343,12 @@ class NodeStore:
                     node=self._row_to_node(row),
                     alive=None if row["alive"] is None else bool(row["alive"]),
                     latency_ms=row["latency_ms"],
+                    jitter_ms=row["jitter_ms"],
+                    recent_success_rate=float(row["recent_success_rate"] or 0.0),
+                    stability_score=float(row["stability_score"] or 0.0),
                     quality_score=float(row["quality_score"] or 0.0),
                     last_checked=row["last_checked"],
+                    last_seen=row["last_seen"],
                     exit_ip=row["exit_ip"],
                     country=row["country"],
                     asn=row["asn"],
@@ -230,6 +359,35 @@ class NodeStore:
             )
         return result
 
+    def list_source_status(self) -> list[dict[str, object]]:
+        rows = self.connection.execute(
+            "SELECT * FROM sources ORDER BY priority, name"
+        ).fetchall()
+        return [dict(row) for row in rows]
+
     def count(self) -> int:
         row = self.connection.execute("SELECT COUNT(*) AS n FROM nodes").fetchone()
         return int(row["n"])
+
+    def list_validation_candidates(
+        self,
+        *,
+        recheck_after_minutes: int = 60,
+        limit: int | None = None,
+    ) -> list[ProxyNode]:
+        sql = """
+        SELECT * FROM nodes
+        WHERE last_checked IS NULL
+           OR last_checked <= datetime('now', ?)
+        ORDER BY
+            CASE WHEN last_checked IS NULL THEN 0 ELSE 1 END,
+            CASE WHEN last_checked IS NULL
+                THEN ABS(RANDOM()) ELSE unixepoch(last_checked) END ASC,
+            quality_score DESC
+        """
+        params: list[object] = [f"-{max(0, int(recheck_after_minutes))} minutes"]
+        if limit is not None:
+            sql += " LIMIT ?"
+            params.append(int(limit))
+        rows = self.connection.execute(sql, params).fetchall()
+        return [self._row_to_node(row) for row in rows]
