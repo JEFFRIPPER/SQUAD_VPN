@@ -31,3 +31,20 @@ def test_runtime_config_has_controller_and_group():
     assert config["proxy-groups"][0]["name"] == "SQUAD-VALIDATOR"
     assert len(converted) == 1
     assert converted[0].fingerprint == node.fingerprint
+
+
+def test_mihomo_asset_names_per_platform():
+    from squad_vpn.setup_mihomo import asset_name
+
+    assert asset_name("v1.19.0", "Windows", "AMD64") == "mihomo-windows-amd64-compatible-v1.19.0.zip"
+    assert asset_name("v1.19.0", "Linux", "x86_64") == "mihomo-linux-amd64-compatible-v1.19.0.gz"
+    assert asset_name("v1.19.0", "Linux", "aarch64") == "mihomo-linux-arm64-v1.19.0.gz"
+    assert asset_name("v1.19.0", "Darwin", "arm64") == "mihomo-darwin-arm64-v1.19.0.gz"
+
+
+def test_mihomo_extracts_gzip_binary():
+    import gzip
+
+    from squad_vpn.setup_mihomo import extract_binary
+
+    assert extract_binary("mihomo-linux-amd64-compatible-v1.gz", gzip.compress(b"ELF")) == b"ELF"

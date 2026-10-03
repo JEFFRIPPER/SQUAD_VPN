@@ -76,6 +76,10 @@
   svg.spark { width: 100%; height: 120px; display: block; margin: 10px 0; }
   .error-banner { display: none; padding: 10px 14px; border-radius: 8px; background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
   .auth { display: none; gap: 8px; align-items: center; }
+  .cycle { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
+  .cycle button { padding: 3px 8px; font-size: 12px; }
+  .public { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .public .sub-url { margin-top: 6px; }
   @media (max-width: 600px) { header { padding: 12px 16px; } main { padding: 12px 16px; } }
 </style>
 </head>
@@ -88,6 +92,10 @@
     <button type="submit">Войти</button>
   </form>
   <span class="meta" id="updated">—</span>
+  <span class="cycle" id="cycle" hidden>
+    <span id="cycle-text"></span>
+    <button type="button" class="ghost" id="cycle-run">Обновить сейчас</button>
+  </span>
 </header>
 
 <main>
@@ -115,6 +123,7 @@
           <option value="balanced" selected>balanced</option>
           <option value="fast">fast</option>
           <option value="stable">stable</option>
+          <option value="all">all (все живые)</option>
         </select>
       </label>
       <label class="ctl">Страна <select id="sub-country"><option value="">любая</option></select></label>
@@ -133,6 +142,17 @@
       <button type="button" id="sub-copy">Копировать</button>
     </div>
     <div class="muted" style="margin-top:6px;font-size:12px" id="sub-count"></div>
+    <div class="public" id="public" hidden>
+      <div style="font-weight:600">Постоянная ссылка (работает откуда угодно)</div>
+      <div class="muted" style="font-size:12px">
+        Опубликована на GitHub и обновляется каждым циклом. Её можно вставлять
+        в клиент на телефоне — компьютер для этого не нужен.
+      </div>
+      <div class="sub-url">
+        <code id="public-url"></code>
+        <button type="button" id="public-copy">Копировать</button>
+      </div>
+    </div>
   </section>
 
   <div class="grid2">
@@ -244,9 +264,9 @@
     banner.style.display = message ? "block" : "none";
   }
 
-  async function api(path) {
+  async function api(path, options = {}) {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    const response = await fetch(path, { headers });
+    const response = await fetch(path, { ...options, headers });
     if (response.status === 401) {
       $("auth").style.display = "flex";
       throw new Error("Нужен токен доступа");
@@ -473,8 +493,52 @@
     }, 250);
   }
 
+  let publicBase = null;
+
+  function publicUrl() {
+    if (!publicBase) return "";
+    const profile = $("sub-profile").value || "all";
+    const country = $("sub-country").value;
+    const protocol = $("sub-protocol").value;
+    const name = country ? `country/${country}` : protocol ? `protocol/${protocol}` : profile;
+    const suffix = { base64: ".b64", mihomo: ".yaml", plain: "" }[$("sub-format").value];
+    return `${publicBase}${name}${suffix}`;
+  }
+
+  function updatePublic() {
+    $("public").hidden = !publicBase;
+    $("public-url").textContent = publicUrl();
+  }
+
+  async function loadCycle() {
+    const status = await (await api("/api/cycle")).json();
+    $("cycle").hidden = !status.enabled;
+    if (!status.enabled) return;
+    const last = status.last;
+    let text = "";
+    if (status.running) {
+      text = "Цикл идёт…";
+    } else if (last) {
+      text = `Цикл: ${fmt.time(last.finished_at.replace("T", " ").replace("+00:00", ""))}`
+        + (last.ok ? "" : " (с ошибками)");
+      if (status.next_run_at) {
+        const minutes = Math.max(0, Math.round((new Date(status.next_run_at) - Date.now()) / 60000));
+        text += ` · следующий через ${minutes} мин`;
+      }
+    } else {
+      text = "Цикл ещё не запускался";
+    }
+    $("cycle-text").textContent = text;
+    $("cycle-text").title = last && last.errors.length ? last.errors.join("\n") : "";
+    $("cycle-run").disabled = status.running;
+    const published = last && last.steps.publish && last.steps.publish.raw_base;
+    if (published) publicBase = published;
+    updatePublic();
+  }
+
   async function refresh() {
     try {
+      await loadCycle();
       await loadStats();
       await Promise.all([loadNodes(), loadSources()]);
       updateSub();
@@ -490,8 +554,27 @@
     $(id).addEventListener("change", () => { state.offset = 0; loadNodes().catch((e) => showError(e.message)); });
   }
   for (const id of ["sub-profile", "sub-country", "sub-protocol", "sub-format", "sub-limit"]) {
-    $(id).addEventListener("input", updateSub);
+    $(id).addEventListener("input", () => { updateSub(); updatePublic(); });
   }
+  $("cycle-run").addEventListener("click", async () => {
+    try {
+      await api("/api/cycle/run", { method: "POST" });
+      $("cycle-text").textContent = "Цикл запущен…";
+      $("cycle-run").disabled = true;
+      setTimeout(refresh, 5000);
+    } catch (e) {
+      showError(e.message);
+    }
+  });
+  $("public-copy").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(publicUrl());
+      $("public-copy").textContent = "Скопировано";
+    } catch {
+      $("public-copy").textContent = "Выдели вручную";
+    }
+    setTimeout(() => { $("public-copy").textContent = "Копировать"; }, 1500);
+  });
   $("prev").addEventListener("click", () => { state.offset = Math.max(0, state.offset - PAGE); loadNodes().catch((e) => showError(e.message)); });
   $("next").addEventListener("click", () => { state.offset += PAGE; loadNodes().catch((e) => showError(e.message)); });
   $("sub-copy").addEventListener("click", async () => {

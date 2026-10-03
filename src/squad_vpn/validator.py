@@ -15,7 +15,9 @@ from .models import ProxyNode, ValidationResult
 
 
 DEFAULT_TEST_URL = "https://www.gstatic.com/generate_204"
-DEFAULT_BINARY = Path("tools/mihomo/mihomo.exe")
+DEFAULT_BINARY = Path(
+    "tools/mihomo/mihomo.exe" if os.name == "nt" else "tools/mihomo/mihomo"
+)
 
 
 class MihomoStartError(RuntimeError):

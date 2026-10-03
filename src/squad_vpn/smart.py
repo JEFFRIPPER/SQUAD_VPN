@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import base64
 import json
 import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from .exporter import export_mihomo, export_plain, remove_stale_files
+from .exporter import export_mihomo, export_plain, remove_stale_files, render_plain
 from .models import RankedNode
 from .store import NodeStore
 
@@ -25,6 +26,7 @@ DEFAULT_PROFILES = (
     SmartProfile("balanced", min_score=70, min_stability=55, max_latency=500),
     SmartProfile("fast", min_score=60, min_stability=40, max_latency=150, limit=150),
     SmartProfile("stable", min_score=65, min_stability=75, max_latency=800),
+    SmartProfile("all", limit=500),
 )
 
 
@@ -40,9 +42,15 @@ def _export_pair(records: list[RankedNode], base: Path) -> dict[str, object]:
     nodes = [item.node for item in records]
     export_plain(nodes, base)
     export_mihomo(nodes, Path(str(base) + ".yaml"))
+    # Most mobile clients (v2rayNG, Hiddify, INCY…) expect base64 subscriptions.
+    Path(str(base) + ".b64").write_text(
+        base64.b64encode(render_plain(nodes).encode("utf-8")).decode("ascii"),
+        encoding="utf-8",
+    )
     return {
         "count": len(records),
         "plain": base.name,
+        "base64": base.name + ".b64",
         "mihomo": base.name + ".yaml",
     }
 
@@ -92,7 +100,7 @@ def export_smart_catalog(
         keep: set[str] = set()
         for name in sorted(groups):
             index[key][name] = _export_pair(groups[name], folder / name)
-            keep.update({name, name + ".yaml"})
+            keep.update({name, name + ".yaml", name + ".b64"})
         remove_stale_files(folder, keep)
 
     (root / "index.json").write_text(

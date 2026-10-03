@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS nodes (
     stability_score REAL NOT NULL DEFAULT 0,
     quality_score REAL NOT NULL DEFAULT 0,
     last_checked TEXT,
+    last_alive TEXT,
     exit_ip TEXT,
     country TEXT,
     asn TEXT,
@@ -86,6 +87,7 @@ MIGRATION_COLUMNS = {
     "stability_score": "REAL NOT NULL DEFAULT 0",
     "quality_score": "REAL NOT NULL DEFAULT 0",
     "last_checked": "TEXT",
+    "last_alive": "TEXT",
     "exit_ip": "TEXT",
     "country": "TEXT",
     "asn": "TEXT",
@@ -163,6 +165,19 @@ class NodeStore:
                 added.add(name)
         if "stability_score" in added:
             self._backfill_scores()
+        if "last_alive" in added:
+            self.connection.execute(
+                """
+                UPDATE nodes SET last_alive = (
+                    SELECT MAX(checked_at) FROM health_checks h
+                    WHERE h.fingerprint = nodes.fingerprint AND h.alive = 1
+                )
+                """
+            )
+            self.connection.execute(
+                "UPDATE nodes SET last_alive = last_checked "
+                "WHERE last_alive IS NULL AND alive = 1"
+            )
 
     def close(self) -> None:
         self.connection.close()
@@ -299,6 +314,7 @@ class NodeStore:
             UPDATE nodes SET
                 alive=?, latency_ms=?, jitter_ms=?, recent_success_rate=?,
                 stability_score=?, quality_score=?, last_checked=CURRENT_TIMESTAMP,
+                last_alive=CASE WHEN ? = 1 THEN CURRENT_TIMESTAMP ELSE last_alive END,
                 exit_ip=COALESCE(?, exit_ip), country=COALESCE(?, country),
                 asn=COALESCE(?, asn), validation_error=?
             WHERE fingerprint=?
@@ -310,6 +326,7 @@ class NodeStore:
                 recent_rate,
                 stable,
                 score,
+                int(result.alive),
                 result.exit_ip,
                 result.country or None,
                 result.asn or None,
@@ -594,6 +611,7 @@ class NodeStore:
         limit: int | None = None,
         seen_within_hours: int | None = 72,
         new_share: float = 0.5,
+        dead_recheck_minutes: int | None = None,
     ) -> list[ProxyNode]:
         """Pick nodes for validation without starving re-checks.
 
@@ -602,6 +620,8 @@ class NodeStore:
         half is given to the other. Nodes not seen in sources for
         ``seen_within_hours`` are skipped.
         """
+        if dead_recheck_minutes is None:
+            dead_recheck_minutes = max(int(recheck_after_minutes) * 6, 360)
         seen_clause = ""
         seen_params: list[object] = []
         if seen_within_hours is not None:
@@ -622,15 +642,18 @@ class NodeStore:
 
         def fetch_due(count: int | None) -> list[sqlite3.Row]:
             # Previously alive nodes first, then the longest-unchecked ones.
+            # Dead nodes back off to dead_recheck_minutes.
             sql = (
                 "SELECT * FROM nodes WHERE last_checked IS NOT NULL"
-                " AND last_checked <= datetime('now', ?)"
+                " AND ((alive = 1 AND last_checked <= datetime('now', ?))"
+                " OR (COALESCE(alive, 0) = 0 AND last_checked <= datetime('now', ?)))"
                 + seen_clause
                 + " ORDER BY CASE WHEN alive = 1 THEN 0 ELSE 1 END,"
                 " last_checked ASC, quality_score DESC"
             )
             params: list[object] = [
                 f"-{max(0, int(recheck_after_minutes))} minutes",
+                f"-{max(0, int(dead_recheck_minutes))} minutes",
                 *seen_params,
             ]
             if count is not None:
@@ -652,6 +675,41 @@ class NodeStore:
                 new_rows = fetch_new(len(new_rows) + spare)
             rows = new_rows + due_rows
         return [self._row_to_node(row) for row in rows]
+
+    def cleanup(
+        self,
+        *,
+        unseen_days: int = 3,
+        dead_unseen_hours: int = 24,
+    ) -> dict[str, int]:
+        """Delete nodes that sources no longer publish.
+
+        - any node not seen in sources for ``unseen_days``;
+        - a dead node not seen for ``dead_unseen_hours``.
+
+        Dead nodes that sources still publish are kept (deleting them would
+        just re-add them as "new" on the next collect); instead they are
+        re-checked less often, see ``list_validation_candidates``.
+        """
+        conditions = {
+            "unseen": ("last_seen < datetime('now', ?)", [f"-{int(unseen_days)} days"]),
+            "dead_unseen": (
+                "alive = 0 AND last_seen < datetime('now', ?)",
+                [f"-{int(dead_unseen_hours)} hours"],
+            ),
+        }
+        removed: dict[str, int] = {}
+        for reason, (where, params) in conditions.items():
+            self.connection.execute(
+                f"DELETE FROM health_checks WHERE fingerprint IN "
+                f"(SELECT fingerprint FROM nodes WHERE {where})",
+                params,
+            )
+            cursor = self.connection.execute(f"DELETE FROM nodes WHERE {where}", params)
+            removed[reason] = cursor.rowcount
+        self.connection.commit()
+        removed["total"] = sum(removed.values())
+        return removed
 
     def prune_sources(self, active_names: list[str]) -> int:
         """Drop stats of sources that were removed or disabled in the registry."""

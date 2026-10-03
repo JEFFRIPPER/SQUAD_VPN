@@ -13,7 +13,7 @@ if errorlevel 1 (
   exit /b 1
 )
 echo [SQUAD VPN] Dashboard: http://127.0.0.1:8080/
-echo [SQUAD VPN] Keep this window open. Close it or press Ctrl+C to stop.
+echo [SQUAD VPN] Keep this window open: it serves the dashboard and refreshes nodes every hour.
 start "" cmd /c "timeout /t 3 >nul & start http://127.0.0.1:8080/"
-".venv\Scripts\python.exe" -m squad_vpn serve
+".venv\Scripts\python.exe" -m squad_vpn serve --watch
 pause

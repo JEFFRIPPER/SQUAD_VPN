@@ -43,7 +43,7 @@ def test_smart_catalog_removes_stale_and_sanitizes(tmp_path):
 
         index = export_smart_catalog(store, out)
         assert list(index["countries"]) == ["DE"]
-        assert sorted(p.name for p in (out / "country").iterdir()) == ["DE", "DE.yaml"]
+        assert sorted(p.name for p in (out / "country").iterdir()) == ["DE", "DE.b64", "DE.yaml"]
         assert not (tmp_path / "de").exists()
     finally:
         store.close()

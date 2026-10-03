@@ -6,14 +6,21 @@ import ipaddress
 import os
 from pathlib import Path
 
-from .collector import collect_source_specs
+from .cycle import (
+    CycleOptions,
+    cleanup_step,
+    collect_step,
+    publish_step,
+    run_cycle,
+    validate_step,
+)
 from .exporter import export_ranked_catalog, export_sources
 from .parser import deduplicate, parse_subscription
+from .publish import PublishError, PublishTarget, detect_origin
 from .setup_mihomo import install_mihomo
 from .smart import export_custom_subscription, export_smart_catalog
-from .sources import load_source_specs
 from .store import NodeStore
-from .validator import DEFAULT_BINARY, DEFAULT_TEST_URL, MihomoValidator
+from .validator import DEFAULT_BINARY, DEFAULT_TEST_URL
 
 
 DEFAULT_DB = Path("data/squad_vpn.sqlite3")
@@ -30,36 +37,7 @@ def _store_nodes(nodes, database: Path) -> int:
 
 
 async def _collect(args: argparse.Namespace) -> int:
-    specs = load_source_specs(args.sources)
-    if not specs:
-        print(f"Нет включённых источников в {args.sources}")
-        return 0
-    nodes, reports = await collect_source_specs(
-        specs, concurrency=args.concurrency
-    )
-    store = NodeStore(args.database)
-    try:
-        saved = store.upsert_many(nodes)
-        for report in reports:
-            store.record_source_report(report)
-        store.prune_sources([spec.name for spec in specs])
-    finally:
-        store.close()
-
-    ok = sum(report.ok for report in reports)
-    failed = len(reports) - ok
-    print(f"Источников: {len(reports)}; успешно: {ok}; ошибок: {failed}")
-    print(f"Собрано уникальных узлов: {len(nodes)}")
-    print(f"Записано в базу: {saved}")
-    for report in reports:
-        state = "OK" if report.ok else "ERR"
-        print(
-            f"  [{state}] {report.source.name}: "
-            f"{report.nodes_selected}/{report.nodes_found} узлов, "
-            f"{report.duration_ms:.0f} ms"
-        )
-        if report.error:
-            print(f"       {report.error}")
+    await collect_step(args.sources, args.database, concurrency=args.concurrency)
     return 0
 
 
@@ -78,37 +56,20 @@ async def _setup_mihomo(args: argparse.Namespace) -> int:
 
 
 async def _validate(args: argparse.Namespace) -> int:
-    if not Path(args.binary).exists():
-        print(f"Mihomo не найден: {args.binary}. Выполни squad-vpn setup-mihomo")
-        return 1
-    store = NodeStore(args.database)
     try:
-        nodes = store.list_validation_candidates(
-            recheck_after_minutes=args.recheck_minutes,
-            limit=args.limit,
-        )
-        if not nodes:
-            print("Нет узлов, которым сейчас нужна проверка")
-            return 0
-        validator = MihomoValidator(
-            args.binary,
+        await validate_step(
+            args.database,
+            binary=args.binary,
             test_url=args.test_url,
             timeout_ms=args.timeout_ms,
-        )
-        results = await validator.validate(
-            nodes,
             concurrency=args.concurrency,
             geo_limit=args.geo_limit,
+            limit=args.limit,
+            recheck_minutes=args.recheck_minutes,
         )
-        alive = 0
-        for result in results:
-            store.record_validation(result)
-            alive += int(result.alive)
-        store.prune_history()
-        print(f"Проверено через Mihomo: {len(results)}")
-        print(f"Живых: {alive}; мёртвых: {len(results) - alive}")
-    finally:
-        store.close()
+    except FileNotFoundError as exc:
+        print(exc)
+        return 1
     return 0
 
 
@@ -179,43 +140,63 @@ def _sources_status(args: argparse.Namespace) -> int:
     return 0
 
 
-async def _run(args: argparse.Namespace) -> int:
-    collect_args = argparse.Namespace(
+def _publish_target(args: argparse.Namespace) -> PublishTarget | None:
+    if not getattr(args, "publish", False):
+        return None
+    repo = args.publish_repo or os.environ.get("SQUAD_PUBLISH_REPO") or detect_origin()
+    if not repo:
+        raise SystemExit(
+            "Не удалось определить репозиторий для публикации: укажи --publish-repo"
+        )
+    return PublishTarget(repo=repo, branch=args.publish_branch, workdir=args.publish_workdir)
+
+
+def _cycle_options(args: argparse.Namespace) -> CycleOptions:
+    return CycleOptions(
         sources=args.sources,
         database=args.database,
-        concurrency=args.source_concurrency,
-    )
-    await _collect(collect_args)
-    validate_args = argparse.Namespace(
-        database=args.database,
+        output=args.output,
+        source_concurrency=args.source_concurrency,
         binary=args.binary,
         test_url=args.test_url,
         timeout_ms=args.timeout_ms,
-        concurrency=args.validation_concurrency,
+        validation_concurrency=args.validation_concurrency,
         geo_limit=args.geo_limit,
         limit=args.limit,
         recheck_minutes=args.recheck_minutes,
+        cleanup=not args.no_cleanup,
+        unseen_days=args.unseen_days,
+        publish=_publish_target(args),
     )
+
+
+async def _run(args: argparse.Namespace) -> int:
+    report = await run_cycle(_cycle_options(args))
+    print(f"Цикл завершён за {report.duration_s} с" + ("" if report.ok else " с ошибками"))
+    for error in report.errors:
+        print(f"  ! {error}")
+    if args.strict and not report.ok:
+        return 1
+    return 0
+
+
+def _cleanup(args: argparse.Namespace) -> int:
+    cleanup_step(args.database, unseen_days=args.unseen_days)
+    return 0
+
+
+def _publish(args: argparse.Namespace) -> int:
+    args.publish = True
+    target = _publish_target(args)
+    assert target is not None
     try:
-        await _validate(validate_args)
-    except (FileNotFoundError, RuntimeError, TimeoutError) as exc:
-        # Export still runs so subscriptions are refreshed from existing data.
-        print(f"Проверка пропущена: {exc}")
-    export_args = argparse.Namespace(
-        database=args.database,
-        output=args.output,
-        alive_only=False,
-        min_score=0.0,
-        min_stability=0.0,
-        max_latency=None,
-        country=None,
-        protocol=None,
-        checked_within_hours=None,
-        seen_within_hours=None,
-        limit=None,
-        no_smart=False,
-    )
-    return _export(export_args)
+        result = publish_step(args.database, target)
+    except PublishError as exc:
+        print(f"Публикация не удалась: {exc}")
+        return 1
+    for name, count in result["profiles"].items():  # type: ignore[union-attr]
+        print(f"  {name}: {count} узлов -> {result['raw_base']}{name}.b64")
+    return 0
 
 
 async def _watch(args: argparse.Namespace) -> int:
@@ -258,7 +239,17 @@ def _serve(args: argparse.Namespace) -> int:
         return 2
     url = f"http://{args.host}:{args.port}/"
     print(f"SQUAD VPN API: {url}" + (f"?token={token}" if token else ""))
-    serve(args.database, host=args.host, port=args.port, token=token)
+    cycle = _cycle_options(args) if args.watch else None
+    if cycle is not None:
+        print(f"Фоновый цикл: каждые {args.interval_minutes} мин.")
+    serve(
+        args.database,
+        host=args.host,
+        port=args.port,
+        token=token,
+        cycle=cycle,
+        interval_minutes=args.interval_minutes,
+    )
     return 0
 
 
@@ -270,6 +261,35 @@ def _add_validation_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--geo-limit", type=int, default=10)
     parser.add_argument("--limit", type=int, default=200)
     parser.add_argument("--recheck-minutes", type=int, default=60)
+
+
+def _add_publish_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--publish-repo",
+        help="git-репозиторий для публикации (по умолчанию origin этого проекта "
+        "или SQUAD_PUBLISH_REPO)",
+    )
+    parser.add_argument(
+        "--publish-branch",
+        default="subs-home",
+        help="Ветка для подписок (по умолчанию subs-home; GitHub Actions пишет в subs)",
+    )
+    parser.add_argument("--publish-workdir", type=Path, default=Path("data/publish"))
+
+
+def _add_cycle_args(parser: argparse.ArgumentParser, *, with_database: bool = True) -> None:
+    parser.add_argument("--sources", type=Path, default=DEFAULT_SOURCES)
+    if with_database:
+        parser.add_argument("--database", type=Path, default=DEFAULT_DB)
+    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--source-concurrency", type=int, default=12)
+    _add_validation_args(parser)
+    parser.add_argument("--no-cleanup", action="store_true", help="Не удалять старые узлы")
+    parser.add_argument("--unseen-days", type=int, default=3)
+    parser.add_argument(
+        "--publish", action="store_true", help="Публиковать подписки в git-ветку"
+    )
+    _add_publish_args(parser)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -327,22 +347,28 @@ def build_parser() -> argparse.ArgumentParser:
     smart.add_argument("--seen-within-hours", type=int, default=48)
     smart.add_argument("--limit", type=int, default=300)
 
-    run = sub.add_parser("run", help="Collect -> validate -> export -> smart")
-    run.add_argument("--sources", type=Path, default=DEFAULT_SOURCES)
-    run.add_argument("--database", type=Path, default=DEFAULT_DB)
-    run.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-    run.add_argument("--source-concurrency", type=int, default=12)
-    _add_validation_args(run)
+    run = sub.add_parser(
+        "run", help="Collect -> validate -> cleanup -> export (-> publish)"
+    )
+    _add_cycle_args(run)
+    run.add_argument(
+        "--strict", action="store_true", help="Код выхода 1, если какой-то шаг упал"
+    )
 
     watch = sub.add_parser("watch", help="Периодически выполнять полный цикл")
-    watch.add_argument("--sources", type=Path, default=DEFAULT_SOURCES)
-    watch.add_argument("--database", type=Path, default=DEFAULT_DB)
-    watch.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
-    watch.add_argument("--source-concurrency", type=int, default=12)
+    _add_cycle_args(watch)
     watch.add_argument("--interval-minutes", type=int, default=60)
     watch.add_argument("--cycles", type=int, default=0, help="0 = бесконечно")
     watch.add_argument("--stop-on-error", action="store_true")
-    _add_validation_args(watch)
+    watch.add_argument("--strict", action="store_true", help=argparse.SUPPRESS)
+
+    clean = sub.add_parser("cleanup", help="Удалить узлы, пропавшие из источников")
+    clean.add_argument("--database", type=Path, default=DEFAULT_DB)
+    clean.add_argument("--unseen-days", type=int, default=3)
+
+    pub = sub.add_parser("publish", help="Опубликовать подписки в git-ветку")
+    pub.add_argument("--database", type=Path, default=DEFAULT_DB)
+    _add_publish_args(pub)
 
     srv = sub.add_parser("serve", help="HTTP API, динамические подписки и веб-панель")
     srv.add_argument("--database", type=Path, default=DEFAULT_DB)
@@ -354,6 +380,13 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Разрешить сетевой доступ без токена",
     )
+    srv.add_argument(
+        "--watch",
+        action="store_true",
+        help="Фоново выполнять полный цикл каждые --interval-minutes",
+    )
+    srv.add_argument("--interval-minutes", type=int, default=60)
+    _add_cycle_args(srv, with_database=False)
     return parser
 
 
@@ -380,5 +413,9 @@ def main() -> int:
         return asyncio.run(_watch(args))
     if args.command == "serve":
         return _serve(args)
+    if args.command == "cleanup":
+        return _cleanup(args)
+    if args.command == "publish":
+        return _publish(args)
     parser.error("Неизвестная команда")
     return 2

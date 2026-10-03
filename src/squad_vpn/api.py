@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import secrets
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager
 from dataclasses import asdict
+from datetime import UTC, datetime, timedelta
 from importlib import resources
 from pathlib import Path
 from typing import Literal
@@ -13,6 +16,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 
 from . import __version__
+from .cycle import CycleOptions, run_cycle
 from .exporter import ranked_to_dict, render_mihomo, render_plain
 from .smart import DEFAULT_PROFILES, SmartProfile
 from .store import SORT_COLUMNS, NodeStore
@@ -31,7 +35,66 @@ def _dashboard_html() -> str:
     )
 
 
-def create_app(database: str | Path, *, token: str | None = None) -> FastAPI:
+class CycleRunner:
+    """Runs the full cycle in the background of the API process."""
+
+    def __init__(self, options: CycleOptions, interval_minutes: int) -> None:
+        self.options = options
+        self.interval = max(1, int(interval_minutes)) * 60
+        self.running = False
+        self.last: dict[str, object] | None = None
+        self.next_run_at: str | None = None
+        self._wake = asyncio.Event()
+        self._lock = asyncio.Lock()
+
+    @staticmethod
+    def _log(message: str) -> None:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] {message}", flush=True)
+
+    async def run_once(self) -> None:
+        async with self._lock:
+            self.running = True
+            try:
+                report = await run_cycle(self.options, log=self._log)
+                self.last = report.as_dict()
+            finally:
+                self.running = False
+
+    async def loop(self) -> None:
+        while True:
+            await self.run_once()
+            self.next_run_at = (
+                datetime.now(UTC) + timedelta(seconds=self.interval)
+            ).isoformat(timespec="seconds")
+            self._wake.clear()
+            try:
+                await asyncio.wait_for(self._wake.wait(), timeout=self.interval)
+            except TimeoutError:
+                pass
+
+    def trigger(self) -> bool:
+        if self.running:
+            return False
+        self._wake.set()
+        return True
+
+    def status(self) -> dict[str, object]:
+        return {
+            "enabled": True,
+            "running": self.running,
+            "interval_minutes": self.interval // 60,
+            "next_run_at": None if self.running else self.next_run_at,
+            "last": self.last,
+        }
+
+
+def create_app(
+    database: str | Path,
+    *,
+    token: str | None = None,
+    cycle: CycleOptions | None = None,
+    interval_minutes: int = 60,
+) -> FastAPI:
     """Build the HTTP API.
 
     When ``token`` is set, ``/sub`` and ``/api/*`` require it either as
@@ -43,7 +106,23 @@ def create_app(database: str | Path, *, token: str | None = None) -> FastAPI:
     # One full init (schema, migrations, WAL); requests then open light connections.
     NodeStore(database).close()
 
+    runner = CycleRunner(cycle, interval_minutes) if cycle is not None else None
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        task = asyncio.create_task(runner.loop()) if runner is not None else None
+        try:
+            yield
+        finally:
+            if task is not None:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+
     app = FastAPI(
+        lifespan=lifespan,
         title="SQUAD VPN",
         version=__version__,
         docs_url="/api/docs",
@@ -190,6 +269,20 @@ def create_app(database: str | Path, *, token: str | None = None) -> FastAPI:
         payload["version"] = __version__
         return payload
 
+    @app.get("/api/cycle", dependencies=protected)
+    def cycle_status() -> dict[str, object]:
+        if runner is None:
+            return {"enabled": False}
+        return runner.status()
+
+    @app.post("/api/cycle/run", dependencies=protected)
+    def cycle_run() -> dict[str, object]:
+        if runner is None:
+            raise HTTPException(
+                status_code=409, detail="Фоновый цикл выключен (запусти serve --watch)"
+            )
+        return {"started": runner.trigger()}
+
     @app.get("/api/sources", dependencies=protected)
     def sources(store: NodeStore = Depends(get_store)) -> list[dict[str, object]]:
         rows = store.list_source_status()
@@ -209,7 +302,12 @@ def serve(
     host: str = "127.0.0.1",
     port: int = 8080,
     token: str | None = None,
+    cycle: CycleOptions | None = None,
+    interval_minutes: int = 60,
 ) -> None:
     import uvicorn
 
-    uvicorn.run(create_app(database, token=token), host=host, port=port, log_level="info")
+    app = create_app(
+        database, token=token, cycle=cycle, interval_minutes=interval_minutes
+    )
+    uvicorn.run(app, host=host, port=port, log_level="warning")
