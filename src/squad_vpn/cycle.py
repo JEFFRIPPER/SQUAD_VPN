@@ -10,7 +10,7 @@ from pathlib import Path
 from .collector import collect_source_specs
 from .exporter import export_ranked_catalog, export_sources
 from .publish import PublishTarget, publish
-from .smart import export_smart_catalog
+from .smart import DEFAULT_PROFILES_PATH, export_smart_catalog, load_profiles
 from .sources import load_source_specs
 from .store import NodeStore
 from .validator import DEFAULT_BINARY, DEFAULT_TEST_URL, MihomoValidator
@@ -36,6 +36,7 @@ class CycleOptions:
     cleanup: bool = True
     unseen_days: int = 3
     publish: PublishTarget | None = None
+    profiles: Path | None = DEFAULT_PROFILES_PATH
 
 
 @dataclass(slots=True)
@@ -123,8 +124,9 @@ async def validate_step(
             log("Нет узлов, которым сейчас нужна проверка")
             return {"checked": 0, "alive": 0}
         validator = MihomoValidator(binary, test_url=test_url, timeout_ms=timeout_ms)
+        geo_known = store.fingerprints_with_country()
         results = await validator.validate(
-            nodes, concurrency=concurrency, geo_limit=geo_limit
+            nodes, concurrency=concurrency, geo_limit=geo_limit, geo_known=geo_known
         )
         alive = 0
         for result in results:
@@ -152,13 +154,19 @@ def cleanup_step(database: Path, *, unseen_days: int = 3, log: Log = print) -> d
     return removed
 
 
-def export_step(database: Path, output: Path, *, log: Log = print) -> dict[str, object]:
+def export_step(
+    database: Path,
+    output: Path,
+    *,
+    profiles: Path | None = DEFAULT_PROFILES_PATH,
+    log: Log = print,
+) -> dict[str, object]:
     store = NodeStore(database)
     try:
         records = store.list_ranked()
         export_ranked_catalog(records, output)
         export_sources(store.list_source_status(), output / "sources.json")
-        index = export_smart_catalog(store, output / "smart")
+        index = export_smart_catalog(store, output / "smart", load_profiles(profiles))
     finally:
         store.close()
     alive = sum(item.alive is True for item in records)
@@ -247,7 +255,9 @@ async def run_cycle(options: CycleOptions, *, log: Log = print) -> CycleReport:
         )
     await step(
         "export",
-        lambda: export_step(options.database, options.output, log=log),
+        lambda: export_step(
+            options.database, options.output, profiles=options.profiles, log=log
+        ),
         blocking=True,
     )
     if options.publish is not None:

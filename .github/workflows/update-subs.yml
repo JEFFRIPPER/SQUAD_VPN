@@ -43,7 +43,7 @@ jobs:
         run: >-
           python -m squad_vpn run
           --publish --publish-branch subs
-          --limit 400 --validation-concurrency 32 --geo-limit 40
+          --limit 400 --validation-concurrency 32 --geo-limit 80
           --strict
 
       - name: Save database

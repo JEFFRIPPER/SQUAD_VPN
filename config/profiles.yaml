@@ -1,0 +1,57 @@
+# Smart-профили SQUAD VPN.
+# Каждый профиль превращается в подписку: <name>, <name>.b64, <name>.yaml
+# и доступен как /sub?profile=<name>. Файл перечитывается без перезапуска.
+#
+# Поля (все, кроме name, необязательные):
+#   description          — подпись в панели
+#   min_score            — минимальный quality score, 0..100
+#   min_stability        — минимальный stability score, 0..100
+#   max_latency          — максимальный ping (медиана последних проверок), мс
+#   checked_within_hours — узел проверялся не раньше, чем N часов назад
+#   seen_within_hours    — узел был в источниках не раньше, чем N часов назад
+#   limit                — максимум узлов в подписке
+#   countries            — только эти страны выхода, например [DE, NL]
+#   exclude_countries    — исключить страны выхода
+#   protocols            — только эти протоколы: vless, vmess, trojan, ss, hysteria2
+#   per_host             — сколько узлов с одного сервера (null = без ограничения)
+#   per_exit_ip          — сколько узлов с одним IP выхода (null = без ограничения)
+#   max_asn_share        — максимальная доля одного провайдера (ASN), 0..1
+#
+# Узлы с выходом в России не помогают обходить блокировки, поэтому основные
+# профили их исключают.
+
+profiles:
+  - name: balanced
+    description: Баланс скорости и надёжности
+    min_score: 70
+    min_stability: 55
+    max_latency: 500
+    exclude_countries: [RU]
+
+  - name: fast
+    description: Самые быстрые
+    min_score: 60
+    min_stability: 40
+    max_latency: 150
+    limit: 150
+    exclude_countries: [RU]
+
+  - name: stable
+    description: Стабильно живые много проверок подряд
+    min_score: 65
+    min_stability: 75
+    max_latency: 800
+    exclude_countries: [RU]
+
+  - name: europe
+    description: Выход в Европе
+    min_score: 60
+    max_latency: 600
+    countries: [DE, NL, FI, FR, GB, SE, PL, CZ, AT, CH, IE, EE, LV, LT]
+
+  - name: all
+    description: Все живые узлы
+    limit: 500
+    per_host: null
+    per_exit_ip: null
+    max_asn_share: null

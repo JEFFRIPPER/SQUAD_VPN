@@ -13,7 +13,7 @@ from pathlib import Path
 
 import httpx
 
-from .smart import export_smart_catalog
+from .smart import DEFAULT_PROFILES_PATH, export_smart_catalog, load_profiles
 from .store import NodeStore
 
 
@@ -31,6 +31,7 @@ class PublishTarget:
     repo: str
     branch: str = "subs"
     workdir: Path = Path("data/publish")
+    profiles: Path | None = DEFAULT_PROFILES_PATH
 
     def github(self) -> tuple[str, str] | None:
         match = GITHUB_URL.search(self.repo)
@@ -108,7 +109,9 @@ def _links_table(target: PublishTarget, index: dict[str, object]) -> list[str]:
         return f"| {title} | {meta['count']} | {b64} | {yaml} | {plain} |"
 
     for name, meta in index["profiles"].items():  # type: ignore[union-attr]
-        lines.append(row(f"**{name}**", meta))
+        description = meta.get("criteria", {}).get("description")  # type: ignore[union-attr]
+        title = f"**{name}**" + (f" — {description}" if description else "")
+        lines.append(row(title, meta))
     for name, meta in index["countries"].items():  # type: ignore[union-attr]
         lines.append(row(f"страна {name}", _prefixed(meta, "country/")))
     for name, meta in index["protocols"].items():  # type: ignore[union-attr]
@@ -131,7 +134,7 @@ def _prefixed(meta: object, prefix: str) -> dict[str, object]:
 
 def build_site(store: NodeStore, directory: Path, target: PublishTarget) -> dict[str, object]:
     """Render everything that goes onto the publish branch into ``directory``."""
-    index = export_smart_catalog(store, directory)
+    index = export_smart_catalog(store, directory, load_profiles(target.profiles))
     stats = store.stats()
     updated = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     stats["updated_at"] = updated
@@ -145,6 +148,8 @@ def build_site(store: NodeStore, directory: Path, target: PublishTarget) -> dict
         f" из {stats['total']} · средний ping: {stats['average_latency_ms'] or '—'} ms",
         "",
         "Ветка генерируется автоматически и перезаписывается при каждом обновлении.",
+        "Clash/Mihomo-конфиги содержат автопереключение: группа AUTO выбирает",
+        "самый быстрый узел, FAILOVER переключается, если текущий перестал отвечать.",
         "Скопируй ссылку из нужной строки и добавь её в VPN-клиент как подписку.",
         "",
         *_links_table(target, index),

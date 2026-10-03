@@ -6,7 +6,7 @@ import json
 import secrets
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
 from importlib import resources
 from pathlib import Path
@@ -18,11 +18,10 @@ from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from . import __version__
 from .cycle import CycleOptions, run_cycle
 from .exporter import ranked_to_dict, render_mihomo, render_plain
-from .smart import DEFAULT_PROFILES, SmartProfile
+from .smart import DEFAULT_PROFILES_PATH, GROUP_PROFILE, load_profiles, select_profile
 from .store import SORT_COLUMNS, NodeStore
 
 
-PROFILES: dict[str, SmartProfile] = {item.name: item for item in DEFAULT_PROFILES}
 MAX_SUB_LIMIT = 2000
 MAX_PAGE_LIMIT = 500
 
@@ -94,6 +93,7 @@ def create_app(
     token: str | None = None,
     cycle: CycleOptions | None = None,
     interval_minutes: int = 60,
+    profiles_path: str | Path | None = DEFAULT_PROFILES_PATH,
 ) -> FastAPI:
     """Build the HTTP API.
 
@@ -105,6 +105,10 @@ def create_app(
     database = Path(database)
     # One full init (schema, migrations, WAL); requests then open light connections.
     NodeStore(database).close()
+
+    def profiles() -> dict[str, object]:
+        # Re-read on each request so edits to profiles.yaml apply without restart.
+        return {item.name: item for item in load_profiles(profiles_path)}
 
     runner = CycleRunner(cycle, interval_minutes) if cycle is not None else None
 
@@ -171,30 +175,26 @@ def create_app(
         limit: int | None = Query(None, ge=1, le=MAX_SUB_LIMIT),
         format: Literal["plain", "base64", "mihomo"] = "plain",
     ) -> Response:
-        if profile is not None and profile not in PROFILES:
+        available = profiles()
+        if profile is not None and profile not in available:
             raise HTTPException(
                 status_code=404,
-                detail=f"Неизвестный профиль. Доступны: {', '.join(PROFILES)}",
+                detail=f"Неизвестный профиль. Доступны: {', '.join(available)}",
             )
         # Profile supplies defaults, explicit query parameters override them.
-        base = PROFILES.get(profile or "", SmartProfile("custom"))
-        records = store.list_ranked(
-            alive_only=True,
-            min_score=base.min_score if min_score is None else min_score,
-            min_stability=base.min_stability if min_stability is None else min_stability,
-            max_latency=base.max_latency if max_latency is None else max_latency,
-            country=country,
-            protocol=protocol,
-            checked_within_hours=(
-                base.checked_within_hours
-                if checked_within_hours is None
-                else checked_within_hours
-            ),
-            seen_within_hours=(
-                base.seen_within_hours if seen_within_hours is None else seen_within_hours
-            ),
-            limit=base.limit if limit is None else limit,
-        )
+        base = available.get(profile or "", replace(GROUP_PROFILE, name="custom"))
+        overrides: dict[str, object] = {
+            "min_score": min_score,
+            "min_stability": min_stability,
+            "max_latency": max_latency,
+            "checked_within_hours": checked_within_hours,
+            "seen_within_hours": seen_within_hours,
+            "limit": limit,
+            "countries": (country,) if country else None,
+            "protocols": (protocol,) if protocol else None,
+        }
+        chosen = replace(base, **{k: v for k, v in overrides.items() if v is not None})
+        records = select_profile(store, chosen)
         nodes = [item.node for item in records]
         headers = {
             "profile-update-interval": "1",
@@ -203,7 +203,7 @@ def create_app(
         }
         if format == "mihomo":
             return Response(
-                render_mihomo(nodes),
+                render_mihomo(nodes, f"SQUAD {chosen.name}"),
                 media_type="text/yaml; charset=utf-8",
                 headers=headers,
             )
@@ -213,8 +213,8 @@ def create_app(
         return PlainTextResponse(body, headers=headers)
 
     @app.get("/api/profiles", dependencies=protected)
-    def profiles() -> dict[str, object]:
-        return {name: asdict(item) for name, item in PROFILES.items()}
+    def profiles_list() -> dict[str, object]:
+        return {name: asdict(item) for name, item in profiles().items()}
 
     @app.get("/api/nodes", dependencies=protected)
     def nodes(
@@ -304,10 +304,15 @@ def serve(
     token: str | None = None,
     cycle: CycleOptions | None = None,
     interval_minutes: int = 60,
+    profiles_path: str | Path | None = DEFAULT_PROFILES_PATH,
 ) -> None:
     import uvicorn
 
     app = create_app(
-        database, token=token, cycle=cycle, interval_minutes=interval_minutes
+        database,
+        token=token,
+        cycle=cycle,
+        interval_minutes=interval_minutes,
+        profiles_path=profiles_path,
     )
     uvicorn.run(app, host=host, port=port, log_level="warning")

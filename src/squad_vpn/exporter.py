@@ -14,14 +14,69 @@ def render_plain(nodes: list[ProxyNode]) -> str:
     return "\n".join(lines) + ("\n" if lines else "")
 
 
-def render_mihomo(nodes: list[ProxyNode]) -> str:
+HEALTH_URL = "https://www.gstatic.com/generate_204"
+PRIVATE_NETWORKS = (
+    "127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16",
+    "169.254.0.0/16", "100.64.0.0/10",
+)
+
+
+def mihomo_config(nodes: list[ProxyNode], title: str = "SQUAD") -> dict[str, object]:
+    """A complete Mihomo/Clash Meta profile with automatic failover.
+
+    Groups:
+    - ``SQUAD`` — what the client routes through; AUTO by default;
+    - ``AUTO`` — url-test: picks the lowest-ping node, re-tests every 5 min;
+    - ``FAILOVER`` — fallback: keeps the best-ranked node, switches when it fails.
+    Nodes are already ranked, so FAILOVER order follows SQUAD's score.
+    """
     proxies = []
     for index, node in enumerate(nodes, start=1):
-        name = f"SQUAD-{index:05d}-{node.fingerprint[:8]}"
+        name = f"{title} {index:03d} {node.protocol} {node.fingerprint[:6]}"
         converted = node_to_mihomo(node, name)
         if converted is not None:
             proxies.append(converted)
-    return dump_yaml({"proxies": proxies})
+    names = [item["name"] for item in proxies]
+    if names:
+        groups: list[dict[str, object]] = [
+            {"name": "SQUAD", "type": "select", "proxies": ["AUTO", "FAILOVER", *names]},
+            {
+                "name": "AUTO", "type": "url-test", "proxies": names,
+                "url": HEALTH_URL, "interval": 300, "tolerance": 50, "lazy": True,
+            },
+            {
+                "name": "FAILOVER", "type": "fallback", "proxies": names,
+                "url": HEALTH_URL, "interval": 120, "lazy": True,
+            },
+        ]
+    else:
+        groups = [{"name": "SQUAD", "type": "select", "proxies": ["DIRECT"]}]
+    rules = [f"IP-CIDR,{net},DIRECT,no-resolve" for net in PRIVATE_NETWORKS]
+    rules.append("MATCH,SQUAD")
+    return {
+        "mixed-port": 7890,
+        "allow-lan": False,
+        "mode": "rule",
+        "log-level": "warning",
+        "ipv6": False,
+        "unified-delay": True,
+        "tcp-concurrent": True,
+        "dns": {
+            "enable": True,
+            "enhanced-mode": "fake-ip",
+            "nameserver": [
+                "https://1.1.1.1/dns-query",
+                "https://dns.google/dns-query",
+            ],
+        },
+        "proxies": proxies,
+        "proxy-groups": groups,
+        "rules": rules,
+    }
+
+
+def render_mihomo(nodes: list[ProxyNode], title: str = "SQUAD") -> str:
+    return dump_yaml(mihomo_config(nodes, title))
 
 
 def ranked_to_dict(item: RankedNode) -> dict[str, object]:
@@ -84,10 +139,10 @@ def export_by_protocol(nodes: list[ProxyNode], directory: str | Path) -> list[Pa
     return created
 
 
-def export_mihomo(nodes: list[ProxyNode], path: str | Path) -> Path:
+def export_mihomo(nodes: list[ProxyNode], path: str | Path, title: str = "SQUAD") -> Path:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(render_mihomo(nodes), encoding="utf-8")
+    target.write_text(render_mihomo(nodes, title), encoding="utf-8")
     return target
 
 
@@ -134,7 +189,7 @@ def export_manifest(records: list[RankedNode], path: str | Path) -> Path:
     latencies = [item.latency_ms for item in alive if item.latency_ms is not None]
     jitters = [item.jitter_ms for item in alive if item.jitter_ms is not None]
     payload = {
-        "version": "0.5",
+        "version": "0.6",
         "updated_at": datetime.now(UTC).isoformat(),
         "total": len(records),
         "alive": len(alive),

@@ -6,7 +6,13 @@ from pathlib import Path
 from statistics import pstdev
 
 from .models import ProxyNode, RankedNode, ValidationResult
-from .scoring import HealthStats, quality_score, stability_score
+from .scoring import (
+    HealthStats,
+    quality_score,
+    representative_latency,
+    stability_score,
+    weighted_success_rate,
+)
 from .sources import SourceReport
 
 
@@ -57,6 +63,11 @@ CREATE TABLE IF NOT EXISTS health_checks (
 CREATE INDEX IF NOT EXISTS idx_health_fingerprint ON health_checks(fingerprint);
 CREATE INDEX IF NOT EXISTS idx_health_checked_at ON health_checks(checked_at);
 
+CREATE TABLE IF NOT EXISTS meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS sources (
     name TEXT PRIMARY KEY,
     url TEXT NOT NULL,
@@ -76,6 +87,8 @@ CREATE TABLE IF NOT EXISTS sources (
 
 
 RECENT_WINDOW = 10
+# Bump when scoring changes: stored scores are recomputed on next open.
+SCORING_VERSION = 2
 HISTORY_KEEP = 50
 
 
@@ -130,6 +143,7 @@ class NodeStore:
         self.connection.executescript(SCHEMA)
         self._migrate_nodes()
         self._migrate_health_checks()
+        self._migrate_scoring()
         self.connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_nodes_quality ON nodes(quality_score DESC)"
         )
@@ -140,6 +154,24 @@ class NodeStore:
             "CREATE INDEX IF NOT EXISTS idx_health_probe ON health_checks(probe_id)"
         )
         self.connection.commit()
+
+    def _migrate_scoring(self) -> None:
+        row = self.connection.execute(
+            "SELECT value FROM meta WHERE key = 'scoring_version'"
+        ).fetchone()
+        current = int(row["value"]) if row else 0
+        if current >= SCORING_VERSION:
+            return
+        has_checks = self.connection.execute(
+            "SELECT 1 FROM nodes WHERE last_checked IS NOT NULL LIMIT 1"
+        ).fetchone()
+        if has_checks:
+            self._backfill_scores()
+        self.connection.execute(
+            "INSERT INTO meta (key, value) VALUES ('scoring_version', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (str(SCORING_VERSION),),
+        )
 
     def _migrate_health_checks(self) -> None:
         columns = {
@@ -306,7 +338,7 @@ class NodeStore:
             """,
             (int(result.alive), int(not result.alive), result.fingerprint),
         )
-        score, stable, jitter, recent_rate = self._compute_scores(
+        score, stable, jitter, recent_rate, latency = self._compute_scores(
             result.fingerprint, result.latency_ms, result.alive
         )
         self.connection.execute(
@@ -321,7 +353,7 @@ class NodeStore:
             """,
             (
                 int(result.alive),
-                result.latency_ms,
+                latency,
                 jitter,
                 recent_rate,
                 stable,
@@ -343,7 +375,12 @@ class NodeStore:
         fingerprint: str,
         latency_ms: float | None,
         alive: bool | None,
-    ) -> tuple[float, float, float | None, float]:
+    ) -> tuple[float, float, float | None, float, float | None]:
+        """Return (quality, stability, jitter, recent_rate, latency).
+
+        ``latency`` is the median of recent successful probes (``None`` for a
+        node that is down now), so one slow probe does not reshuffle ranking.
+        """
         counts = self.connection.execute(
             "SELECT success_count, failure_count FROM nodes WHERE fingerprint = ?",
             (fingerprint,),
@@ -357,19 +394,21 @@ class NodeStore:
             """,
             (fingerprint, RECENT_WINDOW),
         ).fetchall()
-        recent_successes = sum(int(row["alive"]) for row in recent)
-        recent_rate = recent_successes / len(recent) if recent else 0.0
+        recent_rate = weighted_success_rate([bool(row["alive"]) for row in recent])
         recent_latencies = [
             float(row["latency_ms"])
             for row in recent
             if row["alive"] and row["latency_ms"] is not None
         ]
         jitter = pstdev(recent_latencies) if len(recent_latencies) >= 2 else None
+        latency = representative_latency(recent_latencies) if alive else None
+        if latency is None and alive:
+            latency = latency_ms
         stats = HealthStats(
             attempts=successes + failures,
             successes=successes,
             failures=failures,
-            latency_ms=latency_ms,
+            latency_ms=latency,
             jitter_ms=jitter,
             recent_success_rate=recent_rate,
         )
@@ -378,6 +417,7 @@ class NodeStore:
             stability_score(stats),
             jitter,
             recent_rate,
+            None if latency is None else round(latency, 1),
         )
 
     def _prune_history(self, fingerprint: str) -> None:
@@ -420,16 +460,16 @@ class NodeStore:
         ).fetchall()
         for row in rows:
             alive = None if row["alive"] is None else bool(row["alive"])
-            score, stable, jitter, recent_rate = self._compute_scores(
+            score, stable, jitter, recent_rate, latency = self._compute_scores(
                 row["fingerprint"], row["latency_ms"], alive
             )
             self.connection.execute(
                 """
                 UPDATE nodes SET jitter_ms=?, recent_success_rate=?,
-                    stability_score=?, quality_score=?
+                    stability_score=?, quality_score=?, latency_ms=?
                 WHERE fingerprint=?
                 """,
-                (jitter, recent_rate, stable, score, row["fingerprint"]),
+                (jitter, recent_rate, stable, score, latency, row["fingerprint"]),
             )
 
     @staticmethod
@@ -599,6 +639,12 @@ class NodeStore:
             "SELECT * FROM sources ORDER BY priority, name"
         ).fetchall()
         return [dict(row) for row in rows]
+
+    def fingerprints_with_country(self) -> set[str]:
+        rows = self.connection.execute(
+            "SELECT fingerprint FROM nodes WHERE country IS NOT NULL AND country != ''"
+        ).fetchall()
+        return {row["fingerprint"] for row in rows}
 
     def count(self) -> int:
         row = self.connection.execute("SELECT COUNT(*) AS n FROM nodes").fetchone()

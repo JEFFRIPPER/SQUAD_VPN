@@ -19,6 +19,33 @@ class HealthStats:
         return self.successes / self.attempts
 
 
+RECENT_DECAY = 0.75
+
+
+def weighted_success_rate(outcomes: list[bool], decay: float = RECENT_DECAY) -> float:
+    """Success rate where newer checks weigh more (``outcomes`` newest first).
+
+    With decay 0.75 the latest check weighs ~4x the fifth one, so a node that
+    just went down drops fast, and one that recovered climbs back quickly.
+    """
+    if not outcomes:
+        return 0.0
+    weights = [decay**index for index in range(len(outcomes))]
+    hits = sum(weight for weight, ok in zip(weights, outcomes) if ok)
+    return hits / sum(weights)
+
+
+def representative_latency(latencies: list[float]) -> float | None:
+    """Median of recent successful probes: robust to a single slow spike."""
+    if not latencies:
+        return None
+    ordered = sorted(latencies)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return (ordered[middle - 1] + ordered[middle]) / 2
+
+
 def latency_score(latency_ms: float | None) -> float:
     if latency_ms is None or latency_ms <= 0:
         return 0.0

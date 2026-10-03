@@ -179,6 +179,7 @@ class MihomoValidator:
         *,
         concurrency: int = 16,
         geo_limit: int = 0,
+        geo_known: set[str] | None = None,
     ) -> list[ValidationResult]:
         """Validate nodes; every input node gets exactly one result.
 
@@ -190,7 +191,7 @@ class MihomoValidator:
             return []
         results = await self._validate_batch(nodes, concurrency)
         if geo_limit > 0:
-            await self._enrich_batch(nodes, results, geo_limit)
+            await self._enrich_batch(nodes, results, geo_limit, geo_known or set())
         return results
 
     async def _validate_batch(
@@ -250,10 +251,13 @@ class MihomoValidator:
         nodes: list[ProxyNode],
         results: list[ValidationResult],
         geo_limit: int,
+        geo_known: set[str],
     ) -> None:
+        # Nodes whose country is still unknown go first; otherwise the same
+        # fastest nodes would be looked up every run.
         alive = sorted(
             (r for r in results if r.alive),
-            key=lambda r: r.latency_ms or 999999,
+            key=lambda r: (r.fingerprint in geo_known, r.latency_ms or 999999),
         )[:geo_limit]
         if not alive:
             return

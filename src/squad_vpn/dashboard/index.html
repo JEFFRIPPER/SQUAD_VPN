@@ -121,9 +121,6 @@
         <select id="sub-profile">
           <option value="">— свой —</option>
           <option value="balanced" selected>balanced</option>
-          <option value="fast">fast</option>
-          <option value="stable">stable</option>
-          <option value="all">all (все живые)</option>
         </select>
       </label>
       <label class="ctl">Страна <select id="sub-country"><option value="">любая</option></select></label>
@@ -285,6 +282,23 @@
       select.appendChild(option);
     }
     select.value = [...select.options].some((o) => o.value === current) ? current : "";
+  }
+
+  let profilesLoaded = false;
+  async function loadProfiles() {
+    if (profilesLoaded) return;
+    const profiles = await (await api("/api/profiles")).json();
+    const select = $("sub-profile");
+    const current = select.value;
+    while (select.options.length > 1) select.remove(1);
+    for (const [name, profile] of Object.entries(profiles)) {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = profile.description ? `${name} — ${profile.description}` : name;
+      select.appendChild(option);
+    }
+    select.value = [...select.options].some((o) => o.value === current) ? current : "";
+    profilesLoaded = true;
   }
 
   async function loadStats() {
@@ -539,6 +553,7 @@
   async function refresh() {
     try {
       await loadCycle();
+      await loadProfiles();
       await loadStats();
       await Promise.all([loadNodes(), loadSources()]);
       updateSub();

@@ -18,7 +18,12 @@ from .exporter import export_ranked_catalog, export_sources
 from .parser import deduplicate, parse_subscription
 from .publish import PublishError, PublishTarget, detect_origin
 from .setup_mihomo import install_mihomo
-from .smart import export_custom_subscription, export_smart_catalog
+from .smart import (
+    DEFAULT_PROFILES_PATH,
+    export_custom_subscription,
+    export_smart_catalog,
+    load_profiles,
+)
 from .store import NodeStore
 from .validator import DEFAULT_BINARY, DEFAULT_TEST_URL
 
@@ -90,7 +95,7 @@ def _export(args: argparse.Namespace) -> int:
         export_ranked_catalog(records, args.output)
         export_sources(store.list_source_status(), args.output / "sources.json")
         if not args.no_smart:
-            export_smart_catalog(store, args.output / "smart")
+            export_smart_catalog(store, args.output / "smart", load_profiles(args.profiles))
     finally:
         store.close()
     alive = sum(item.alive is True for item in records)
@@ -148,7 +153,12 @@ def _publish_target(args: argparse.Namespace) -> PublishTarget | None:
         raise SystemExit(
             "Не удалось определить репозиторий для публикации: укажи --publish-repo"
         )
-    return PublishTarget(repo=repo, branch=args.publish_branch, workdir=args.publish_workdir)
+    return PublishTarget(
+        repo=repo,
+        branch=args.publish_branch,
+        workdir=args.publish_workdir,
+        profiles=args.profiles,
+    )
 
 
 def _cycle_options(args: argparse.Namespace) -> CycleOptions:
@@ -167,6 +177,7 @@ def _cycle_options(args: argparse.Namespace) -> CycleOptions:
         cleanup=not args.no_cleanup,
         unseen_days=args.unseen_days,
         publish=_publish_target(args),
+        profiles=args.profiles,
     )
 
 
@@ -249,6 +260,7 @@ def _serve(args: argparse.Namespace) -> int:
         token=token,
         cycle=cycle,
         interval_minutes=args.interval_minutes,
+        profiles_path=args.profiles,
     )
     return 0
 
@@ -275,6 +287,18 @@ def _add_publish_args(parser: argparse.ArgumentParser) -> None:
         help="Ветка для подписок (по умолчанию subs-home; GitHub Actions пишет в subs)",
     )
     parser.add_argument("--publish-workdir", type=Path, default=Path("data/publish"))
+    _add_profiles_arg(parser)
+
+
+def _add_profiles_arg(parser: argparse.ArgumentParser) -> None:
+    if any("--profiles" in action.option_strings for action in parser._actions):
+        return
+    parser.add_argument(
+        "--profiles",
+        type=Path,
+        default=DEFAULT_PROFILES_PATH,
+        help="YAML со smart-профилями (по умолчанию config/profiles.yaml)",
+    )
 
 
 def _add_cycle_args(parser: argparse.ArgumentParser, *, with_database: bool = True) -> None:
@@ -334,6 +358,7 @@ def build_parser() -> argparse.ArgumentParser:
     exp.add_argument("--seen-within-hours", type=int)
     exp.add_argument("--limit", type=int)
     exp.add_argument("--no-smart", action="store_true")
+    _add_profiles_arg(exp)
 
     smart = sub.add_parser("smart", help="Создать одну подписку по фильтрам")
     smart.add_argument("--database", type=Path, default=DEFAULT_DB)
