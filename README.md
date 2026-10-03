@@ -165,6 +165,12 @@ squad-vpn smart --country DE --protocol vless --max-latency 200 `
 
 ## API и веб-панель
 
+Проще всего: дважды щёлкнуть `scripts\open-dashboard.cmd` — он обновит
+зависимости, запустит сервер и сам откроет панель в браузере. Окно не
+закрывать, пока панель нужна.
+
+Вручную:
+
 ```powershell
 squad-vpn serve
 ```
