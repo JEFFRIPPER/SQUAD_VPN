@@ -89,16 +89,22 @@ def page(title: str, text: str, body: str = '<div class="spinner"></div>') -> st
 
 
 class Api:
-    """Functions callable from the splash pages (window.pywebview.api.*)."""
+    """Functions callable from the splash pages (window.pywebview.api.*).
+
+    pywebview exposes every public attribute of this object to JavaScript and
+    walks into it recursively. Holding the window in a public attribute made
+    it reflect over the whole native window on the UI thread and freeze
+    ("Не отвечает"), so all state is private (underscore).
+    """
 
     def __init__(self, root: Path) -> None:
-        self.root = root
-        self.window = None
+        self._root = root
+        self._window = None
 
     def install(self) -> None:
-        installer = self.root / "install.cmd"
-        subprocess.Popen(["cmd", "/c", str(installer)], cwd=self.root, creationflags=NEW_CONSOLE)
-        self.window.load_html(page(
+        installer = self._root / "install.cmd"
+        subprocess.Popen(["cmd", "/c", str(installer)], cwd=self._root, creationflags=NEW_CONSOLE)
+        self._window.load_html(page(
             "Устанавливаю…",
             "Открылось окно установки: дождись слова Done. Это окно само переключится на панель.",
         ))
@@ -106,17 +112,17 @@ class Api:
 
     def _after_install(self) -> None:
         if wait_healthy(900):
-            self.window.load_url(APP_URL)
+            self._window.load_url(APP_URL)
         else:
-            show_error(self.window, self.root, "Установка не завершилась",
+            show_error(self._window, self._root, "Установка не завершилась",
                        "Посмотри окно установки: если там ошибка, пришли её текст.")
 
     def retry(self) -> None:
-        threading.Thread(target=boot, args=(self.window, self.root), daemon=True).start()
+        threading.Thread(target=boot, args=(self._window, self._root), daemon=True).start()
 
     def open_logs(self) -> None:
-        folder = self.root / "data" / "logs"
-        os.startfile(folder if folder.exists() else self.root)  # type: ignore[attr-defined]
+        folder = self._root / "data" / "logs"
+        os.startfile(folder if folder.exists() else self._root)  # type: ignore[attr-defined]
 
 
 def show_error(window, root: Path, title: str, text: str) -> None:
@@ -128,7 +134,27 @@ def show_error(window, root: Path, title: str, text: str) -> None:
     ))
 
 
+def log(root: Path, message: str) -> None:
+    """The exe has no console: write what happens to data/logs/app.log."""
+    try:
+        folder = root / "data" / "logs"
+        folder.mkdir(parents=True, exist_ok=True)
+        with open(folder / "app.log", "a", encoding="utf-8") as handle:
+            handle.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} {message}\n")
+    except OSError:
+        pass
+
+
 def boot(window, root: Path) -> None:
+    try:
+        _boot(window, root)
+    except Exception as exc:  # never leave the user on an endless spinner
+        log(root, f"boot failed: {exc!r}")
+        show_error(window, root, "Что-то пошло не так", f"{type(exc).__name__}: {exc}")
+
+
+def _boot(window, root: Path) -> None:
+    log(root, f"start, root={root}")
     if not (root / "pyproject.toml").exists():
         window.load_html(page(
             "Не та папка",
@@ -150,9 +176,12 @@ def boot(window, root: Path) -> None:
         return
     window.load_html(page("Запускаю SQUAD VPN…", "Это займёт несколько секунд"))
     start_agent(root)
+    log(root, "agent started, waiting for the server")
     if wait_healthy(45):
+        log(root, "server is up")
         window.load_url(APP_URL)
     else:
+        log(root, "server did not answer in 45 s")
         show_error(window, root, "SQUAD VPN не запустился",
                    "Фоновая программа не ответила за 45 секунд. Журнал подскажет причину.")
 
@@ -177,7 +206,7 @@ def main() -> int:
         height=780,
         min_size=(400, 560),
     )
-    api.window = window
+    api._window = window
     webview.start(boot, (window, root))
     return 0
 

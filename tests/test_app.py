@@ -154,3 +154,13 @@ def test_launcher_pages_and_root():
     html = launcher.page("Заголовок", "Текст", "<button>Ок</button>")
     assert "Заголовок" in html and "<button>Ок</button>" in html and "{" not in html.split("<style>")[0]
     assert launcher.APP_URL == "http://127.0.0.1:8080/app"
+
+
+def test_launcher_js_api_exposes_only_methods(tmp_path):
+    # pywebview walks public attributes recursively; a public window reference
+    # froze the exe ("Не отвечает").
+    launcher = _launcher()
+    api = launcher.Api(tmp_path)
+    api._window = object()
+    public = {name: getattr(api, name) for name in dir(api) if not name.startswith("_")}
+    assert public and all(callable(value) for value in public.values())
