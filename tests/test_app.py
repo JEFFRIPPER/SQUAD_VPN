@@ -90,7 +90,7 @@ def _client(tmp_path, monkeypatch, host="127.0.0.1"):
     from squad_vpn.api import create_app
 
     monkeypatch.setattr(agent, "project_root", lambda: tmp_path)
-    app = create_app(tmp_path / "db.sqlite3", profiles_path=None)
+    app = create_app(tmp_path / "db.sqlite3", profiles_path=None, client_root=tmp_path)
     return TestClient(app, client=(host, 50000))
 
 
@@ -164,3 +164,9 @@ def test_launcher_js_api_exposes_only_methods(tmp_path):
     api._window = object()
     public = {name: getattr(api, name) for name in dir(api) if not name.startswith("_")}
     assert public and all(callable(value) for value in public.values())
+
+
+def test_launcher_escapes_messages():
+    launcher = _launcher()
+    html = launcher.page("<b>x</b>", "C:\\\\path<script>alert(1)</script>")
+    assert "<script>" not in html and "&lt;script&gt;" in html

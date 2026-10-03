@@ -208,3 +208,46 @@ def test_launcher_unpacks_source_safely(tmp_path, monkeypatch):
     assert (target / "pyproject.toml").read_text() == "x"
     assert (target / "src" / "a.py").exists()
     assert not (tmp_path / "evil.txt").exists()
+
+
+def test_dns_rebinding_and_csrf_are_blocked(tmp_path):
+    app = _app(tmp_path)
+    local = TestClient(app, base_url="http://127.0.0.1:8080", client=("127.0.0.1", 5000))
+    assert local.get("/api/stats").status_code == 200
+    rebinding = TestClient(app, base_url="http://evil.example:8080", client=("127.0.0.1", 5000))
+    assert rebinding.get("/api/stats").status_code == 403
+    assert local.post("/api/backups", headers={"Origin": "https://evil.example"}).status_code == 403
+    assert local.post("/api/backups", headers={"Origin": "http://127.0.0.1:8081"}).status_code == 403
+    assert local.post("/api/backups", headers={"Origin": "http://127.0.0.1:8080"}).status_code == 200
+    assert local.post("/api/backups").status_code == 200  # no Origin: not a browser
+    lan = TestClient(app, base_url="http://192.168.1.5:8080", client=("192.168.1.20", 5000))
+    assert lan.get("/sub").status_code == 200  # IP addresses are fine
+
+
+def test_cycle_run_needs_admin_from_network(tmp_path):
+    app = _app(tmp_path)
+    keys = KeyStore(tmp_path / "data" / "api_keys.json")
+    _, read_token = keys.create("viewer", "read")
+    remote = TestClient(app, client=("10.0.0.3", 5000))
+    assert remote.post("/api/cycle/run", params={"token": read_token}).status_code == 403
+
+
+def test_every_subprocess_call_hides_its_window():
+    """Under pythonw a console program without CREATE_NO_WINDOW flashes a window."""
+    import ast
+    from pathlib import Path
+
+    offenders = []
+    for path in Path("src/squad_vpn").glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr in {"run", "Popen"}
+                and isinstance(node.func.value, ast.Name)
+                and node.func.value.id == "subprocess"
+                and not any(k.arg == "creationflags" for k in node.keywords)
+            ):
+                offenders.append(f"{path.name}:{node.lineno}")
+    assert offenders == []

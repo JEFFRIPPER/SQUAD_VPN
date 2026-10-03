@@ -5,6 +5,7 @@ from pathlib import Path
 
 import httpx
 
+from . import __version__
 from .models import ProxyNode
 from .parser import deduplicate, parse_subscription
 from .sources import SourceReport, SourceSpec, SourceTimer, load_source_specs
@@ -64,7 +65,7 @@ async def collect_source_specs(
     concurrency: int = DEFAULT_CONCURRENCY,
 ) -> tuple[list[ProxyNode], list[SourceReport]]:
     semaphore = asyncio.Semaphore(max(1, concurrency))
-    headers = {"User-Agent": "SQUAD-VPN/0.9"}
+    headers = {"User-Agent": f"SQUAD-VPN/{__version__}"}
     async with httpx.AsyncClient(timeout=timeout, headers=headers, trust_env=False) as client:
         results = await asyncio.gather(
             *[_fetch_spec(client, spec, semaphore) for spec in specs]

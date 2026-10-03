@@ -11,6 +11,7 @@ from pathlib import Path
 
 import httpx
 
+from . import __version__
 from .validator import DEFAULT_BINARY
 
 
@@ -55,7 +56,7 @@ def extract_binary(name: str, payload: bytes) -> bytes:
 
 async def install_mihomo(target: str | Path = DEFAULT_BINARY) -> tuple[Path, str]:
     target = Path(target)
-    headers = {"User-Agent": "SQUAD-VPN/0.7"}
+    headers = {"User-Agent": f"SQUAD-VPN/{__version__}"}
     # In GitHub Actions the token lifts the 60 requests/hour anonymous limit.
     token = os.environ.get("GITHUB_TOKEN")
     if token:

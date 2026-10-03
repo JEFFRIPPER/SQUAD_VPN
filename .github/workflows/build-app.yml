@@ -6,6 +6,7 @@ on:
     paths:
       - "app/**"
       - ".github/workflows/build-app.yml"
+    tags: ["v*"]
   workflow_dispatch:
 
 permissions:
@@ -56,11 +57,28 @@ jobs:
         run: |
           gh release view app-latest -R $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -ne 0) {
-            gh release create app-latest -R $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA `
+            gh release create app-latest -R $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA --latest=false `
               --title "SQUAD VPN — приложение для Windows" `
               --notes "Скачай SQUAD-VPN.exe и запусти: на новом компьютере он сам установит SQUAD VPN (Python, всё нужное, автозапуск, ярлык). На уже установленном — это панель управления; обновляется сама."
           }
           gh release edit app-latest -R $env:GITHUB_REPOSITORY `
             --notes "Скачай SQUAD-VPN.exe и запусти: на новом компьютере он сам установит SQUAD VPN (Python, всё нужное, автозапуск, ярлык). На уже установленном — это панель управления; обновляется сама."
           gh release upload app-latest dist/SQUAD-VPN.exe dist/app-version.txt -R $env:GITHUB_REPOSITORY --clobber
+          $global:LASTEXITCODE = 0
+
+      # A version tag (v1.0.0 …) also gets its own release with the exe.
+      - name: Publish versioned release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view $env:TAG -R $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:TAG dist/SQUAD-VPN.exe -R $env:GITHUB_REPOSITORY `
+              --title "SQUAD VPN $env:TAG" --notes-file CHANGELOG.md --latest
+          } else {
+            gh release upload $env:TAG dist/SQUAD-VPN.exe -R $env:GITHUB_REPOSITORY --clobber
+          }
           $global:LASTEXITCODE = 0

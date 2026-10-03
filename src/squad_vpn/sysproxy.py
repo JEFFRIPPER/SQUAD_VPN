@@ -24,6 +24,17 @@ class ProxyState:
     def as_dict(self) -> dict[str, object]:
         return asdict(self)
 
+    @classmethod
+    def parse(cls, data: object) -> "ProxyState | None":
+        """Read a saved state; a damaged file must not block restoring the proxy."""
+        if not isinstance(data, dict):
+            return None
+        return cls(
+            enabled=bool(data.get("enabled")),
+            server=str(data.get("server") or ""),
+            override=str(data.get("override") or ""),
+        )
+
 
 class ProxyBackend:
     """Reads and writes the proxy settings; replaced by a fake in tests."""

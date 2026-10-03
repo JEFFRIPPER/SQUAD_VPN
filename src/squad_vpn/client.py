@@ -137,7 +137,7 @@ def cleanup_orphan(
         previous = state.get("previous_proxy")
         result["proxy_restored"] = sysproxy.restore(
             backend,
-            sysproxy.ProxyState(**previous) if isinstance(previous, dict) else None,
+            sysproxy.ProxyState.parse(previous),
             mixed_port,
         )
     pid = state.get("pid")
@@ -184,6 +184,7 @@ class VpnClient:
         self.state = ClientState(self.dir / "state.json")
         self._process = None
         self._monitor: asyncio.Task | None = None
+        self._restart_task: asyncio.Task | None = None
         self._lock = asyncio.Lock()
         self._secret = ""
         self._names: dict[str, str] = {}
@@ -343,7 +344,7 @@ class VpnClient:
                 previous = state.get("previous_proxy")
                 restored = sysproxy.restore(
                     self.backend,
-                    sysproxy.ProxyState(**previous) if isinstance(previous, dict) else None,
+                    sysproxy.ProxyState.parse(previous),
                     self.mixed_port,
                 )
             await asyncio.to_thread(self._stop_core)
@@ -426,7 +427,8 @@ class VpnClient:
                 if self._process is not None and getattr(self._process, "poll", lambda: None)() is not None:
                     self._event("crash", self.status.get("node"), "ядро завершилось, перезапускаю")  # type: ignore[arg-type]
                     profile = str(self.status.get("profile"))
-                    asyncio.create_task(self._restart(profile))
+                    # Keep a reference: an unreferenced task may be garbage-collected.
+                    self._restart_task = asyncio.create_task(self._restart(profile))
                     return
             except asyncio.CancelledError:
                 raise

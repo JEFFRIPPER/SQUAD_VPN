@@ -23,7 +23,7 @@ from pathlib import Path
 import httpx
 
 from . import __version__
-from .publish import PublishError, _git, force_push_tree
+from .publish import NO_WINDOW, PublishError, _git, force_push_tree
 from .store import NodeStore
 
 
@@ -211,7 +211,7 @@ def fetch_reports(repo: str, *, cache: Path = Path("data/probes-cache")) -> list
         try:
             completed = subprocess.run(
                 ["git", "cat-file", "-s", f"{ref}:{REPORT_FILE}"],
-                cwd=cache, capture_output=True, text=True,
+                cwd=cache, capture_output=True, text=True, creationflags=NO_WINDOW,
             )
             if completed.returncode != 0 or int(completed.stdout.strip()) > MAX_REPORT_BYTES:
                 continue

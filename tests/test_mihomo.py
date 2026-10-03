@@ -21,7 +21,7 @@ def test_vless_reality_xhttp_conversion():
 
 
 def test_runtime_config_has_controller_and_group():
-    node = parse_uri(f"trojan://secret@example.com:443?sni=example.com")
+    node = parse_uri("trojan://secret@example.com:443?sni=example.com")
     assert node is not None
     config, converted = build_runtime_config(
         [node], controller_port=19090, mixed_port=17890
@@ -48,3 +48,22 @@ def test_mihomo_extracts_gzip_binary():
     from squad_vpn.setup_mihomo import extract_binary
 
     assert extract_binary("mihomo-linux-amd64-compatible-v1.gz", gzip.compress(b"ELF")) == b"ELF"
+
+
+def test_unconvertible_only_batch_never_starts_mihomo(monkeypatch, tmp_path):
+    import asyncio
+
+    from squad_vpn.models import ProxyNode
+    from squad_vpn.validator import MihomoValidator
+
+    validator = MihomoValidator(tmp_path / "missing")
+    calls = []
+
+    async def fake_probe(batch, concurrency):
+        calls.append(len(batch))
+        return []
+
+    monkeypatch.setattr(validator, "_run_probe", fake_probe)
+    nodes = [ProxyNode("ss", f"h{i}.example", 443, userinfo="no-colon") for i in range(5)]
+    results = asyncio.run(validator.validate(nodes))
+    assert calls == [] and len(results) == 5 and not any(r.alive for r in results)

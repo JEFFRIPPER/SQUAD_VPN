@@ -2,7 +2,6 @@ import asyncio
 import json
 
 import httpx
-import pytest
 from fastapi.testclient import TestClient
 
 from squad_vpn import client as client_module
@@ -226,3 +225,12 @@ def test_client_api(tmp_path, monkeypatch):
         assert http.post("/api/client/disconnect").json()["state"] == "disconnected"
     remote = TestClient(app, client=("10.0.0.5", 5000))
     assert remote.post("/api/client/connect", json={}).status_code == 403
+
+
+def test_cleanup_survives_damaged_state(tmp_path):
+    backend = FakeBackend()
+    sysproxy.enable(backend, 7890)
+    state = client_module.ClientState(tmp_path / "data" / "client" / "state.json")
+    state.save({"proxy_set": True, "previous_proxy": {"enabled": True, "server": "corp:3128", "junk": 1}})
+    assert cleanup_orphan(tmp_path, backend=backend, controller_port=1)["proxy_restored"]
+    assert backend.state.server == "corp:3128"

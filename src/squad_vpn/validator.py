@@ -189,7 +189,21 @@ class MihomoValidator:
         """
         if not nodes:
             return []
-        results = await self._validate_batch(nodes, concurrency)
+        from .mihomo import node_to_mihomo
+
+        # Unconvertible nodes never reach Mihomo: a batch of only such nodes
+        # would make it start with an empty group, fail, and be bisected into
+        # one useless start per node.
+        convertible = [node for node in nodes if node_to_mihomo(node, "probe") is not None]
+        by_fp: dict[str, ValidationResult] = {}
+        if convertible:
+            for result in await self._validate_batch(convertible, concurrency):
+                by_fp[result.fingerprint] = result
+        results = [
+            by_fp.get(node.fingerprint)
+            or ValidationResult(node.fingerprint, False, error="Не поддерживается конвертером Mihomo")
+            for node in nodes
+        ]
         if geo_limit > 0:
             await self._enrich_batch(nodes, results, geo_limit, geo_known or set())
         return results

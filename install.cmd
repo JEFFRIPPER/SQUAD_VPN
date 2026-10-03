@@ -11,6 +11,8 @@ where git >nul 2>nul
 if errorlevel 1 (
   echo [1/6] Installing Git...
   winget install -e --id Git.Git --silent --accept-source-agreements --accept-package-agreements
+  rem A fresh install is not on PATH in this window yet.
+  set "PATH=%PATH%;%ProgramFiles%\Git\cmd"
 ) else (
   echo [1/6] Git found.
 )
@@ -20,10 +22,11 @@ if exist ".venv\Scripts\python.exe" (
   echo [2/6] Python environment found.
   goto deps
 )
+rem A real Python 3.11+ (the Microsoft Store "python" stub does not count).
 set "PY="
-where py >nul 2>nul && set "PY=py -3"
+py -3 -c "import sys; sys.exit(sys.version_info < (3, 11))" >nul 2>nul && set "PY=py -3"
 if not defined PY (
-  where python >nul 2>nul && set "PY=python"
+  python -c "import sys; sys.exit(sys.version_info < (3, 11))" >nul 2>nul && set "PY=python"
 )
 if not defined PY (
   echo [2/6] Installing Python 3.12...

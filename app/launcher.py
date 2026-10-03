@@ -123,7 +123,10 @@ button.alt {{ background:transparent; color:var(--p); border:1px solid var(--v);
 
 
 def page(title: str, text: str, body: str = '<div class="spinner"></div>') -> str:
-    return PAGE.format(title=title, text=text, body=body)
+    """Title and text are escaped (they may hold paths and error messages)."""
+    from html import escape
+
+    return PAGE.format(title=escape(title), text=escape(text), body=body)
 
 
 class Api:

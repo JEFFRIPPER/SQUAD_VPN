@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .config import AppConfig, load_config
@@ -64,6 +64,28 @@ def lan_address() -> str | None:
     except OSError:
         return None
     return None if address.startswith("127.") else address
+
+
+def _host_allowed(hostname: str) -> bool:
+    """Only IP addresses and localhost may name this server.
+
+    A web page can make a browser send requests to 127.0.0.1, and with DNS
+    rebinding even read the answers (its own domain resolving to 127.0.0.1).
+    Such requests carry the attacker's domain in Host; rejecting every
+    domain name except localhost closes that hole.
+    """
+    import ipaddress
+
+    hostname = hostname.strip("[]").lower()
+    if hostname in {"localhost", "testserver"}:
+        return True
+    try:
+        ipaddress.ip_address(hostname)
+    except ValueError:
+        return False
+    return True
+
+
 LOG_FILES = {"agent": "agent.log", "server": "squad.log", "crash": "server.log", "app": "app.log"}
 
 
@@ -211,6 +233,8 @@ def create_app(
 
         return load_settings(root / "data" / "settings.json")
 
+    background: set[asyncio.Task] = set()  # keep references: tasks must not be GC'd
+
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         task = asyncio.create_task(runner.loop()) if runner is not None else None
@@ -219,7 +243,9 @@ def create_app(
         resume = vpn.state.load().get("connected")
         if settings.client_autoconnect or resume:
             profile = str(vpn.state.load().get("profile") or settings.client_profile)
-            asyncio.create_task(vpn.connect(profile))
+            connecting = asyncio.create_task(vpn.connect(profile))
+            background.add(connecting)
+            connecting.add_done_callback(background.discard)
         try:
             yield
         finally:
@@ -309,10 +335,9 @@ def create_app(
 
     @app.get("/api/links", dependencies=protected)
     def links(request: Request, store: NodeStore = Depends(get_store)) -> dict[str, object]:
-        from .agent import project_root
         from .publish import PublishTarget, detect_origin
 
-        origin = detect_origin(project_root())
+        origin = detect_origin(root)
         target = PublishTarget(origin, branch="subs") if origin else None
         items = []
         for profile in profiles().values():
@@ -440,25 +465,21 @@ def create_app(
         name: Literal["agent", "server", "crash", "app"] = "agent",
         lines: int = Query(200, ge=1, le=2000),
     ) -> dict[str, object]:
-        from .agent import project_root
-
-        path = project_root() / "data" / "logs" / LOG_FILES[name]
+        path = root / "data" / "logs" / LOG_FILES[name]
         return {"name": name, "lines": _tail(path, lines)}
 
     @app.get("/api/settings", dependencies=local_only)
     def get_settings() -> dict[str, object]:
-        from .agent import project_root
         from .settings import ALLOWED_INTERVALS, load_settings
 
-        settings = load_settings(project_root() / "data" / "settings.json")
+        settings = load_settings(root / "data" / "settings.json")
         return {**asdict(settings), "allowed_intervals": list(ALLOWED_INTERVALS)}
 
     @app.post("/api/settings", dependencies=local_only)
     def set_settings(payload: dict[str, object]) -> dict[str, object]:
-        from .agent import project_root
         from .settings import Settings, load_settings, save_settings
 
-        path = project_root() / "data" / "settings.json"
+        path = root / "data" / "settings.json"
         current = asdict(load_settings(path))
         current.update({k: v for k, v in payload.items() if k in current})
         try:
@@ -480,11 +501,10 @@ def create_app(
     @app.post("/api/autostart", dependencies=local_only)
     def autostart_set(payload: dict[str, object]) -> dict[str, object]:
         from . import autostart
-        from .agent import project_root
 
         try:
             if payload.get("enabled"):
-                autostart.enable(project_root())
+                autostart.enable(root)
             else:
                 autostart.disable()
         except OSError as exc:
@@ -493,14 +513,14 @@ def create_app(
 
     @app.post("/api/control/{command}", dependencies=local_only)
     def control(command: Literal["update", "restart", "open-folder"]) -> dict[str, object]:
-        from .agent import project_root, send_command
+        from .agent import send_command
 
         if command == "open-folder":
             import os as _os
 
             if _os.name != "nt":
                 raise HTTPException(status_code=409, detail="Только в Windows")
-            _os.startfile(project_root())  # type: ignore[attr-defined]
+            _os.startfile(root)  # type: ignore[attr-defined]
             return {"ok": True}
         if not send_command(command):
             raise HTTPException(status_code=409, detail="Агент не запущен")
@@ -509,6 +529,23 @@ def create_app(
     @app.get("/health")
     def health() -> dict[str, object]:
         return {"status": "ok", "version": __version__, "auth": bool(token)}
+
+    @app.middleware("http")
+    async def same_origin(request: Request, call_next):
+        """Block DNS rebinding (foreign Host) and CSRF (foreign Origin on changes)."""
+        hostname = (request.url.hostname or "")
+        if not _host_allowed(hostname):
+            return JSONResponse({"detail": "Недопустимое имя хоста"}, status_code=403)
+        if request.method not in ("GET", "HEAD", "OPTIONS"):
+            origin = request.headers.get("origin")
+            if origin and origin != "null":
+                from urllib.parse import urlsplit
+
+                parts = urlsplit(origin)
+                same = (parts.hostname or "") == hostname and (parts.port or 80) == (request.url.port or 80)
+                if not same or not _host_allowed(parts.hostname or ""):
+                    return JSONResponse({"detail": "Запрос с чужого сайта отклонён"}, status_code=403)
+        return await call_next(request)
 
     @app.middleware("http")
     async def rate_limit(request: Request, call_next):
@@ -669,7 +706,7 @@ def create_app(
             return {"enabled": False}
         return runner.status()
 
-    @app.post("/api/cycle/run", dependencies=protected)
+    @app.post("/api/cycle/run", dependencies=[Depends(authorize("admin"))])
     def cycle_run() -> dict[str, object]:
         if runner is None:
             raise HTTPException(
@@ -685,8 +722,11 @@ def create_app(
     def agent_status() -> dict[str, object]:
         from .agent import read_status
 
-        status = read_status()
-        return {"running": False} if status is None else {"running": True, **status}
+        from .diagnostics import _port_open
+
+        status = read_status(root) or {}
+        # agent.json survives a stop; whether the agent runs is told by its port.
+        return {**status, "running": _port_open(8079)}
 
     @app.get("/api/client", dependencies=local_only)
     def client_status(store: NodeStore = Depends(get_store)) -> dict[str, object]:

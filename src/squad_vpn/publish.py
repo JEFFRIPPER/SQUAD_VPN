@@ -18,6 +18,7 @@ from .smart import DEFAULT_PROFILES_PATH, export_smart_catalog, load_profiles
 from .store import NodeStore
 
 
+NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 PROTECTED_BRANCHES = {"main", "master", "develop", "dev"}
 GITHUB_URL = re.compile(
     r"github\.com[/:](?P<owner>[A-Za-z0-9_.-]+)/(?P<repo>[A-Za-z0-9_.-]+?)(?:\.git)?/?$"
@@ -66,6 +67,9 @@ def _git(workdir: Path, *args: str) -> str:
         text=True,
         encoding="utf-8",
         errors="replace",
+        # The agent runs without a console: without this flag every git call
+        # would flash a black window on the user's screen.
+        creationflags=NO_WINDOW,
     )
     if completed.returncode != 0:
         message = (completed.stderr or completed.stdout).strip()

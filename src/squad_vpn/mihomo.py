@@ -246,10 +246,10 @@ def build_runtime_config(
     converted: list[MihomoProxy] = []
     for index, node in enumerate(nodes, start=1):
         name = f"SVPN-{index:05d}-{node.fingerprint[:8]}"
-        config = node_to_mihomo(node, name)
-        if config is None:
+        proxy = node_to_mihomo(node, name)
+        if proxy is None:
             continue
-        converted.append(MihomoProxy(node.fingerprint, name, config))
+        converted.append(MihomoProxy(node.fingerprint, name, proxy))
 
     names = [item.name for item in converted]
     config: dict[str, Any] = {
