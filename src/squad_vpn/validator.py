@@ -98,7 +98,7 @@ class MihomoValidator:
         timeout: float = 12.0,
     ) -> None:
         deadline = time.monotonic() + timeout
-        async with httpx.AsyncClient(timeout=1.0) as client:
+        async with httpx.AsyncClient(timeout=1.0, trust_env=False) as client:
             while time.monotonic() < deadline:
                 if process.poll() is not None:
                     raise MihomoStartError(
@@ -156,7 +156,7 @@ class MihomoValidator:
                 ip_response = await proxied.get("https://api.ipify.org?format=json")
                 ip_response.raise_for_status()
                 exit_ip = str(ip_response.json()["ip"])
-            async with httpx.AsyncClient(timeout=6.0) as direct:
+            async with httpx.AsyncClient(timeout=6.0, trust_env=False) as direct:
                 geo_response = await direct.get(f"https://ipwho.is/{exit_ip}")
                 geo_response.raise_for_status()
                 data = geo_response.json()
@@ -231,7 +231,7 @@ class MihomoValidator:
             try:
                 await self._wait_ready(process, base_url, directory / "mihomo.log")
                 semaphore = asyncio.Semaphore(max(1, concurrency))
-                async with httpx.AsyncClient(base_url=base_url) as client:
+                async with httpx.AsyncClient(base_url=base_url, trust_env=False) as client:
                     probed = await asyncio.gather(
                         *(self._probe_one(client, item, semaphore) for item in converted)
                     )
@@ -274,7 +274,7 @@ class MihomoValidator:
             try:
                 await self._wait_ready(process, base_url, directory / "mihomo.log")
                 item_by_fp = {item.fingerprint: item for item in converted}
-                async with httpx.AsyncClient(base_url=base_url) as client:
+                async with httpx.AsyncClient(base_url=base_url, trust_env=False) as client:
                     for result in alive:
                         item = item_by_fp.get(result.fingerprint)
                         if item is not None:

@@ -60,7 +60,9 @@ async def install_mihomo(target: str | Path = DEFAULT_BINARY) -> tuple[Path, str
     token = os.environ.get("GITHUB_TOKEN")
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    async with httpx.AsyncClient(follow_redirects=True, headers=headers, timeout=60.0) as client:
+    async with httpx.AsyncClient(
+        follow_redirects=True, headers=headers, timeout=60.0, trust_env=False
+    ) as client:
         response = await client.get(LATEST_RELEASE)
         response.raise_for_status()
         release = response.json()

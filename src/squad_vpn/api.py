@@ -10,13 +10,17 @@ from dataclasses import asdict, replace
 from datetime import UTC, datetime, timedelta
 from importlib import resources
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 
 from . import __version__
 from .cycle import CycleOptions, run_cycle
+from .validator import DEFAULT_BINARY
+
+if TYPE_CHECKING:
+    from .client import VpnClient
 from .exporter import ranked_to_dict, render_mihomo, render_plain
 from .smart import DEFAULT_PROFILES_PATH, GROUP_PROFILE, load_profiles, select_profile
 from .store import SORT_COLUMNS, NodeStore
@@ -117,6 +121,8 @@ def create_app(
     cycle: CycleOptions | None = None,
     interval_minutes: int = 60,
     profiles_path: str | Path | None = DEFAULT_PROFILES_PATH,
+    client: "VpnClient | None" = None,
+    client_root: Path | None = None,
 ) -> FastAPI:
     """Build the HTTP API.
 
@@ -134,13 +140,39 @@ def create_app(
         return {item.name: item for item in load_profiles(profiles_path)}
 
     runner = CycleRunner(cycle, interval_minutes) if cycle is not None else None
+    root = Path(client_root) if client_root is not None else Path.cwd()
+    if client is None:
+        from .client import VpnClient
+
+        client = VpnClient(
+            database,
+            root=root,
+            profiles_path=Path(profiles_path) if profiles_path else None,
+            binary=cycle.binary if cycle is not None else DEFAULT_BINARY,
+        )
+    vpn = client
+
+    def client_settings():
+        from .settings import load_settings
+
+        return load_settings(root / "data" / "settings.json")
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         task = asyncio.create_task(runner.loop()) if runner is not None else None
+        # Reconnect after a restart/update, or at Windows logon if asked to.
+        settings = client_settings()
+        resume = vpn.state.load().get("connected")
+        if settings.client_autoconnect or resume:
+            profile = str(vpn.state.load().get("profile") or settings.client_profile)
+            asyncio.create_task(vpn.connect(profile))
         try:
             yield
         finally:
+            try:
+                await vpn.disconnect("shutdown", keep_resume=True)
+            except Exception:
+                pass
             if task is not None:
                 task.cancel()
                 try:
@@ -428,6 +460,64 @@ def create_app(
 
         status = read_status()
         return {"running": False} if status is None else {"running": True, **status}
+
+    @app.get("/api/client", dependencies=local_only)
+    def client_status(store: NodeStore = Depends(get_store)) -> dict[str, object]:
+        settings = client_settings()
+        return {
+            **vpn.snapshot(),
+            "proxy_supported": vpn.backend.supported,
+            "port": vpn.mixed_port,
+            "settings": {
+                "profile": settings.client_profile,
+                "autoconnect": settings.client_autoconnect,
+            },
+            "totals": store.client_totals(),
+        }
+
+    @app.post("/api/client/connect", dependencies=local_only)
+    async def client_connect(payload: dict[str, object] | None = None) -> dict[str, object]:
+        from .settings import save_settings
+
+        settings = client_settings()
+        profile = str((payload or {}).get("profile") or settings.client_profile)
+        if profile not in profiles():
+            raise HTTPException(status_code=422, detail="Неизвестный профиль")
+        if profile != settings.client_profile:
+            settings.client_profile = profile
+            save_settings(settings, root / "data" / "settings.json")
+        return await vpn.connect(profile)
+
+    @app.post("/api/client/disconnect", dependencies=local_only)
+    async def client_disconnect() -> dict[str, object]:
+        return await vpn.disconnect("user")
+
+    @app.post("/api/client/failover", dependencies=local_only)
+    async def client_failover() -> dict[str, object]:
+        try:
+            return await vpn.failover()
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+    @app.post("/api/client/choose", dependencies=local_only)
+    async def client_choose(payload: dict[str, object]) -> dict[str, object]:
+        node = payload.get("node")
+        try:
+            return await vpn.choose(str(node) if node else None)
+        except RuntimeError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.get("/api/client/nodes", dependencies=local_only)
+    def client_nodes() -> list[dict[str, object]]:
+        return vpn.node_names()
+
+    @app.get("/api/client/events", dependencies=local_only)
+    def client_events(
+        limit: int = Query(30, ge=1, le=200), store: NodeStore = Depends(get_store)
+    ) -> list[dict[str, object]]:
+        return store.client_events(limit)
 
     @app.get("/api/sources", dependencies=protected)
     def sources(store: NodeStore = Depends(get_store)) -> list[dict[str, object]]:

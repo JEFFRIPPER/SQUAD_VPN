@@ -218,7 +218,7 @@ def _purge_cdn(target: PublishTarget) -> None:
     if repo is None:
         return
     try:
-        with httpx.Client(timeout=10.0) as client:
+        with httpx.Client(timeout=10.0, trust_env=False) as client:
             for name in PURGE_FILES:
                 for suffix in ("", ".b64", ".yaml"):
                     client.get(

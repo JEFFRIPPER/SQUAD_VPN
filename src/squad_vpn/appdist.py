@@ -79,7 +79,7 @@ def ensure_app(
     if local_version_path.exists():
         local_version = local_version_path.read_text(encoding="utf-8").strip()
     try:
-        with httpx.Client(follow_redirects=True, timeout=timeout) as client:
+        with httpx.Client(follow_redirects=True, timeout=timeout, trust_env=False) as client:
             response = client.get(base + ASSET_VERSION)
             if response.status_code == 404:
                 return "skipped: no release yet"

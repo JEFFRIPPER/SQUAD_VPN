@@ -166,6 +166,7 @@ class Agent:
         self.auto_update = auto_update
         self.control_port = control_port
         self.child: subprocess.Popen[bytes] | None = None
+        self._stopping = False
         self.child_started = 0.0
         self.backoff = 5.0
         self.status_path = root / "data" / "agent.json"
@@ -267,6 +268,18 @@ class Agent:
                 return None
         return command if command in COMMANDS else None
 
+    def _cleanup_client(self) -> None:
+        """The server was killed without a chance to disconnect: undo the
+        system proxy ourselves so the computer keeps its internet."""
+        from .client import cleanup_orphan
+
+        try:
+            result = cleanup_orphan(self.root, clear_resume=True)
+            if any(result.values()):
+                log.info("VPN-клиент отключён: %s", result)
+        except Exception as exc:
+            log.warning("Не удалось отключить VPN-клиент: %s", exc)
+
     def _ensure_app(self) -> None:
         from .appdist import ensure_app
 
@@ -303,6 +316,7 @@ class Agent:
                 command = self._read_command(control)
                 if command == b"stop":
                     log.info("Получена команда остановки")
+                    self._stopping = True
                     break
                 if command == b"restart":
                     log.info("Получена команда перезапуска")
@@ -334,8 +348,11 @@ class Agent:
                 time.sleep(2)
         except KeyboardInterrupt:
             log.info("Остановлено пользователем")
+            self._stopping = True
         finally:
             self.stop_server()
+            if self._stopping:
+                self._cleanup_client()
             try:
                 control.close()
             except OSError:

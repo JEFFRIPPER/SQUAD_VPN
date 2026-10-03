@@ -87,6 +87,25 @@ CREATE TABLE IF NOT EXISTS node_probe_status (
 );
 CREATE INDEX IF NOT EXISTS idx_nps_probe ON node_probe_status(probe_id, checked_at);
 
+-- VPN client (v0.8): one row per connection, plus notable events.
+CREATE TABLE IF NOT EXISTS client_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    started_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ended_at TEXT,
+    profile TEXT NOT NULL DEFAULT '',
+    bytes_up INTEGER NOT NULL DEFAULT 0,
+    bytes_down INTEGER NOT NULL DEFAULT 0,
+    switches INTEGER NOT NULL DEFAULT 0,
+    end_reason TEXT
+);
+CREATE TABLE IF NOT EXISTS client_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    kind TEXT NOT NULL,
+    node TEXT,
+    detail TEXT
+);
+
 CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -884,6 +903,75 @@ class NodeStore:
             "SELECT fingerprint FROM nodes WHERE country IS NOT NULL AND country != ''"
         ).fetchall()
         return {row["fingerprint"] for row in rows}
+
+    # --- VPN client sessions ------------------------------------------------
+
+    def start_session(self, profile: str) -> int:
+        cursor = self.connection.execute(
+            "INSERT INTO client_sessions (profile) VALUES (?)", (profile,)
+        )
+        self.connection.commit()
+        return int(cursor.lastrowid)
+
+    def update_session(
+        self, session_id: int, *, bytes_up: int, bytes_down: int, switches: int,
+        ended: bool = False, reason: str | None = None,
+    ) -> None:
+        self.connection.execute(
+            """
+            UPDATE client_sessions SET bytes_up = ?, bytes_down = ?, switches = ?,
+                ended_at = CASE WHEN ? THEN CURRENT_TIMESTAMP ELSE ended_at END,
+                end_reason = COALESCE(?, end_reason)
+            WHERE id = ?
+            """,
+            (int(bytes_up), int(bytes_down), int(switches), int(ended), reason, session_id),
+        )
+        self.connection.commit()
+
+    def close_open_sessions(self, reason: str) -> int:
+        cursor = self.connection.execute(
+            "UPDATE client_sessions SET ended_at = CURRENT_TIMESTAMP, end_reason = ? "
+            "WHERE ended_at IS NULL",
+            (reason,),
+        )
+        self.connection.commit()
+        return cursor.rowcount
+
+    def add_client_event(self, kind: str, node: str | None = None, detail: str | None = None) -> None:
+        self.connection.execute(
+            "INSERT INTO client_events (kind, node, detail) VALUES (?, ?, ?)",
+            (kind, node, (detail or "")[:300] or None),
+        )
+        self.connection.execute(
+            "DELETE FROM client_events WHERE id NOT IN "
+            "(SELECT id FROM client_events ORDER BY id DESC LIMIT 500)"
+        )
+        self.connection.commit()
+
+    def client_events(self, limit: int = 50) -> list[dict[str, object]]:
+        rows = self.connection.execute(
+            "SELECT at, kind, node, detail FROM client_events ORDER BY id DESC LIMIT ?",
+            (max(1, int(limit)),),
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def client_totals(self) -> dict[str, dict[str, int]]:
+        def total(since: str) -> dict[str, int]:
+            row = self.connection.execute(
+                """
+                SELECT COUNT(*) AS sessions,
+                       COALESCE(SUM(bytes_up), 0) AS up, COALESCE(SUM(bytes_down), 0) AS down,
+                       COALESCE(SUM(switches), 0) AS switches,
+                       COALESCE(SUM(
+                           (julianday(COALESCE(ended_at, CURRENT_TIMESTAMP)) - julianday(started_at))
+                           * 86400), 0) AS seconds
+                FROM client_sessions WHERE started_at >= datetime('now', ?)
+                """,
+                (since,),
+            ).fetchone()
+            return {key: int(row[key]) for key in ("sessions", "up", "down", "switches", "seconds")}
+
+        return {"today": total("start of day"), "week": total("-7 days")}
 
     def count(self) -> int:
         row = self.connection.execute("SELECT COUNT(*) AS n FROM nodes").fetchone()

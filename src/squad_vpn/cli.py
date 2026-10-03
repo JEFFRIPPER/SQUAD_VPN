@@ -161,6 +161,13 @@ def _publish_target(args: argparse.Namespace) -> PublishTarget | None:
     )
 
 
+def _settings_region() -> str | None:
+    from .settings import load_settings
+
+    region = load_settings().probe_region
+    return None if region == "auto" else region
+
+
 def _cycle_options(args: argparse.Namespace) -> CycleOptions:
     return CycleOptions(
         sources=args.sources,
@@ -179,7 +186,7 @@ def _cycle_options(args: argparse.Namespace) -> CycleOptions:
         publish=_publish_target(args),
         profiles=args.profiles,
         probe_id=args.probe_id,
-        probe_region=args.probe_region,
+        probe_region=args.probe_region or _settings_region(),
         probe_sync=not args.no_probe_sync,
         probe_publish=args.probe_publish,
         probe_repo=args.probe_repo,

@@ -30,3 +30,4 @@ SQUAD VPN.exe
 SQUAD VPN.exe.*
 data/app-version.txt
 data/settings.json
+data/client/

@@ -54,7 +54,7 @@ def branch_name(probe_id: str) -> str:
 def detect_region(timeout: float = 8.0) -> str:
     """Country code of this machine's public IP ("??" when unknown)."""
     try:
-        response = httpx.get("https://ipwho.is/", timeout=timeout)
+        response = httpx.get("https://ipwho.is/", timeout=timeout, trust_env=False)
         response.raise_for_status()
         code = str(response.json().get("country_code") or "").upper()
     except (httpx.HTTPError, ValueError):

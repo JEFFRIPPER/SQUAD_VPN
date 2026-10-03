@@ -21,6 +21,19 @@ PRIVATE_NETWORKS = (
 )
 
 
+def mihomo_proxies(
+    nodes: list[ProxyNode], title: str = "SQUAD"
+) -> list[tuple[ProxyNode, dict[str, object]]]:
+    """Convertible nodes with their Mihomo proxy entries (unique names)."""
+    result = []
+    for index, node in enumerate(nodes, start=1):
+        name = f"{title} {index:03d} {node.protocol} {node.fingerprint[:6]}"
+        converted = node_to_mihomo(node, name)
+        if converted is not None:
+            result.append((node, converted))
+    return result
+
+
 def mihomo_config(nodes: list[ProxyNode], title: str = "SQUAD") -> dict[str, object]:
     """A complete Mihomo/Clash Meta profile with automatic failover.
 
@@ -30,12 +43,7 @@ def mihomo_config(nodes: list[ProxyNode], title: str = "SQUAD") -> dict[str, obj
     - ``FAILOVER`` — fallback: keeps the best-ranked node, switches when it fails.
     Nodes are already ranked, so FAILOVER order follows SQUAD's score.
     """
-    proxies = []
-    for index, node in enumerate(nodes, start=1):
-        name = f"{title} {index:03d} {node.protocol} {node.fingerprint[:6]}"
-        converted = node_to_mihomo(node, name)
-        if converted is not None:
-            proxies.append(converted)
+    proxies = [proxy for _, proxy in mihomo_proxies(nodes, title)]
     names = [item["name"] for item in proxies]
     if names:
         groups: list[dict[str, object]] = [
@@ -193,7 +201,7 @@ def export_manifest(records: list[RankedNode], path: str | Path) -> Path:
     latencies = [item.latency_ms for item in alive if item.latency_ms is not None]
     jitters = [item.jitter_ms for item in alive if item.jitter_ms is not None]
     payload = {
-        "version": "0.7",
+        "version": "0.8",
         "updated_at": datetime.now(UTC).isoformat(),
         "total": len(records),
         "alive": len(alive),

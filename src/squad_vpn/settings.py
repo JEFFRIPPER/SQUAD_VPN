@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
@@ -16,6 +17,12 @@ class Settings:
     interval_minutes: int = 60
     auto_update: bool = True
     update_hours: float = 3.0
+    # Country of this computer for the probe network: "auto" = by IP.
+    # Set it by hand when another VPN changes the IP (e.g. shows NL while in RU).
+    probe_region: str = "auto"
+    # VPN client (v0.8)
+    client_profile: str = "balanced"
+    client_autoconnect: bool = False
 
     def validate(self) -> "Settings":
         if self.interval_minutes not in ALLOWED_INTERVALS:
@@ -23,6 +30,14 @@ class Settings:
         if not 0.5 <= float(self.update_hours) <= 48:
             raise ValueError("update_hours: от 0.5 до 48")
         self.auto_update = bool(self.auto_update)
+        self.client_autoconnect = bool(self.client_autoconnect)
+        self.probe_region = str(self.probe_region or "auto").strip()
+        if self.probe_region != "auto":
+            self.probe_region = self.probe_region.upper()
+            if not re.fullmatch(r"[A-Z]{2}", self.probe_region):
+                raise ValueError("probe_region: auto или код страны из 2 букв")
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", str(self.client_profile)):
+            raise ValueError("client_profile: недопустимое имя профиля")
         return self
 
 

@@ -205,6 +205,27 @@
   }
   .log .warn { color: var(--md-error); }
 
+  .connect-hero { text-align: center; padding: 32px 16px 28px; border-radius: var(--radius-xl); background: var(--md-surface-low); }
+  .power {
+    width: 168px; height: 168px; border-radius: 50%; border: 0; cursor: pointer; position: relative;
+    background: var(--md-surface-highest); color: var(--md-on-surface-variant);
+    display: inline-grid; place-items: center; transition: background .3s, color .3s, box-shadow .3s;
+  }
+  .power svg.icon { width: 72px; height: 72px; }
+  .power:hover { box-shadow: var(--elev-1); }
+  .power:disabled { cursor: progress; }
+  .connected .power { background: var(--md-primary); color: var(--md-on-primary); box-shadow: 0 0 0 12px color-mix(in srgb, var(--md-primary) 18%, transparent); }
+  .connecting .power { background: var(--md-primary-container); color: var(--md-on-primary-container); animation: pulse 1.2s ease-in-out infinite; }
+  .failed .power { background: var(--md-error-container); color: var(--md-on-error-container); }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 16px color-mix(in srgb, var(--md-primary) 12%, transparent); } }
+  .cx-state { font-size: 28px; line-height: 36px; margin-top: 20px; }
+  .speed { display: inline-flex; align-items: center; gap: 4px; font-size: 20px; line-height: 28px; font-variant-numeric: tabular-nums; }
+  .speed svg.icon { width: 20px; height: 20px; color: var(--md-primary); }
+  svg.spark { width: 100%; height: 36px; margin-top: 8px; display: block; }
+  .events { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; max-height: 240px; overflow-y: auto; }
+  .event { display: flex; gap: 8px; font-size: 13px; line-height: 18px; }
+  .event .when { color: var(--md-on-surface-variant); flex: none; width: 72px; }
+  .event .what { min-width: 0; overflow-wrap: anywhere; }
   iframe.panel { width: 100%; height: calc(100vh - 170px); border: 0; border-radius: var(--radius-l); background: var(--md-surface-low); }
 
   /* dialog, snackbar */
@@ -236,7 +257,8 @@
       background: var(--md-surface-container); gap: 0;
     }
     .rail .brand { display: none; }
-    .nav-item { width: auto; flex: 1; }
+    .nav-item { width: auto; flex: 1; min-width: 0; font-size: 11px; letter-spacing: 0; }
+    .nav-item .pill { width: 48px; }
     main { padding: 16px 16px 24px; }
     .topbar h1 { font-size: 24px; line-height: 32px; }
     .hero { padding: 20px; }
@@ -262,13 +284,18 @@
   <symbol id="i-restart" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8"/></symbol>
   <symbol id="i-open" viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2zM14 3v2h3.6l-9.8 9.8 1.4 1.4L19 6.4V10h2V3z"/></symbol>
   <symbol id="i-public" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m-1 17.9A8 8 0 0 1 4 12l1-1 5 5v1a2 2 0 0 0 1 2zm6.9-2.5A2 2 0 0 0 16 16h-1v-3a1 1 0 0 0-1-1H8v-2h2a1 1 0 0 0 1-1V7h2a2 2 0 0 0 2-2v-.4a8 8 0 0 1 2.9 12.8"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M13 3h-2v10h2zm4.83 2.17-1.42 1.42A6.92 6.92 0 0 1 19 12a7 7 0 1 1-11.42-5.42L6.17 5.17A8.93 8.93 0 0 0 3 12a9 9 0 0 0 18 0c0-2.74-1.23-5.18-3.17-6.83"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99zM21 9l-3.99-4v3H10v2h7.01v3z"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8z"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8z"/></symbol>
   <symbol id="i-computer" viewBox="0 0 24 24"><path d="M20 18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2H0v2h24v-2zM4 6h16v10H4z"/></symbol>
 </svg>
 
 <div class="shell">
   <nav class="rail" aria-label="Разделы">
     <div class="brand"><svg class="icon"><use href="#i-shield"/></svg></div>
-    <button class="nav-item" data-page="home" aria-current="page"><span class="pill"><svg class="icon"><use href="#i-home"/></svg></span>Главная</button>
+    <button class="nav-item" data-page="connect" aria-current="page"><span class="pill"><svg class="icon"><use href="#i-power"/></svg></span>VPN</button>
+    <button class="nav-item" data-page="home"><span class="pill"><svg class="icon"><use href="#i-home"/></svg></span>Обзор</button>
     <button class="nav-item" data-page="subs"><span class="pill"><svg class="icon"><use href="#i-link"/></svg></span>Подписки</button>
     <button class="nav-item" data-page="nodes"><span class="pill"><svg class="icon"><use href="#i-dns"/></svg></span>Узлы</button>
     <button class="nav-item" data-page="settings"><span class="pill"><svg class="icon"><use href="#i-settings"/></svg></span>Настройки</button>
@@ -283,8 +310,67 @@
         <span class="chip" id="version-chip">—</span>
       </div>
 
-      <!-- Главная -->
-      <section class="page active" id="page-home">
+      <!-- Подключение -->
+      <section class="page active" id="page-connect">
+        <div class="stack">
+          <div class="connect-hero" id="cx-hero">
+            <button class="power" id="cx-power" aria-label="Подключиться">
+              <svg class="icon"><use href="#i-power"/></svg>
+            </button>
+            <div class="cx-state" id="cx-state">Не подключено</div>
+            <div class="muted" id="cx-sub">Нажми, чтобы пустить трафик этого компьютера через лучшие узлы</div>
+            <div class="row" style="justify-content:center;margin-top:16px">
+              <select class="select" id="cx-profile" aria-label="Профиль"></select>
+              <select class="select" id="cx-node" aria-label="Узел" disabled><option value="">Узел: авто (лучший)</option></select>
+              <button class="btn tonal" id="cx-failover" disabled><svg class="icon"><use href="#i-swap"/></svg>Сменить узел</button>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="card">
+              <div class="label">Текущий узел</div>
+              <h3 id="cx-node-name" style="margin-top:8px;overflow-wrap:anywhere">—</h3>
+              <div class="muted" id="cx-node-meta">—</div>
+            </div>
+            <div class="card">
+              <div class="label">Ping сейчас</div>
+              <div class="display" id="cx-ping">—</div>
+              <div class="muted" id="cx-ping-note">проверка каждые 15 с</div>
+            </div>
+            <div class="card">
+              <div class="label">Скорость</div>
+              <div class="row" style="gap:16px;margin-top:6px">
+                <span class="speed"><svg class="icon"><use href="#i-down"/></svg><b id="cx-down">—</b></span>
+                <span class="speed"><svg class="icon"><use href="#i-up"/></svg><b id="cx-up">—</b></span>
+              </div>
+              <svg class="spark" id="cx-spark" viewBox="0 0 120 32" preserveAspectRatio="none" aria-hidden="true"></svg>
+            </div>
+            <div class="card">
+              <div class="label">Эта сессия</div>
+              <div class="display" id="cx-time" style="font-size:28px;line-height:44px">—</div>
+              <div class="muted" id="cx-session">—</div>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="card outlined">
+              <h3>Статистика</h3>
+              <div class="muted" id="cx-totals" style="margin-top:8px">—</div>
+              <div class="setting" style="border:0;padding-bottom:0">
+                <div class="body"><div class="title">Подключаться автоматически</div><div class="muted">При запуске Windows и после обновлений</div></div>
+                <label class="switch"><input type="checkbox" id="cx-auto" aria-label="Автоподключение"><span class="track"></span><span class="thumb"></span></label>
+              </div>
+            </div>
+            <div class="card outlined">
+              <h3>События</h3>
+              <div class="events" id="cx-events"><span class="muted">пока пусто</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Обзор -->
+      <section class="page" id="page-home">
         <div class="stack">
           <div class="hero" id="hero">
             <div class="status-icon"><svg class="icon" id="hero-icon"><use href="#i-shield"/></svg></div>
@@ -360,6 +446,16 @@
               <label class="switch"><input type="checkbox" id="set-autoupdate" aria-label="Автообновление"><span class="track"></span><span class="thumb"></span></label>
             </div>
             <div class="setting">
+              <div class="body"><div class="title">Страна этого компьютера</div><div class="muted" id="set-region-note">Для сети пробников. «Авто» — по IP</div></div>
+              <select class="select" id="set-region" aria-label="Страна">
+                <option value="auto">Авто (по IP)</option>
+                <option value="RU">Россия (RU)</option><option value="BY">Беларусь (BY)</option>
+                <option value="KZ">Казахстан (KZ)</option><option value="UA">Украина (UA)</option>
+                <option value="DE">Германия (DE)</option><option value="NL">Нидерланды (NL)</option>
+                <option value="US">США (US)</option>
+              </select>
+            </div>
+            <div class="setting">
               <div class="body"><div class="title">Проверять узлы каждые</div><div class="muted">Как часто собирать и проверять узлы из твоей сети</div></div>
               <select class="select" id="set-interval" aria-label="Интервал"></select>
             </div>
@@ -409,8 +505,8 @@
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
-  const TITLES = { home: "SQUAD VPN", subs: "Подписки", nodes: "Узлы", settings: "Настройки", log: "Журнал" };
-  const state = { page: "home", source: "github", format: "base64", log: "agent", links: null, restarting: false };
+  const TITLES = { connect: "SQUAD VPN", home: "Обзор", subs: "Подписки", nodes: "Узлы", settings: "Настройки", log: "Журнал" };
+  const state = { page: "connect", source: "github", format: "base64", log: "agent", links: null, restarting: false };
 
   const storage = {
     get(key) { try { return sessionStorage.getItem(key); } catch { return null; } },
@@ -468,6 +564,7 @@
     if (page === "subs") loadLinks().catch((e) => snack(e.message));
     if (page === "settings") loadSettings().catch((e) => snack(e.message));
     if (page === "log") loadLog().catch((e) => snack(e.message));
+    if (page === "connect") loadConnect().catch((e) => snack(e.message));
   }
   document.querySelectorAll(".nav-item").forEach((b) => b.addEventListener("click", () => go(b.dataset.page)));
 
@@ -683,6 +780,18 @@
     }
     select.value = settings.interval_minutes;
     $("set-autoupdate").checked = settings.auto_update;
+    const region = $("set-region");
+    if (![...region.options].some((o) => o.value === settings.probe_region)) {
+      const option = document.createElement("option");
+      option.value = settings.probe_region;
+      option.textContent = settings.probe_region;
+      region.appendChild(option);
+    }
+    region.value = settings.probe_region;
+    const self = (await api("/api/probes").catch(() => [])).find((p) => p.is_self);
+    $("set-region-note").textContent = self
+      ? `Сейчас пробник: ${self.region}. Если включён другой VPN, «Авто» видит его страну — тогда выбери свою вручную`
+      : "Для сети пробников. «Авто» — по IP";
     $("set-autostart").checked = autostart.enabled;
     $("set-autostart").disabled = !autostart.supported;
   }
@@ -702,6 +811,7 @@
         body: JSON.stringify({
           interval_minutes: Number($("set-interval").value),
           auto_update: $("set-autoupdate").checked,
+          probe_region: $("set-region").value,
         }),
       });
       await api("/api/control/restart", { method: "POST" });
@@ -745,7 +855,202 @@
   segmented("log", "log", () => loadLog().catch((e) => snack(e.message)));
   $("log-refresh").addEventListener("click", () => loadLog().catch((e) => snack(e.message)));
 
+  // connection
+  const EVENT_TEXT = {
+    connect: "Подключено", disconnect: "Отключено", switch: "Переключение на", degraded: "Узел деградировал",
+    reload: "Список узлов обновлён", recovered: "Узел снова в норме", error: "Ошибка", crash: "Ядро упало, перезапуск", pin: "Закреплён узел", auto: "Автовыбор узла",
+  };
+  const speedHistory = [];
+  let profilesForClient = false;
+
+  function bytes(value) {
+    if (value == null) return "—";
+    const units = ["Б", "КБ", "МБ", "ГБ", "ТБ"];
+    let n = Number(value), i = 0;
+    while (n >= 1024 && i < units.length - 1) { n /= 1024; i += 1; }
+    return `${n < 10 && i ? n.toFixed(1) : Math.round(n)} ${units[i]}`;
+  }
+  function duration(seconds) {
+    seconds = Math.max(0, Math.round(seconds));
+    const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), sec = seconds % 60;
+    return h ? `${h} ч ${m} мин` : m ? `${m} мин ${sec} с` : `${sec} с`;
+  }
+
+  async function loadClientProfiles(current) {
+    if (profilesForClient) return;
+    const profiles = await api("/api/profiles");
+    const select = $("cx-profile");
+    select.replaceChildren();
+    for (const [name, profile] of Object.entries(profiles)) {
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = `Профиль: ${name}` + (profile.description ? ` — ${profile.description}` : "");
+      select.appendChild(option);
+    }
+    select.value = current;
+    profilesForClient = true;
+  }
+
+  function drawSpark() {
+    const svg = $("cx-spark");
+    svg.replaceChildren();
+    if (speedHistory.length < 2) return;
+    const max = Math.max(1024, ...speedHistory);
+    const points = speedHistory.map((v, i) => `${(i / (speedHistory.length - 1)) * 120},${32 - (v / max) * 30}`);
+    const area = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+    area.setAttribute("points", `0,32 ${points.join(" ")} 120,32`);
+    area.setAttribute("fill", "color-mix(in srgb, var(--md-primary) 18%, transparent)");
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+    line.setAttribute("points", points.join(" "));
+    line.setAttribute("fill", "none");
+    line.setAttribute("stroke", "var(--md-primary)");
+    line.setAttribute("stroke-width", "1.5");
+    line.setAttribute("vector-effect", "non-scaling-stroke");
+    svg.append(area, line);
+  }
+
+  let nodesLoadedFor = "";
+  async function loadClientNodes(since) {
+    if (nodesLoadedFor === since) return;
+    const nodes = await api("/api/client/nodes");
+    const select = $("cx-node");
+    select.replaceChildren();
+    const auto = document.createElement("option");
+    auto.value = "";
+    auto.textContent = "Узел: авто (лучший)";
+    select.appendChild(auto);
+    for (const node of nodes) {
+      const option = document.createElement("option");
+      option.value = node.name;
+      option.textContent = `${node.country || "??"} · ${node.label}` + (node.latency_ms ? ` · ${Math.round(node.latency_ms)} ms` : "");
+      select.appendChild(option);
+    }
+    nodesLoadedFor = since;
+  }
+
+  async function loadConnect() {
+    const c = await api("/api/client");
+    await loadClientProfiles(c.settings.profile);
+    const hero = $("cx-hero");
+    hero.classList.toggle("connected", c.state === "connected");
+    hero.classList.toggle("connecting", c.state === "connecting");
+    hero.classList.toggle("failed", c.state === "error");
+    const connected = c.state === "connected";
+    $("cx-power").disabled = c.state === "connecting";
+    $("cx-power").setAttribute("aria-label", connected ? "Отключиться" : "Подключиться");
+    $("cx-profile").disabled = connected || c.state === "connecting";
+    $("cx-node").disabled = !connected;
+    $("cx-failover").disabled = !connected;
+    $("cx-auto").checked = c.settings.autoconnect;
+    if (connected) {
+      $("cx-state").textContent = "Подключено";
+      $("cx-sub").textContent = (c.proxy_set ? "Трафик Windows идёт через SQUAD VPN" : `Прокси: 127.0.0.1:${c.port} (настрой вручную)`)
+        + ` · профиль ${c.profile_label || c.profile} · узлов ${c.nodes}`;
+      await loadClientNodes(c.since);
+      $("cx-node").value = c.pinned || "";
+    } else if (c.state === "connecting") {
+      $("cx-state").textContent = "Подключаюсь…";
+      $("cx-sub").textContent = "Запускаю ядро и выбираю лучший узел";
+    } else if (c.state === "error") {
+      $("cx-state").textContent = "Не удалось подключиться";
+      $("cx-sub").textContent = c.error || "";
+    } else {
+      $("cx-state").textContent = "Не подключено";
+      $("cx-sub").textContent = c.proxy_supported
+        ? "Нажми, чтобы пустить трафик этого компьютера через лучшие узлы"
+        : `Системный прокси доступен только в Windows; ядро будет слушать 127.0.0.1:${c.port}`;
+      nodesLoadedFor = "";
+    }
+    const info = c.node_info;
+    $("cx-node-name").textContent = connected ? (info ? info.name : c.node || "выбираю…") : "—";
+    $("cx-node-meta").textContent = connected && info
+      ? `${info.country || "страна ?"} · ${info.protocol} · score ${Math.round(info.score)}` + (c.pinned ? " · закреплён" : " · автовыбор")
+      : "—";
+    $("cx-ping").textContent = connected && c.delay_ms != null ? `${Math.round(c.delay_ms)} ms` : "—";
+    $("cx-ping-note").textContent = connected && c.delay_ms == null && c.node
+      ? "узел не ответил — ищу замену" : "проверка каждые 15 с";
+    $("cx-down").textContent = connected ? `${bytes(c.speed_down)}/с` : "—";
+    $("cx-up").textContent = connected ? `${bytes(c.speed_up)}/с` : "—";
+    if (connected) {
+      speedHistory.push(c.speed_down || 0);
+      if (speedHistory.length > 60) speedHistory.shift();
+    } else {
+      speedHistory.length = 0;
+    }
+    drawSpark();
+    if (connected && c.since) {
+      $("cx-time").textContent = duration((Date.now() - new Date(c.since)) / 1000);
+      const sess = c.session || { down: 0, up: 0, switches: 0 };
+      $("cx-session").textContent = `↓ ${bytes(sess.down)} · ↑ ${bytes(sess.up)} · переключений ${sess.switches}`;
+    } else {
+      $("cx-time").textContent = "—";
+      $("cx-session").textContent = "—";
+    }
+    const t = c.totals;
+    $("cx-totals").textContent = `Сегодня: ${duration(t.today.seconds)}, ↓ ${bytes(t.today.down)} ↑ ${bytes(t.today.up)}, переключений ${t.today.switches}. `
+      + `За неделю: ${duration(t.week.seconds)}, ↓ ${bytes(t.week.down)}, сессий ${t.week.sessions}.`;
+    const events = await api("/api/client/events?limit=30");
+    const box = $("cx-events");
+    box.replaceChildren();
+    if (!events.length) {
+      const empty = document.createElement("span");
+      empty.className = "muted";
+      empty.textContent = "пока пусто";
+      box.appendChild(empty);
+    }
+    for (const event of events) {
+      const row = document.createElement("div");
+      row.className = "event";
+      const when = document.createElement("span");
+      when.className = "when";
+      when.textContent = ago(event.at);
+      const what = document.createElement("span");
+      what.className = "what";
+      what.textContent = `${EVENT_TEXT[event.kind] || event.kind}${event.node ? " " + event.node : ""}${event.detail ? " — " + event.detail : ""}`;
+      row.append(when, what);
+      box.appendChild(row);
+    }
+  }
+
+  $("cx-power").addEventListener("click", async () => {
+    const connected = $("cx-hero").classList.contains("connected");
+    $("cx-power").disabled = true;
+    try {
+      if (connected) {
+        await api("/api/client/disconnect", { method: "POST" });
+        snack("Отключено");
+      } else {
+        $("cx-hero").classList.add("connecting");
+        $("cx-state").textContent = "Подключаюсь…";
+        const result = await api("/api/client/connect", { method: "POST", body: JSON.stringify({ profile: $("cx-profile").value }) });
+        snack(result.state === "connected" ? "Подключено" : (result.error || "Не удалось подключиться"));
+      }
+    } catch (e) { snack(e.message); }
+    loadConnect().catch(() => {});
+  });
+  $("cx-failover").addEventListener("click", async () => {
+    try {
+      await api("/api/client/failover", { method: "POST" });
+      snack("Ищу узел лучше…");
+      loadConnect().catch(() => {});
+    } catch (e) { snack(e.message); }
+  });
+  $("cx-node").addEventListener("change", async (e) => {
+    try {
+      await api("/api/client/choose", { method: "POST", body: JSON.stringify({ node: e.target.value || null }) });
+      snack(e.target.value ? "Узел закреплён" : "Снова автовыбор лучшего узла");
+      loadConnect().catch(() => {});
+    } catch (err) { snack(err.message); }
+  });
+  $("cx-auto").addEventListener("change", async (e) => {
+    try {
+      await api("/api/settings", { method: "POST", body: JSON.stringify({ client_autoconnect: e.target.checked, client_profile: $("cx-profile").value }) });
+      snack(e.target.checked ? "Буду подключаться автоматически" : "Автоподключение выключено");
+    } catch (err) { e.target.checked = !e.target.checked; snack(err.message); }
+  });
+
   async function refresh() {
+    if (state.page === "connect") loadConnect().catch((e) => { $("cx-sub").textContent = e.message; });
     try {
       await loadHome();
     } catch (e) {
@@ -758,6 +1063,8 @@
 
   refresh();
   setInterval(refresh, 15000);
+  // The connection page is live: speed and ping every 2 seconds.
+  setInterval(() => { if (state.page === "connect" && !document.hidden) loadConnect().catch(() => {}); }, 2000);
 })();
 </script>
 </body>
