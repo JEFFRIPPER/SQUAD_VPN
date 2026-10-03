@@ -1,0 +1,61 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: SQUAD IE 001 ss fa8ed3
+  type: ss
+  server: 20.238.125.195
+  port: 443
+  cipher: chacha20-ietf-poly1305
+  password: jUg9wluj5iOiY9sI
+  udp: true
+- name: SQUAD IE 002 trojan dbf64c
+  type: trojan
+  server: loved-shark.rooster465.autos
+  port: 443
+  password: UX82473651
+  udp: true
+  sni: loved-shark.rooster465.autos
+  skip-cert-verify: true
+  network: tcp
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - SQUAD IE 001 ss fa8ed3
+  - SQUAD IE 002 trojan dbf64c
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - SQUAD IE 001 ss fa8ed3
+  - SQUAD IE 002 trojan dbf64c
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

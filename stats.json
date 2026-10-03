@@ -1,0 +1,128 @@
+{
+  "total": 1067,
+  "alive": 228,
+  "dead": 839,
+  "unchecked": 0,
+  "average_latency_ms": 137.2,
+  "average_jitter_ms": 34.6,
+  "average_score": 84.72,
+  "last_checked": "2026-10-03 17:29:20",
+  "last_seen": "2026-10-03 17:27:37",
+  "protocols": {
+    "vless": {
+      "total": 532,
+      "alive": 132
+    },
+    "ss": {
+      "total": 92,
+      "alive": 56
+    },
+    "trojan": {
+      "total": 375,
+      "alive": 20
+    },
+    "hysteria2": {
+      "total": 14,
+      "alive": 13
+    },
+    "vmess": {
+      "total": 54,
+      "alive": 7
+    }
+  },
+  "countries": {
+    "US": {
+      "total": 56,
+      "alive": 56
+    },
+    "NL": {
+      "total": 44,
+      "alive": 44
+    },
+    "DE": {
+      "total": 15,
+      "alive": 15
+    },
+    "FR": {
+      "total": 11,
+      "alive": 11
+    },
+    "JP": {
+      "total": 10,
+      "alive": 10
+    },
+    "GB": {
+      "total": 8,
+      "alive": 8
+    },
+    "LV": {
+      "total": 4,
+      "alive": 4
+    },
+    "CA": {
+      "total": 4,
+      "alive": 3
+    },
+    "SG": {
+      "total": 3,
+      "alive": 3
+    },
+    "IE": {
+      "total": 2,
+      "alive": 2
+    },
+    "PL": {
+      "total": 2,
+      "alive": 2
+    },
+    "AT": {
+      "total": 1,
+      "alive": 1
+    },
+    "BR": {
+      "total": 1,
+      "alive": 1
+    },
+    "CH": {
+      "total": 1,
+      "alive": 1
+    },
+    "CO": {
+      "total": 1,
+      "alive": 1
+    },
+    "CZ": {
+      "total": 1,
+      "alive": 1
+    },
+    "ES": {
+      "total": 1,
+      "alive": 1
+    },
+    "GR": {
+      "total": 1,
+      "alive": 1
+    },
+    "HK": {
+      "total": 1,
+      "alive": 1
+    },
+    "IT": {
+      "total": 1,
+      "alive": 1
+    },
+    "SE": {
+      "total": 1,
+      "alive": 1
+    },
+    "TW": {
+      "total": 1,
+      "alive": 1
+    },
+    "ZA": {
+      "total": 1,
+      "alive": 1
+    }
+  },
+  "updated_at": "2026-10-03 17:29 UTC"
+}

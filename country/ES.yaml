@@ -1,0 +1,50 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: SQUAD ES 001 ss 84c7d0
+  type: ss
+  server: 140.174.184.5
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: qItG8SueYQcP
+  udp: true
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - SQUAD ES 001 ss 84c7d0
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - SQUAD ES 001 ss 84c7d0
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

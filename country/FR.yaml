@@ -1,0 +1,113 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: SQUAD FR 001 vless 249d5a
+  type: vless
+  server: nasnet-162191099-direct.mbghalibaf.com
+  port: 443
+  uuid: e8b1500b-e9e8-5492-8312-f4eadf7d0767
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  alpn:
+  - h2
+  skip-cert-verify: false
+  network: tcp
+- name: SQUAD FR 002 vless edf323
+  type: vless
+  server: 31.77.227.10
+  port: 52006
+  uuid: bc659d88-a1e0-4c65-a49a-7b51b26a7a7f
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fr.setlisting.ru
+  alpn:
+  - h2
+  - http/1.1
+  network: tcp
+- name: SQUAD FR 003 hysteria2 7baffb
+  type: hysteria2
+  server: 35.181.166.40
+  port: 443
+  password: H7mP2xY9kJ4nQ8wR5tF6vB3z
+  sni: vpn-fr-002.fastervpn.world
+  skip-cert-verify: true
+- name: SQUAD FR 004 trojan 18226f
+  type: trojan
+  server: www.speedtest.net
+  port: 443
+  password: humanity
+  udp: true
+  sni: www.calmlunch.com
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /assignment
+    headers:
+      Host: www.calmlunch.com
+- name: SQUAD FR 005 vless a9fdcd
+  type: vless
+  server: 137.74.16.237
+  port: 443
+  uuid: aaec4e42-a095-44b6-a239-f16d234a0798
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.icloud.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 7LSzvilTVKGMtBDuKGeMrLtlhY7tQf5YcG566dEgO0I
+    short-id: b390e0a721d242b0
+  network: tcp
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - SQUAD FR 001 vless 249d5a
+  - SQUAD FR 002 vless edf323
+  - SQUAD FR 003 hysteria2 7baffb
+  - SQUAD FR 004 trojan 18226f
+  - SQUAD FR 005 vless a9fdcd
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - SQUAD FR 001 vless 249d5a
+  - SQUAD FR 002 vless edf323
+  - SQUAD FR 003 hysteria2 7baffb
+  - SQUAD FR 004 trojan 18226f
+  - SQUAD FR 005 vless a9fdcd
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

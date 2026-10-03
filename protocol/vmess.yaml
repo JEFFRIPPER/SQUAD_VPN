@@ -1,0 +1,142 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: SQUAD vmess 001 vmess 10d611
+  type: vmess
+  server: aidrivercat.org
+  port: 443
+  uuid: 03fcc618-b93d-6796-6aed-8a38c975d581
+  alterId: 0
+  cipher: auto
+  udp: true
+  tls: true
+  servername: aidrivercat.org
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /linkvws
+    headers:
+      Host: aidrivercat.org
+- name: SQUAD vmess 002 vmess 8dc5b5
+  type: vmess
+  server: 89.39.161.157
+  port: 443
+  uuid: 03fcc618-b93d-6796-6aed-8a38c975d581
+  alterId: 0
+  cipher: auto
+  udp: true
+  tls: true
+  servername: aksai.org
+  network: ws
+  ws-opts:
+    path: /linkvws
+    headers:
+      Host: aksai.org
+- name: SQUAD vmess 003 vmess 197d88
+  type: vmess
+  server: 172.111.38.100
+  port: 22324
+  uuid: 04621bae-ab36-11ec-b909-0242ac120002
+  alterId: 0
+  cipher: auto
+  udp: true
+  skip-cert-verify: false
+  network: tcp
+- name: SQUAD vmess 004 vmess e0becc
+  type: vmess
+  server: 129.146.143.80
+  port: 48111
+  uuid: d4603cc2-e0ee-4651-83f5-1db5b7168177
+  alterId: 0
+  cipher: auto
+  udp: true
+  skip-cert-verify: true
+  network: tcp
+- name: SQUAD vmess 005 vmess c026d1
+  type: vmess
+  server: 57.129.132.223
+  port: 80
+  uuid: a25cbf11-2908-4a1b-a3a8-9a571777dca3
+  alterId: 0
+  cipher: auto
+  udp: true
+  network: ws
+  ws-opts:
+    path: /vmess/
+    headers:
+      Host: google.com
+- name: SQUAD vmess 006 vmess 36ce2a
+  type: vmess
+  server: 149.88.23.207
+  port: 18000
+  uuid: f8c8dc3d-0d37-46b0-8b34-a7232882fcfe
+  alterId: 0
+  cipher: auto
+  udp: true
+  network: tcp
+- name: SQUAD vmess 007 vmess 6f9f7f
+  type: vmess
+  server: 47.76.44.32
+  port: 443
+  uuid: f23bb427-c1f9-4373-876c-2f43e9f790f3
+  alterId: 0
+  cipher: auto
+  udp: true
+  tls: true
+  network: ws
+  ws-opts:
+    path: /ws-vmess
+    headers:
+      Host: 93ucrn4i0pffuabk.v.3dns.vip
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - SQUAD vmess 001 vmess 10d611
+  - SQUAD vmess 002 vmess 8dc5b5
+  - SQUAD vmess 003 vmess 197d88
+  - SQUAD vmess 004 vmess e0becc
+  - SQUAD vmess 005 vmess c026d1
+  - SQUAD vmess 006 vmess 36ce2a
+  - SQUAD vmess 007 vmess 6f9f7f
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - SQUAD vmess 001 vmess 10d611
+  - SQUAD vmess 002 vmess 8dc5b5
+  - SQUAD vmess 003 vmess 197d88
+  - SQUAD vmess 004 vmess e0becc
+  - SQUAD vmess 005 vmess c026d1
+  - SQUAD vmess 006 vmess 36ce2a
+  - SQUAD vmess 007 vmess 6f9f7f
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

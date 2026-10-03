@@ -1,0 +1,151 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: SQUAD hysteria2 001 hysteria2 fb8af1
+  type: hysteria2
+  server: 153.76.190.41
+  port: 8443
+  password: 3a92b39a-5f02-415e-a908-783ec320e83f
+  sni: speedtestmark.com
+  skip-cert-verify: true
+- name: SQUAD hysteria2 002 hysteria2 147850
+  type: hysteria2
+  server: vpn-tw-002.fastervpn.world
+  port: 443
+  password: H7mP2xY9kJ4nQ8wR5tF6vB3z
+  sni: 127.0.0.1
+  skip-cert-verify: true
+- name: SQUAD hysteria2 003 hysteria2 2bfb74
+  type: hysteria2
+  server: 144.31.49.47
+  port: 443
+  password: YutbgyXL1mGaSlBXDoEucWvYbrDCINgUcQ6R6_At5Pjr2xCc
+  sni: admin.wwwinternetvideo.click
+  skip-cert-verify: true
+- name: SQUAD hysteria2 004 hysteria2 5c8f8a
+  type: hysteria2
+  server: 64.188.119.177
+  port: 28015
+  password: e19b5aa3-16c9-435a-8bc9-76f2f6ddff43
+  sni: api-test-udp-trf.kaneki.cfd
+  skip-cert-verify: false
+- name: SQUAD hysteria2 005 hysteria2 1a8cd0
+  type: hysteria2
+  server: hy2.561891.xyz
+  port: 44356
+  password: dongtaiwang.com
+  sni: hy2.561891.xyz
+- name: SQUAD hysteria2 006 hysteria2 7baffb
+  type: hysteria2
+  server: 35.181.166.40
+  port: 443
+  password: H7mP2xY9kJ4nQ8wR5tF6vB3z
+  sni: vpn-fr-002.fastervpn.world
+  skip-cert-verify: true
+- name: SQUAD hysteria2 007 hysteria2 a2f169
+  type: hysteria2
+  server: 77.74.123.102
+  port: 8443
+  password: s0_sdK93x9wer_D02Lz9cvK3_Sa014Oakl_C2z
+  sni: grape-test-italy.dynuddns.net
+  skip-cert-verify: false
+- name: SQUAD hysteria2 008 hysteria2 32a8fc
+  type: hysteria2
+  server: 162.249.127.143
+  port: 8443
+  password: 9Me_Jx935gnHx13_Nx45M_NYXe037js_Be4z
+  sni: hop-germany-september.dynuddns.com
+  skip-cert-verify: true
+- name: SQUAD hysteria2 009 hysteria2 87e99e
+  type: hysteria2
+  server: de.1.23.h2corp.org
+  port: 443
+  password: mkL3AfdSZIpTWRB9TcWPn9vywPGN89MRHg3ToRDj
+  sni: germany3.h2corp.local
+  skip-cert-verify: true
+- name: SQUAD hysteria2 010 hysteria2 f8de7d
+  type: hysteria2
+  server: 130.49.161.70
+  port: 443
+  password: p7Q76LzlnS4hIzr1W3staBOnUe_WwSkR
+  sni: hy2.aspidnet.xyz
+  obfs: salamander
+  obfs-password: rG07s3COMIEvdnQipRyWzx_H_2xygNC3
+- name: SQUAD hysteria2 011 hysteria2 2163ae
+  type: hysteria2
+  server: 202.146.222.29
+  port: 443
+  password: H7mP2xY9kJ4nQ8wR5tF6vB3z
+  sni: 202.146.222.29
+  skip-cert-verify: true
+- name: SQUAD hysteria2 012 hysteria2 2ec1c5
+  type: hysteria2
+  server: 77.232.139.128
+  port: 11592
+  password: 033dc6b532
+  sni: srv-8718e6.frd21.ru
+  skip-cert-verify: false
+  obfs: salamander
+  obfs-password: eba1b4766d2a26d6c167e2d2e9efabf4
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - SQUAD hysteria2 001 hysteria2 fb8af1
+  - SQUAD hysteria2 002 hysteria2 147850
+  - SQUAD hysteria2 003 hysteria2 2bfb74
+  - SQUAD hysteria2 004 hysteria2 5c8f8a
+  - SQUAD hysteria2 005 hysteria2 1a8cd0
+  - SQUAD hysteria2 006 hysteria2 7baffb
+  - SQUAD hysteria2 007 hysteria2 a2f169
+  - SQUAD hysteria2 008 hysteria2 32a8fc
+  - SQUAD hysteria2 009 hysteria2 87e99e
+  - SQUAD hysteria2 010 hysteria2 f8de7d
+  - SQUAD hysteria2 011 hysteria2 2163ae
+  - SQUAD hysteria2 012 hysteria2 2ec1c5
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - SQUAD hysteria2 001 hysteria2 fb8af1
+  - SQUAD hysteria2 002 hysteria2 147850
+  - SQUAD hysteria2 003 hysteria2 2bfb74
+  - SQUAD hysteria2 004 hysteria2 5c8f8a
+  - SQUAD hysteria2 005 hysteria2 1a8cd0
+  - SQUAD hysteria2 006 hysteria2 7baffb
+  - SQUAD hysteria2 007 hysteria2 a2f169
+  - SQUAD hysteria2 008 hysteria2 32a8fc
+  - SQUAD hysteria2 009 hysteria2 87e99e
+  - SQUAD hysteria2 010 hysteria2 f8de7d
+  - SQUAD hysteria2 011 hysteria2 2163ae
+  - SQUAD hysteria2 012 hysteria2 2ec1c5
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

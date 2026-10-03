@@ -1,0 +1,518 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: SQUAD ss 001 ss cefd2f
+  type: ss
+  server: 156.146.38.167
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+  udp: true
+- name: SQUAD ss 002 ss cd87e7
+  type: ss
+  server: 156.146.38.169
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+  udp: true
+- name: SQUAD ss 003 ss 085125
+  type: ss
+  server: 138.199.42.68
+  port: 8080
+  cipher: rc4-md5
+  password: 14fFPrbezE3HDZzsMOr6
+  udp: true
+- name: SQUAD ss 004 ss dc98f5
+  type: ss
+  server: 108.181.0.177
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: G5p6ww4o67HB
+  udp: true
+- name: SQUAD ss 005 ss 57b849
+  type: ss
+  server: 185.156.47.97
+  port: 9443
+  cipher: aes-256-gcm
+  password: eveaaTOb8ji8yntw2Z9yWUG0d6Ir8Ld8m3ymH8THdC5egiTH1mXCiBc0Skr7FibH
+  udp: true
+- name: SQUAD ss 006 ss e93a1e
+  type: ss
+  server: 37.19.198.243
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+  udp: true
+- name: SQUAD ss 007 ss e332fa
+  type: ss
+  server: 140.82.63.79
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: ZoZtfPOyVvmKARUN
+  udp: true
+- name: SQUAD ss 008 ss fa8ed3
+  type: ss
+  server: 20.238.125.195
+  port: 443
+  cipher: chacha20-ietf-poly1305
+  password: jUg9wluj5iOiY9sI
+  udp: true
+- name: SQUAD ss 009 ss 49a36a
+  type: ss
+  server: 149.22.87.240
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+  udp: true
+- name: SQUAD ss 010 ss b66775
+  type: ss
+  server: 82.38.31.189
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD ss 011 ss 72c32e
+  type: ss
+  server: 82.38.31.42
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD ss 012 ss c1a8eb
+  type: ss
+  server: 82.38.31.164
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD ss 013 ss db8263
+  type: ss
+  server: 82.38.31.7
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD ss 014 ss 8022de
+  type: ss
+  server: 82.38.31.199
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD ss 015 ss b8e7ac
+  type: ss
+  server: 109.201.152.181
+  port: 443
+  cipher: aes-128-cfb
+  password: shadowsocks
+  udp: true
+- name: SQUAD ss 016 ss ad2f67
+  type: ss
+  server: 158.173.20.208
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+  udp: true
+- name: SQUAD ss 017 ss 7963b4
+  type: ss
+  server: 82.38.31.35
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD ss 018 ss a01555
+  type: ss
+  server: 51.195.126.38
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: 2YdE4lFOid5a
+  udp: true
+- name: SQUAD ss 019 ss c86b88
+  type: ss
+  server: 185.226.172.8
+  port: 8008
+  cipher: aes-256-gcm
+  password: XKFKl2rULjIp74
+  udp: true
+- name: SQUAD ss 020 ss 84c7d0
+  type: ss
+  server: 140.174.184.5
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: qItG8SueYQcP
+  udp: true
+- name: SQUAD ss 021 ss 3e2443
+  type: ss
+  server: 82.38.31.162
+  port: 443
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD ss 022 ss bb9721
+  type: ss
+  server: 132.243.175.144
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: e8KgS8fD0yDqYFpgN4G5piCOt9aFyqA3
+  udp: true
+- name: SQUAD ss 023 ss baee1a
+  type: ss
+  server: 4.168.234.190
+  port: 443
+  cipher: chacha20-ietf-poly1305
+  password: SBw5b6E9noHolBdA
+  udp: true
+- name: SQUAD ss 024 ss c1bf6e
+  type: ss
+  server: 37.19.198.244
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+  udp: true
+- name: SQUAD ss 025 ss fc54d6
+  type: ss
+  server: 198.98.53.130
+  port: 443
+  cipher: chacha20-ietf-poly1305
+  password: eDfN7SODQceIOmIAbtJJtK
+  udp: true
+- name: SQUAD ss 026 ss a891e2
+  type: ss
+  server: 156.146.38.168
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+  udp: true
+- name: SQUAD ss 027 ss 2a304b
+  type: ss
+  server: 137.184.174.93
+  port: 8080
+  cipher: rc4-md5
+  password: 14fFPrbezE3HDZzsMOr6
+  udp: true
+- name: SQUAD ss 028 ss 5961f0
+  type: ss
+  server: 173.244.56.6
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+  udp: true
+- name: SQUAD ss 029 ss c1efa6
+  type: ss
+  server: 108.181.58.239
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: CJmTCCx7Ltud
+  udp: true
+- name: SQUAD ss 030 ss 4e95db
+  type: ss
+  server: 149.102.132.184
+  port: 80
+  cipher: aes-256-gcm
+  password: g5h5jleTRSyO3Rk4
+  udp: true
+- name: SQUAD ss 031 ss fca7fc
+  type: ss
+  server: 8.209.74.72
+  port: 20001
+  cipher: chacha20-ietf-poly1305
+  password: PWpjPo3tqhPN4yRZ
+  udp: true
+- name: SQUAD ss 032 ss 9db596
+  type: ss
+  server: 146.70.61.37
+  port: 8080
+  cipher: rc4-md5
+  password: 14fFPrbezE3HDZzsMOr6
+  udp: true
+- name: SQUAD ss 033 ss a5e74c
+  type: ss
+  server: 141.98.101.181
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+  udp: true
+- name: SQUAD ss 034 ss 8b0616
+  type: ss
+  server: 209.46.102.22
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: 1hhrqrokj3ag
+  udp: true
+- name: SQUAD ss 035 ss 9815aa
+  type: ss
+  server: 82.38.31.82
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD ss 036 ss 2cb538
+  type: ss
+  server: 193.29.139.197
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD ss 037 ss dbca24
+  type: ss
+  server: 82.38.31.174
+  port: 443
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD ss 038 ss 9c1c75
+  type: ss
+  server: 82.38.31.181
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD ss 039 ss f1dbc5
+  type: ss
+  server: 193.29.139.212
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: QCXDxuDlTTMD7jtgHUjIoj
+  udp: true
+- name: SQUAD ss 040 ss 6911e4
+  type: ss
+  server: 82.38.31.46
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD ss 041 ss bdb78a
+  type: ss
+  server: 82.38.31.49
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD ss 042 ss 37dd5a
+  type: ss
+  server: 82.38.31.217
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD ss 043 ss 8285d1
+  type: ss
+  server: 82.38.31.182
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD ss 044 ss 783368
+  type: ss
+  server: 82.38.31.205
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD ss 045 ss 436c49
+  type: ss
+  server: 82.110.60.9
+  port: 19999
+  cipher: aes-256-gcm
+  password: ZRpgaBeGxtENIXgvhpkZBKz9GnWRS2dYcx9O+a2iwN4=
+  udp: true
+- name: SQUAD ss 046 ss 484db0
+  type: ss
+  server: 82.38.31.212
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD ss 047 ss 4f9ff0
+  type: ss
+  server: 82.38.31.208
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD ss 048 ss 528ad5
+  type: ss
+  server: 15.204.247.206
+  port: 4444
+  cipher: aes-256-gcm
+  password: pKEW8JPByTVTLtM
+  udp: true
+- name: SQUAD ss 049 ss c224c4
+  type: ss
+  server: 102.37.156.224
+  port: 443
+  cipher: chacha20-ietf-poly1305
+  password: aduB9HGxQHjA2SBMRjkHX6
+  udp: true
+- name: SQUAD ss 050 ss 8704c2
+  type: ss
+  server: 84.247.155.196
+  port: 443
+  cipher: aes-256-gcm
+  password: 3eOFeNssde7PYYMv
+  udp: true
+- name: SQUAD ss 051 ss 764dd7
+  type: ss
+  server: 82.38.31.186
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD ss 052 ss 528d74
+  type: ss
+  server: bale.xv98.ir
+  port: 5051
+  cipher: chacha20-ietf-poly1305
+  password: 68mL2QkZEBlxWa3hcslGDw
+  udp: true
+- name: SQUAD ss 053 ss 856d49
+  type: ss
+  server: 149.104.107.41
+  port: 8090
+  cipher: aes-256-gcm
+  password: PCnnH6SQSnfoS27
+  udp: true
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - SQUAD ss 001 ss cefd2f
+  - SQUAD ss 002 ss cd87e7
+  - SQUAD ss 003 ss 085125
+  - SQUAD ss 004 ss dc98f5
+  - SQUAD ss 005 ss 57b849
+  - SQUAD ss 006 ss e93a1e
+  - SQUAD ss 007 ss e332fa
+  - SQUAD ss 008 ss fa8ed3
+  - SQUAD ss 009 ss 49a36a
+  - SQUAD ss 010 ss b66775
+  - SQUAD ss 011 ss 72c32e
+  - SQUAD ss 012 ss c1a8eb
+  - SQUAD ss 013 ss db8263
+  - SQUAD ss 014 ss 8022de
+  - SQUAD ss 015 ss b8e7ac
+  - SQUAD ss 016 ss ad2f67
+  - SQUAD ss 017 ss 7963b4
+  - SQUAD ss 018 ss a01555
+  - SQUAD ss 019 ss c86b88
+  - SQUAD ss 020 ss 84c7d0
+  - SQUAD ss 021 ss 3e2443
+  - SQUAD ss 022 ss bb9721
+  - SQUAD ss 023 ss baee1a
+  - SQUAD ss 024 ss c1bf6e
+  - SQUAD ss 025 ss fc54d6
+  - SQUAD ss 026 ss a891e2
+  - SQUAD ss 027 ss 2a304b
+  - SQUAD ss 028 ss 5961f0
+  - SQUAD ss 029 ss c1efa6
+  - SQUAD ss 030 ss 4e95db
+  - SQUAD ss 031 ss fca7fc
+  - SQUAD ss 032 ss 9db596
+  - SQUAD ss 033 ss a5e74c
+  - SQUAD ss 034 ss 8b0616
+  - SQUAD ss 035 ss 9815aa
+  - SQUAD ss 036 ss 2cb538
+  - SQUAD ss 037 ss dbca24
+  - SQUAD ss 038 ss 9c1c75
+  - SQUAD ss 039 ss f1dbc5
+  - SQUAD ss 040 ss 6911e4
+  - SQUAD ss 041 ss bdb78a
+  - SQUAD ss 042 ss 37dd5a
+  - SQUAD ss 043 ss 8285d1
+  - SQUAD ss 044 ss 783368
+  - SQUAD ss 045 ss 436c49
+  - SQUAD ss 046 ss 484db0
+  - SQUAD ss 047 ss 4f9ff0
+  - SQUAD ss 048 ss 528ad5
+  - SQUAD ss 049 ss c224c4
+  - SQUAD ss 050 ss 8704c2
+  - SQUAD ss 051 ss 764dd7
+  - SQUAD ss 052 ss 528d74
+  - SQUAD ss 053 ss 856d49
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - SQUAD ss 001 ss cefd2f
+  - SQUAD ss 002 ss cd87e7
+  - SQUAD ss 003 ss 085125
+  - SQUAD ss 004 ss dc98f5
+  - SQUAD ss 005 ss 57b849
+  - SQUAD ss 006 ss e93a1e
+  - SQUAD ss 007 ss e332fa
+  - SQUAD ss 008 ss fa8ed3
+  - SQUAD ss 009 ss 49a36a
+  - SQUAD ss 010 ss b66775
+  - SQUAD ss 011 ss 72c32e
+  - SQUAD ss 012 ss c1a8eb
+  - SQUAD ss 013 ss db8263
+  - SQUAD ss 014 ss 8022de
+  - SQUAD ss 015 ss b8e7ac
+  - SQUAD ss 016 ss ad2f67
+  - SQUAD ss 017 ss 7963b4
+  - SQUAD ss 018 ss a01555
+  - SQUAD ss 019 ss c86b88
+  - SQUAD ss 020 ss 84c7d0
+  - SQUAD ss 021 ss 3e2443
+  - SQUAD ss 022 ss bb9721
+  - SQUAD ss 023 ss baee1a
+  - SQUAD ss 024 ss c1bf6e
+  - SQUAD ss 025 ss fc54d6
+  - SQUAD ss 026 ss a891e2
+  - SQUAD ss 027 ss 2a304b
+  - SQUAD ss 028 ss 5961f0
+  - SQUAD ss 029 ss c1efa6
+  - SQUAD ss 030 ss 4e95db
+  - SQUAD ss 031 ss fca7fc
+  - SQUAD ss 032 ss 9db596
+  - SQUAD ss 033 ss a5e74c
+  - SQUAD ss 034 ss 8b0616
+  - SQUAD ss 035 ss 9815aa
+  - SQUAD ss 036 ss 2cb538
+  - SQUAD ss 037 ss dbca24
+  - SQUAD ss 038 ss 9c1c75
+  - SQUAD ss 039 ss f1dbc5
+  - SQUAD ss 040 ss 6911e4
+  - SQUAD ss 041 ss bdb78a
+  - SQUAD ss 042 ss 37dd5a
+  - SQUAD ss 043 ss 8285d1
+  - SQUAD ss 044 ss 783368
+  - SQUAD ss 045 ss 436c49
+  - SQUAD ss 046 ss 484db0
+  - SQUAD ss 047 ss 4f9ff0
+  - SQUAD ss 048 ss 528ad5
+  - SQUAD ss 049 ss c224c4
+  - SQUAD ss 050 ss 8704c2
+  - SQUAD ss 051 ss 764dd7
+  - SQUAD ss 052 ss 528d74
+  - SQUAD ss 053 ss 856d49
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

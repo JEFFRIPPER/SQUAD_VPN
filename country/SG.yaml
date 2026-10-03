@@ -1,0 +1,89 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: SQUAD SG 001 vless 76f777
+  type: vless
+  server: 172.64.150.28
+  port: 2082
+  uuid: e5cc16a6-ea42-46b2-82ae-ad2157e1641b
+  udp: true
+  encryption: none
+  network: ws
+  ws-opts:
+    path: /fp
+    headers:
+      Host: hhlfy.twiladaphne.ndjp.net
+- name: SQUAD SG 002 vless 3694ed
+  type: vless
+  server: 104.21.60.109
+  port: 443
+  uuid: b8d8a5b0-867f-4491-b4e4-30edc04bb10e
+  udp: true
+  encryption: ''
+  packet-encoding: xudp
+  tls: true
+  servername: u.srilankangrill.online
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: u.srilankangrill.online
+- name: SQUAD SG 003 vless b0eeb8
+  type: vless
+  server: 45.80.108.7
+  port: 8443
+  uuid: 7967bf59-57e3-4cde-9898-527b0fe60022
+  udp: true
+  encryption: ''
+  tls: true
+  servername: speed.dulacloud.store
+  network: ws
+  ws-opts:
+    path: /dula?Telegram-WangCai2fp=chrome
+    headers:
+      Host: speed.dulacloud.store
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - SQUAD SG 001 vless 76f777
+  - SQUAD SG 002 vless 3694ed
+  - SQUAD SG 003 vless b0eeb8
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - SQUAD SG 001 vless 76f777
+  - SQUAD SG 002 vless 3694ed
+  - SQUAD SG 003 vless b0eeb8
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

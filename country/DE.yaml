@@ -1,0 +1,220 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: SQUAD DE 001 trojan 973bc5
+  type: trojan
+  server: 199.232.78.160
+  port: 443
+  password: mitivpn
+  udp: true
+  sni: ssl.fastly.com
+  client-fingerprint: chrome
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /---@MiTiVPN---@MiTiVPN/---@MiTiVPN---@MiTiVPN/---@MiTiVPN---@MiTiVPN/D-e1i@MiTiVPN---@MiTiVPN/---@MiTiVPN---@MiTiVPN/---@MiTiVPN---@MiTiVPN
+    headers:
+      Host: mitivpn---deb--s---mitivpn-2.global.ssl.fastly.net
+- name: SQUAD DE 002 ss a01555
+  type: ss
+  server: 51.195.126.38
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: 2YdE4lFOid5a
+  udp: true
+- name: SQUAD DE 003 trojan 1f9a4b
+  type: trojan
+  server: 167.82.76.27
+  port: 443
+  password: mitivpn
+  udp: true
+  sni: ssl.fastly.com
+  client-fingerprint: chrome
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /---@VPNine1---@VPNine1/---@VPNine1---@VPNine1/---@VPNine1---@VPNine1/des---@VPNine1---@VPNine1/---@VPNine1---@VPNine1/---@VPNine1---@VPNine1
+    headers:
+      Host: mitivpn---deb--s---mitivpn-3.global.ssl.fastly.net
+- name: SQUAD DE 004 vless 659618
+  type: vless
+  server: 82.39.171.142
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: SQUAD DE 005 ss fca7fc
+  type: ss
+  server: 8.209.74.72
+  port: 20001
+  cipher: chacha20-ietf-poly1305
+  password: PWpjPo3tqhPN4yRZ
+  udp: true
+- name: SQUAD DE 006 hysteria2 32a8fc
+  type: hysteria2
+  server: 162.249.127.143
+  port: 8443
+  password: 9Me_Jx935gnHx13_Nx45M_NYXe037js_Be4z
+  sni: hop-germany-september.dynuddns.com
+  skip-cert-verify: true
+- name: SQUAD DE 007 ss 8b0616
+  type: ss
+  server: 209.46.102.22
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: 1hhrqrokj3ag
+  udp: true
+- name: SQUAD DE 008 vless 285137
+  type: vless
+  server: 2.28.142.170
+  port: 443
+  uuid: f774f037-6320-42e3-a97b-6d4a1f018dd5
+  udp: true
+  encryption: mlkem768x25519plus.native.0rtt.Y0-j5e-CpehUKzhEeat1dTYevroKyHV4g9HML3ujmlQ
+  tls: true
+  servername: germanytest.tulnaro.ir
+  client-fingerprint: chrome
+  alpn:
+  - h3
+  - h2
+  - http/1.1
+  reality-opts:
+    public-key: IqFTx4k5VQydmffvavaOHDXBtdgDxX26A6NtsVvDfhw
+    short-id: d485c3d5248d6b51
+  network: xhttp
+  xhttp-opts:
+    path: /
+    host: germanytest.tulnaro.ir
+    mode: auto
+- name: SQUAD DE 009 vless 8a992b
+  type: vless
+  server: s3.bamans.uk
+  port: 443
+  uuid: 86c0996e-817e-409f-a732-ff9ef94917bd
+  udp: true
+  encryption: none
+  tls: true
+  servername: s3.bamans.uk
+  alpn:
+  - h2
+  skip-cert-verify: false
+  network: xhttp
+  xhttp-opts:
+    path: /3a6b3b038ea34622bd1e13ec5798ab03
+    mode: stream-up
+- name: SQUAD DE 010 vless 319031
+  type: vless
+  server: rubifen.adaspoloandco.com
+  port: 443
+  uuid: cf39fab0-bb85-42cb-9945-2ad69d78e575
+  udp: true
+  encryption: none
+  tls: true
+  servername: rubifen.adaspoloandco.com
+  client-fingerprint: chrome
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /GOrbEh
+- name: SQUAD DE 011 hysteria2 87e99e
+  type: hysteria2
+  server: de.1.23.h2corp.org
+  port: 443
+  password: mkL3AfdSZIpTWRB9TcWPn9vywPGN89MRHg3ToRDj
+  sni: germany3.h2corp.local
+  skip-cert-verify: true
+- name: SQUAD DE 012 vless d565e5
+  type: vless
+  server: 103.27.157.120
+  port: 443
+  uuid: 025a80fb-233b-4714-b02d-f4384c653d58
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: download.amd.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: k0883nIGfstbzb8hES-dQ1yPcBwbUbnsyg4w-UA5gkA
+    short-id: 68aaa5222092bbea
+  network: tcp
+- name: SQUAD DE 013 vless 9dca88
+  type: vless
+  server: 31.76.11.83
+  port: 26150
+  uuid: e676c6c8-44a8-4a1d-82cc-821a1f70f0c0
+  udp: true
+  encryption: none
+  network: tcp
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - SQUAD DE 001 trojan 973bc5
+  - SQUAD DE 002 ss a01555
+  - SQUAD DE 003 trojan 1f9a4b
+  - SQUAD DE 004 vless 659618
+  - SQUAD DE 005 ss fca7fc
+  - SQUAD DE 006 hysteria2 32a8fc
+  - SQUAD DE 007 ss 8b0616
+  - SQUAD DE 008 vless 285137
+  - SQUAD DE 009 vless 8a992b
+  - SQUAD DE 010 vless 319031
+  - SQUAD DE 011 hysteria2 87e99e
+  - SQUAD DE 012 vless d565e5
+  - SQUAD DE 013 vless 9dca88
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - SQUAD DE 001 trojan 973bc5
+  - SQUAD DE 002 ss a01555
+  - SQUAD DE 003 trojan 1f9a4b
+  - SQUAD DE 004 vless 659618
+  - SQUAD DE 005 ss fca7fc
+  - SQUAD DE 006 hysteria2 32a8fc
+  - SQUAD DE 007 ss 8b0616
+  - SQUAD DE 008 vless 285137
+  - SQUAD DE 009 vless 8a992b
+  - SQUAD DE 010 vless 319031
+  - SQUAD DE 011 hysteria2 87e99e
+  - SQUAD DE 012 vless d565e5
+  - SQUAD DE 013 vless 9dca88
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

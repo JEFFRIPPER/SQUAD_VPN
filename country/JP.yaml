@@ -1,0 +1,144 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: SQUAD JP 001 vless 951641
+  type: vless
+  server: 142.91.106.31
+  port: 43000
+  uuid: f8681dba-d368-4bab-a3c2-a8dc712ba368
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: onJvbzSx_vZUyycafvPuhsiSQsr9tw4zotyVMSWCvm4
+    short-id: 8d66106f
+  network: tcp
+- name: SQUAD JP 002 ss 49a36a
+  type: ss
+  server: 149.22.87.240
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+  udp: true
+- name: SQUAD JP 003 trojan 27e966
+  type: trojan
+  server: fancy-javelin.rooster465.autos
+  port: 443
+  password: UX82473651
+  udp: true
+  sni: fancy-javelin.rooster465.autos
+  skip-cert-verify: true
+  network: tcp
+- name: SQUAD JP 004 trojan 48798e
+  type: trojan
+  server: promoted-rattler.rooster465.autos
+  port: 443
+  password: UX82473651
+  udp: true
+  sni: promoted-rattler.rooster465.autos
+  skip-cert-verify: true
+  network: tcp
+- name: SQUAD JP 005 trojan 0350d8
+  type: trojan
+  server: brief-glider.rooster465.autos
+  port: 443
+  password: UX82473651
+  udp: true
+  sni: brief-glider.rooster465.autos
+  skip-cert-verify: true
+  network: tcp
+- name: SQUAD JP 006 vless 1cb95d
+  type: vless
+  server: 172.93.167.45
+  port: 443
+  uuid: 8344360f-0349-4784-a19f-33fd92e89389
+  udp: true
+  encryption: none
+  tls: true
+  servername: api.w2m.ink
+  client-fingerprint: chrome
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /v2
+    headers:
+      Host: api.w2m.ink
+- name: SQUAD JP 007 vless 4b8543
+  type: vless
+  server: 104.16.10.104
+  port: 443
+  uuid: 4e4f1f70-5e56-4a76-bb9d-db087f4690c4
+  udp: true
+  encryption: none
+  tls: true
+  servername: jp3.yohototo.top
+  client-fingerprint: unsafe
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /tyxyws
+    headers:
+      Host: jp3.yohototo.top
+- name: SQUAD JP 008 ss 8704c2
+  type: ss
+  server: 84.247.155.196
+  port: 443
+  cipher: aes-256-gcm
+  password: 3eOFeNssde7PYYMv
+  udp: true
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - SQUAD JP 001 vless 951641
+  - SQUAD JP 002 ss 49a36a
+  - SQUAD JP 003 trojan 27e966
+  - SQUAD JP 004 trojan 48798e
+  - SQUAD JP 005 trojan 0350d8
+  - SQUAD JP 006 vless 1cb95d
+  - SQUAD JP 007 vless 4b8543
+  - SQUAD JP 008 ss 8704c2
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - SQUAD JP 001 vless 951641
+  - SQUAD JP 002 ss 49a36a
+  - SQUAD JP 003 trojan 27e966
+  - SQUAD JP 004 trojan 48798e
+  - SQUAD JP 005 trojan 0350d8
+  - SQUAD JP 006 vless 1cb95d
+  - SQUAD JP 007 vless 4b8543
+  - SQUAD JP 008 ss 8704c2
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

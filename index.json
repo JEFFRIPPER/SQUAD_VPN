@@ -1,0 +1,307 @@
+{
+  "profiles": {
+    "balanced": {
+      "count": 190,
+      "plain": "balanced",
+      "base64": "balanced.b64",
+      "mihomo": "balanced.yaml",
+      "criteria": {
+        "name": "balanced",
+        "description": "Баланс скорости и надёжности",
+        "min_score": 70,
+        "min_stability": 55,
+        "max_latency": 500,
+        "checked_within_hours": 12,
+        "seen_within_hours": 48,
+        "limit": 300,
+        "countries": [],
+        "exclude_countries": [
+          "RU"
+        ],
+        "protocols": [],
+        "per_host": 1,
+        "per_exit_ip": 1,
+        "max_asn_share": 0.34
+      }
+    },
+    "fast": {
+      "count": 134,
+      "plain": "fast",
+      "base64": "fast.b64",
+      "mihomo": "fast.yaml",
+      "criteria": {
+        "name": "fast",
+        "description": "Самые быстрые",
+        "min_score": 60,
+        "min_stability": 40,
+        "max_latency": 150,
+        "checked_within_hours": 12,
+        "seen_within_hours": 48,
+        "limit": 150,
+        "countries": [],
+        "exclude_countries": [
+          "RU"
+        ],
+        "protocols": [],
+        "per_host": 1,
+        "per_exit_ip": 1,
+        "max_asn_share": 0.34
+      }
+    },
+    "stable": {
+      "count": 65,
+      "plain": "stable",
+      "base64": "stable.b64",
+      "mihomo": "stable.yaml",
+      "criteria": {
+        "name": "stable",
+        "description": "Стабильно живые много проверок подряд",
+        "min_score": 65,
+        "min_stability": 75,
+        "max_latency": 800,
+        "checked_within_hours": 12,
+        "seen_within_hours": 48,
+        "limit": 300,
+        "countries": [],
+        "exclude_countries": [
+          "RU"
+        ],
+        "protocols": [],
+        "per_host": 1,
+        "per_exit_ip": 1,
+        "max_asn_share": 0.34
+      }
+    },
+    "europe": {
+      "count": 73,
+      "plain": "europe",
+      "base64": "europe.b64",
+      "mihomo": "europe.yaml",
+      "criteria": {
+        "name": "europe",
+        "description": "Выход в Европе",
+        "min_score": 60,
+        "min_stability": 0.0,
+        "max_latency": 600,
+        "checked_within_hours": 12,
+        "seen_within_hours": 48,
+        "limit": 300,
+        "countries": [
+          "DE",
+          "NL",
+          "FI",
+          "FR",
+          "GB",
+          "SE",
+          "PL",
+          "CZ",
+          "AT",
+          "CH",
+          "IE",
+          "EE",
+          "LV",
+          "LT"
+        ],
+        "exclude_countries": [],
+        "protocols": [],
+        "per_host": 1,
+        "per_exit_ip": 1,
+        "max_asn_share": 0.34
+      }
+    },
+    "all": {
+      "count": 228,
+      "plain": "all",
+      "base64": "all.b64",
+      "mihomo": "all.yaml",
+      "criteria": {
+        "name": "all",
+        "description": "Все живые узлы",
+        "min_score": 0.0,
+        "min_stability": 0.0,
+        "max_latency": null,
+        "checked_within_hours": 12,
+        "seen_within_hours": 48,
+        "limit": 500,
+        "countries": [],
+        "exclude_countries": [],
+        "protocols": [],
+        "per_host": null,
+        "per_exit_ip": null,
+        "max_asn_share": null
+      }
+    }
+  },
+  "countries": {
+    "AT": {
+      "count": 1,
+      "plain": "AT",
+      "base64": "AT.b64",
+      "mihomo": "AT.yaml"
+    },
+    "BR": {
+      "count": 1,
+      "plain": "BR",
+      "base64": "BR.b64",
+      "mihomo": "BR.yaml"
+    },
+    "CA": {
+      "count": 3,
+      "plain": "CA",
+      "base64": "CA.b64",
+      "mihomo": "CA.yaml"
+    },
+    "CH": {
+      "count": 1,
+      "plain": "CH",
+      "base64": "CH.b64",
+      "mihomo": "CH.yaml"
+    },
+    "CO": {
+      "count": 1,
+      "plain": "CO",
+      "base64": "CO.b64",
+      "mihomo": "CO.yaml"
+    },
+    "CZ": {
+      "count": 1,
+      "plain": "CZ",
+      "base64": "CZ.b64",
+      "mihomo": "CZ.yaml"
+    },
+    "DE": {
+      "count": 13,
+      "plain": "DE",
+      "base64": "DE.b64",
+      "mihomo": "DE.yaml"
+    },
+    "ES": {
+      "count": 1,
+      "plain": "ES",
+      "base64": "ES.b64",
+      "mihomo": "ES.yaml"
+    },
+    "FR": {
+      "count": 5,
+      "plain": "FR",
+      "base64": "FR.b64",
+      "mihomo": "FR.yaml"
+    },
+    "GB": {
+      "count": 7,
+      "plain": "GB",
+      "base64": "GB.b64",
+      "mihomo": "GB.yaml"
+    },
+    "GR": {
+      "count": 1,
+      "plain": "GR",
+      "base64": "GR.b64",
+      "mihomo": "GR.yaml"
+    },
+    "HK": {
+      "count": 1,
+      "plain": "HK",
+      "base64": "HK.b64",
+      "mihomo": "HK.yaml"
+    },
+    "IE": {
+      "count": 2,
+      "plain": "IE",
+      "base64": "IE.b64",
+      "mihomo": "IE.yaml"
+    },
+    "IT": {
+      "count": 1,
+      "plain": "IT",
+      "base64": "IT.b64",
+      "mihomo": "IT.yaml"
+    },
+    "JP": {
+      "count": 8,
+      "plain": "JP",
+      "base64": "JP.b64",
+      "mihomo": "JP.yaml"
+    },
+    "LV": {
+      "count": 1,
+      "plain": "LV",
+      "base64": "LV.b64",
+      "mihomo": "LV.yaml"
+    },
+    "NL": {
+      "count": 39,
+      "plain": "NL",
+      "base64": "NL.b64",
+      "mihomo": "NL.yaml"
+    },
+    "PL": {
+      "count": 2,
+      "plain": "PL",
+      "base64": "PL.b64",
+      "mihomo": "PL.yaml"
+    },
+    "SE": {
+      "count": 1,
+      "plain": "SE",
+      "base64": "SE.b64",
+      "mihomo": "SE.yaml"
+    },
+    "SG": {
+      "count": 3,
+      "plain": "SG",
+      "base64": "SG.b64",
+      "mihomo": "SG.yaml"
+    },
+    "TW": {
+      "count": 1,
+      "plain": "TW",
+      "base64": "TW.b64",
+      "mihomo": "TW.yaml"
+    },
+    "US": {
+      "count": 47,
+      "plain": "US",
+      "base64": "US.b64",
+      "mihomo": "US.yaml"
+    },
+    "ZA": {
+      "count": 1,
+      "plain": "ZA",
+      "base64": "ZA.b64",
+      "mihomo": "ZA.yaml"
+    }
+  },
+  "protocols": {
+    "hysteria2": {
+      "count": 12,
+      "plain": "hysteria2",
+      "base64": "hysteria2.b64",
+      "mihomo": "hysteria2.yaml"
+    },
+    "ss": {
+      "count": 53,
+      "plain": "ss",
+      "base64": "ss.b64",
+      "mihomo": "ss.yaml"
+    },
+    "trojan": {
+      "count": 17,
+      "plain": "trojan",
+      "base64": "trojan.b64",
+      "mihomo": "trojan.yaml"
+    },
+    "vless": {
+      "count": 105,
+      "plain": "vless",
+      "base64": "vless.b64",
+      "mihomo": "vless.yaml"
+    },
+    "vmess": {
+      "count": 7,
+      "plain": "vmess",
+      "base64": "vmess.b64",
+      "mihomo": "vmess.yaml"
+    }
+  }
+}

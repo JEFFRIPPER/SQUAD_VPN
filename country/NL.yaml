@@ -1,0 +1,500 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: SQUAD NL 001 vless 9bcec0
+  type: vless
+  server: 107.189.18.145
+  port: 443
+  uuid: 67a171fb-a31d-49f3-a9d6-98de350763e8
+  udp: true
+  encryption: none
+  tls: true
+  servername: restnet.duckdns.org
+  client-fingerprint: chrome
+  network: tcp
+- name: SQUAD NL 002 vless c73f09
+  type: vless
+  server: 162.35.242.252
+  port: 443
+  uuid: e3e9805a-6c8b-4edd-8ee8-621df79806eb
+  udp: true
+  encryption: none
+  tls: true
+  servername: nl.aksay.pro
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: ClG6fvriBTK8donGsTlKusJ0dwRCgVDDTAGzAtZzJDY
+    short-id: 82c2b7d5e70ff000
+  network: tcp
+- name: SQUAD NL 003 ss b66775
+  type: ss
+  server: 82.38.31.189
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD NL 004 ss 72c32e
+  type: ss
+  server: 82.38.31.42
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD NL 005 vless b6d13c
+  type: vless
+  server: 51.158.206.80
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: SQUAD NL 006 ss c1a8eb
+  type: ss
+  server: 82.38.31.164
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD NL 007 ss db8263
+  type: ss
+  server: 82.38.31.7
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD NL 008 ss 8022de
+  type: ss
+  server: 82.38.31.199
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD NL 009 ss b8e7ac
+  type: ss
+  server: 109.201.152.181
+  port: 443
+  cipher: aes-128-cfb
+  password: shadowsocks
+  udp: true
+- name: SQUAD NL 010 ss ad2f67
+  type: ss
+  server: 158.173.20.208
+  port: 443
+  cipher: aes-128-gcm
+  password: shadowsocks
+  udp: true
+- name: SQUAD NL 011 ss 7963b4
+  type: ss
+  server: 82.38.31.35
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD NL 012 ss 3e2443
+  type: ss
+  server: 82.38.31.162
+  port: 443
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD NL 013 ss c1efa6
+  type: ss
+  server: 108.181.58.239
+  port: 8388
+  cipher: chacha20-ietf-poly1305
+  password: CJmTCCx7Ltud
+  udp: true
+- name: SQUAD NL 014 vless b3ac5f
+  type: vless
+  server: 51.158.206.26
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: SQUAD NL 015 vless 2a5846
+  type: vless
+  server: 64.188.126.56
+  port: 43000
+  uuid: 47f79fc1-0646-40e8-8a58-73e85d183d5a
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: 64.188.126.56
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: jjbMUO41S9JE7ou_zbbDStzSYLzJVN_0O-j0f6b380E
+    short-id: bf4e20af99d3042d
+  network: tcp
+- name: SQUAD NL 016 vless 63476b
+  type: vless
+  server: 51.158.206.8
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: SQUAD NL 017 vless 942500
+  type: vless
+  server: 86.54.28.75
+  port: 443
+  uuid: 44ae52b9-76fc-444d-8e43-186b4384b80a
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: PryGoq51ilG0eLUPl9i0xCvmk1xpwkyFSr_tG4GNLlU
+    short-id: 1d86d17709852910
+  network: tcp
+- name: SQUAD NL 018 vless 9b46f8
+  type: vless
+  server: 51.158.206.103
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: SQUAD NL 019 hysteria2 a2f169
+  type: hysteria2
+  server: 77.74.123.102
+  port: 8443
+  password: s0_sdK93x9wer_D02Lz9cvK3_Sa014Oakl_C2z
+  sni: grape-test-italy.dynuddns.net
+  skip-cert-verify: false
+- name: SQUAD NL 020 vless 17adfc
+  type: vless
+  server: 51.158.206.12
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: SQUAD NL 021 ss 9815aa
+  type: ss
+  server: 82.38.31.82
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD NL 022 vless 4e45b0
+  type: vless
+  server: 138.16.141.59
+  port: 7443
+  uuid: a289a3d3-5833-4b28-8809-ae72898a98d0
+  udp: true
+  encryption: none
+  tls: true
+  servername: ibm.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: RY7zkFQ01lI92jxNAyCa8T33UBW1fgpJgg8ZEqMA10k
+    short-id: a09ff9f8
+  network: tcp
+- name: SQUAD NL 023 ss 2cb538
+  type: ss
+  server: 193.29.139.197
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD NL 024 vless ddc857
+  type: vless
+  server: 87.58.201.67
+  port: 443
+  uuid: 6e38d9f6-0c9d-437b-8135-20f93f94c572
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: ne3.paledweld.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: G3Ljfvmg8X2VYuxSgGCBdn3Rca207x86GNRBLLmxuUQ
+    short-id: 0aaf3be85ef94749
+  network: tcp
+- name: SQUAD NL 025 ss dbca24
+  type: ss
+  server: 82.38.31.174
+  port: 443
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD NL 026 ss 9c1c75
+  type: ss
+  server: 82.38.31.181
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD NL 027 ss f1dbc5
+  type: ss
+  server: 193.29.139.212
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: QCXDxuDlTTMD7jtgHUjIoj
+  udp: true
+- name: SQUAD NL 028 ss 6911e4
+  type: ss
+  server: 82.38.31.46
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD NL 029 ss bdb78a
+  type: ss
+  server: 82.38.31.49
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: oZIoA69Q8yhcQV8ka3Pa3A
+  udp: true
+- name: SQUAD NL 030 ss 37dd5a
+  type: ss
+  server: 82.38.31.217
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD NL 031 ss 8285d1
+  type: ss
+  server: 82.38.31.182
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD NL 032 ss 783368
+  type: ss
+  server: 82.38.31.205
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD NL 033 vless 496965
+  type: vless
+  server: dey.lnmarketplace.net
+  port: 443
+  uuid: 3536e1fa-0850-44d1-b123-925ce12476cf
+  udp: true
+  encryption: none
+  tls: true
+  servername: dey.lnmarketplace.net
+  alpn:
+  - h2
+  network: xhttp
+  xhttp-opts:
+    path: /kavir
+    host: dey.lnmarketplace.net
+    mode: stream-one
+- name: SQUAD NL 034 hysteria2 f8de7d
+  type: hysteria2
+  server: 130.49.161.70
+  port: 443
+  password: p7Q76LzlnS4hIzr1W3staBOnUe_WwSkR
+  sni: hy2.aspidnet.xyz
+  obfs: salamander
+  obfs-password: rG07s3COMIEvdnQipRyWzx_H_2xygNC3
+- name: SQUAD NL 035 vless 427373
+  type: vless
+  server: 206.71.158.124
+  port: 443
+  uuid: 3536e1fa-0850-44d1-b123-925ce12476cf
+  udp: true
+  encryption: none
+  tls: true
+  servername: dey.lnmarketplace.net
+  client-fingerprint: chrome
+  alpn:
+  - h2
+  network: xhttp
+  xhttp-opts:
+    path: /kavir
+    host: dey.lnmarketplace.net
+    mode: stream-one
+- name: SQUAD NL 036 trojan fa616e
+  type: trojan
+  server: 78.47.146.151
+  port: 443
+  password: humanity
+  udp: true
+  sni: www.pleadcourt.org
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /assignment
+    headers:
+      Host: www.pleadcourt.org
+- name: SQUAD NL 037 ss 484db0
+  type: ss
+  server: 82.38.31.212
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD NL 038 ss 4f9ff0
+  type: ss
+  server: 82.38.31.208
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+- name: SQUAD NL 039 ss 764dd7
+  type: ss
+  server: 82.38.31.186
+  port: 8080
+  cipher: chacha20-ietf-poly1305
+  password: k1dBOmOB4oqi7Ump37a1bQ
+  udp: true
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - SQUAD NL 001 vless 9bcec0
+  - SQUAD NL 002 vless c73f09
+  - SQUAD NL 003 ss b66775
+  - SQUAD NL 004 ss 72c32e
+  - SQUAD NL 005 vless b6d13c
+  - SQUAD NL 006 ss c1a8eb
+  - SQUAD NL 007 ss db8263
+  - SQUAD NL 008 ss 8022de
+  - SQUAD NL 009 ss b8e7ac
+  - SQUAD NL 010 ss ad2f67
+  - SQUAD NL 011 ss 7963b4
+  - SQUAD NL 012 ss 3e2443
+  - SQUAD NL 013 ss c1efa6
+  - SQUAD NL 014 vless b3ac5f
+  - SQUAD NL 015 vless 2a5846
+  - SQUAD NL 016 vless 63476b
+  - SQUAD NL 017 vless 942500
+  - SQUAD NL 018 vless 9b46f8
+  - SQUAD NL 019 hysteria2 a2f169
+  - SQUAD NL 020 vless 17adfc
+  - SQUAD NL 021 ss 9815aa
+  - SQUAD NL 022 vless 4e45b0
+  - SQUAD NL 023 ss 2cb538
+  - SQUAD NL 024 vless ddc857
+  - SQUAD NL 025 ss dbca24
+  - SQUAD NL 026 ss 9c1c75
+  - SQUAD NL 027 ss f1dbc5
+  - SQUAD NL 028 ss 6911e4
+  - SQUAD NL 029 ss bdb78a
+  - SQUAD NL 030 ss 37dd5a
+  - SQUAD NL 031 ss 8285d1
+  - SQUAD NL 032 ss 783368
+  - SQUAD NL 033 vless 496965
+  - SQUAD NL 034 hysteria2 f8de7d
+  - SQUAD NL 035 vless 427373
+  - SQUAD NL 036 trojan fa616e
+  - SQUAD NL 037 ss 484db0
+  - SQUAD NL 038 ss 4f9ff0
+  - SQUAD NL 039 ss 764dd7
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - SQUAD NL 001 vless 9bcec0
+  - SQUAD NL 002 vless c73f09
+  - SQUAD NL 003 ss b66775
+  - SQUAD NL 004 ss 72c32e
+  - SQUAD NL 005 vless b6d13c
+  - SQUAD NL 006 ss c1a8eb
+  - SQUAD NL 007 ss db8263
+  - SQUAD NL 008 ss 8022de
+  - SQUAD NL 009 ss b8e7ac
+  - SQUAD NL 010 ss ad2f67
+  - SQUAD NL 011 ss 7963b4
+  - SQUAD NL 012 ss 3e2443
+  - SQUAD NL 013 ss c1efa6
+  - SQUAD NL 014 vless b3ac5f
+  - SQUAD NL 015 vless 2a5846
+  - SQUAD NL 016 vless 63476b
+  - SQUAD NL 017 vless 942500
+  - SQUAD NL 018 vless 9b46f8
+  - SQUAD NL 019 hysteria2 a2f169
+  - SQUAD NL 020 vless 17adfc
+  - SQUAD NL 021 ss 9815aa
+  - SQUAD NL 022 vless 4e45b0
+  - SQUAD NL 023 ss 2cb538
+  - SQUAD NL 024 vless ddc857
+  - SQUAD NL 025 ss dbca24
+  - SQUAD NL 026 ss 9c1c75
+  - SQUAD NL 027 ss f1dbc5
+  - SQUAD NL 028 ss 6911e4
+  - SQUAD NL 029 ss bdb78a
+  - SQUAD NL 030 ss 37dd5a
+  - SQUAD NL 031 ss 8285d1
+  - SQUAD NL 032 ss 783368
+  - SQUAD NL 033 vless 496965
+  - SQUAD NL 034 hysteria2 f8de7d
+  - SQUAD NL 035 vless 427373
+  - SQUAD NL 036 trojan fa616e
+  - SQUAD NL 037 ss 484db0
+  - SQUAD NL 038 ss 4f9ff0
+  - SQUAD NL 039 ss 764dd7
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

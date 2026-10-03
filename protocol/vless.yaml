@@ -1,0 +1,1760 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: SQUAD vless 001 vless e231de
+  type: vless
+  server: 108.162.198.178
+  port: 2086
+  uuid: 47fcef29-ab4e-4aa6-932b-d95a18f28a4e
+  udp: true
+  encryption: none
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+- name: SQUAD vless 002 vless 696586
+  type: vless
+  server: 104.18.34.14
+  port: 80
+  uuid: 47fcef29-ab4e-4aa6-932b-d95a18f28a4e
+  udp: true
+  encryption: ''
+  servername: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+  network: ws
+  ws-opts:
+    path: /?ed=2560security=tls
+    headers:
+      Host: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+- name: SQUAD vless 003 vless d88448
+  type: vless
+  server: 188.114.97.6
+  port: 8080
+  uuid: 47fcef29-ab4e-4aa6-932b-d95a18f28a4e
+  udp: true
+  encryption: none
+  network: ws
+  ws-opts:
+    path: /?ed=2560
+    headers:
+      Host: zb1zi.s3nx.dyz.hh.vavava.kdns.fr
+- name: SQUAD vless 004 vless 10af45
+  type: vless
+  server: 172.64.32.108
+  port: 8080
+  uuid: 47fcef29-ab4e-4aa6-932b-d95a18f28a4e
+  udp: true
+  encryption: ''
+  packet-encoding: none
+  network: ws
+  ws-opts:
+    path: /?ed=2560security=tls
+    headers:
+      Host: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+- name: SQUAD vless 005 vless 69f505
+  type: vless
+  server: 104.18.39.218
+  port: 2095
+  uuid: 47fcef29-ab4e-4aa6-932b-d95a18f28a4e
+  udp: true
+  encryption: ''
+  network: ws
+  ws-opts:
+    path: /?ed=2560security=tls
+    headers:
+      Host: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+- name: SQUAD vless 006 vless 577a84
+  type: vless
+  server: 172.64.154.8
+  port: 80
+  uuid: 47fcef29-ab4e-4aa6-932b-d95a18f28a4e
+  udp: true
+  encryption: ''
+  servername: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+  network: ws
+  ws-opts:
+    path: /?ed=2560security=tls
+    headers:
+      Host: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+- name: SQUAD vless 007 vless 76f777
+  type: vless
+  server: 172.64.150.28
+  port: 2082
+  uuid: e5cc16a6-ea42-46b2-82ae-ad2157e1641b
+  udp: true
+  encryption: none
+  network: ws
+  ws-opts:
+    path: /fp
+    headers:
+      Host: hhlfy.twiladaphne.ndjp.net
+- name: SQUAD vless 008 vless ab6eac
+  type: vless
+  server: 69.48.201.136
+  port: 30016
+  uuid: 03dc60cb-a8d4-4226-93fe-0e6cbf77fe5a
+  udp: true
+  encryption: none
+  network: ws
+  ws-opts:
+    path: /usserver
+    headers:
+      Host: uspanel.unixzone.us
+- name: SQUAD vless 009 vless 6ac11a
+  type: vless
+  server: 172.235.38.85
+  port: 42942
+  uuid: bca46025-bf43-40c0-895b-054a6fbcfd32
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.tesla.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: JmkfJoDWpAqt6gj4cbc4_cwItsdryMlV7joAGfNTKQU
+    short-id: a56d7d8da977f860
+  network: tcp
+- name: SQUAD vless 010 vless 174ea5
+  type: vless
+  server: 159.89.87.21
+  port: 28190
+  uuid: 14c80e0e-f7ce-4991-94fc-99a1db4a9b1e
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: aws.amazon.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: ZJRnFU-1s1JOnO8E9uZ7b00l1fPEh63fGRbdBANFRno
+    short-id: ''
+  network: tcp
+- name: SQUAD vless 011 vless 8be4bf
+  type: vless
+  server: 38.246.229.58
+  port: 47642
+  uuid: c538c9dd-2e3f-488f-a8ca-ac5b7c0773f3
+  udp: true
+  encryption: none
+  tls: true
+  servername: sega.com
+  client-fingerprint: ios
+  reality-opts:
+    public-key: 9mg1QdPctekP9woKygHzBCxb8Hw2QTICXROQiiJB6Ag
+    short-id: 76ed3287
+  network: tcp
+- name: SQUAD vless 012 vless ee0e37
+  type: vless
+  server: 169.40.42.133
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: SQUAD vless 013 vless 988ce8
+  type: vless
+  server: 15.204.97.197
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: SQUAD vless 014 vless c64b5a
+  type: vless
+  server: 15.204.97.216
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: SQUAD vless 015 vless c95b63
+  type: vless
+  server: 169.40.42.184
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: SQUAD vless 016 vless 951641
+  type: vless
+  server: 142.91.106.31
+  port: 43000
+  uuid: f8681dba-d368-4bab-a3c2-a8dc712ba368
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: onJvbzSx_vZUyycafvPuhsiSQsr9tw4zotyVMSWCvm4
+    short-id: 8d66106f
+  network: tcp
+- name: SQUAD vless 017 vless 249d5a
+  type: vless
+  server: nasnet-162191099-direct.mbghalibaf.com
+  port: 443
+  uuid: e8b1500b-e9e8-5492-8312-f4eadf7d0767
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  alpn:
+  - h2
+  skip-cert-verify: false
+  network: tcp
+- name: SQUAD vless 018 vless 9bcec0
+  type: vless
+  server: 107.189.18.145
+  port: 443
+  uuid: 67a171fb-a31d-49f3-a9d6-98de350763e8
+  udp: true
+  encryption: none
+  tls: true
+  servername: restnet.duckdns.org
+  client-fingerprint: chrome
+  network: tcp
+- name: SQUAD vless 019 vless c73f09
+  type: vless
+  server: 162.35.242.252
+  port: 443
+  uuid: e3e9805a-6c8b-4edd-8ee8-621df79806eb
+  udp: true
+  encryption: none
+  tls: true
+  servername: nl.aksay.pro
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: ClG6fvriBTK8donGsTlKusJ0dwRCgVDDTAGzAtZzJDY
+    short-id: 82c2b7d5e70ff000
+  network: tcp
+- name: SQUAD vless 020 vless 151bdb
+  type: vless
+  server: 66.90.104.43
+  port: 2083
+  uuid: cd3bb7d9-7df3-4644-ac05-c260990ac277
+  udp: true
+  encryption: none
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless
+- name: SQUAD vless 021 vless 587481
+  type: vless
+  server: milan.adaspoloandco.com
+  port: 8443
+  uuid: 69ac162b-1643-4acb-9f49-09d8b0fad609
+  udp: true
+  encryption: none
+  tls: true
+  servername: milan.adaspoloandco.com
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /RoBeRt
+    headers:
+      Host: milan.adaspoloandco.com
+- name: SQUAD vless 022 vless b6d13c
+  type: vless
+  server: 51.158.206.80
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: SQUAD vless 023 vless f3cc0c
+  type: vless
+  server: dey.lnmarketplace.net
+  port: 443
+  uuid: 3536e1fa-0850-44d1-b123-925ce12476cf
+  udp: true
+  encryption: none
+  tls: true
+  servername: dey.lnmarketplace.net
+  alpn:
+  - h2
+  skip-cert-verify: false
+  network: xhttp
+  xhttp-opts:
+    path: /kavir
+    host: dey.lnmarketplace.net
+    mode: stream-one
+- name: SQUAD vless 024 vless 25913c
+  type: vless
+  server: 91.107.191.165
+  port: 2
+  uuid: 9f15b600-ce52-447f-b388-ef70de75308e
+  udp: true
+  encryption: none
+  network: tcp
+- name: SQUAD vless 025 vless edf323
+  type: vless
+  server: 31.77.227.10
+  port: 52006
+  uuid: bc659d88-a1e0-4c65-a49a-7b51b26a7a7f
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fr.setlisting.ru
+  alpn:
+  - h2
+  - http/1.1
+  network: tcp
+- name: SQUAD vless 026 vless 9d57d7
+  type: vless
+  server: 3.9.135.156
+  port: 51847
+  uuid: 391a01e9-b664-407b-9158-610fab3f5920
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.tesla.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: S6noV0L8eNASnTe1gXLutLZNdfENsvKMsOJiGQYi6nc
+    short-id: 0eec442e7b34d2f2
+  network: tcp
+- name: SQUAD vless 027 vless ca826e
+  type: vless
+  server: 87.192.47.10
+  port: 52006
+  uuid: bc659d88-a1e0-4c65-a49a-7b51b26a7a7f
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: grok.setlisting.ru
+  alpn:
+  - h2
+  - http/1.1
+  skip-cert-verify: false
+  network: tcp
+- name: SQUAD vless 028 vless 15396e
+  type: vless
+  server: 57.131.38.163
+  port: 2053
+  uuid: d4b08cd6-0903-411a-9dac-45dbdf5c9712
+  udp: true
+  encryption: none
+  tls: true
+  servername: www.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: Ej2H5ucT7qKegYcT8wODdlxa-cLHr7F4hDVUHzAhcnc
+    short-id: 5b8a942318178e7b
+  network: tcp
+- name: SQUAD vless 029 vless 7585e3
+  type: vless
+  server: 150.241.101.17
+  port: 8443
+  uuid: 47d9b534-8a0a-4bd2-90f1-1d6ade14427e
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yandex.net
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: 6ba85179e30d4fc2
+  network: tcp
+- name: SQUAD vless 030 vless c8f76e
+  type: vless
+  server: assets-es.pleiades.codes
+  port: 443
+  uuid: e0b9fb0f-1bbd-478b-9580-c2294778338b
+  udp: true
+  encryption: none
+  tls: true
+  servername: assets-es.pleiades.codes
+  client-fingerprint: chrome
+  skip-cert-verify: false
+  network: grpc
+  grpc-opts:
+    grpc-service-name: cdn.v1.AssetService
+- name: SQUAD vless 031 vless 5b6d94
+  type: vless
+  server: 34.3.101.206
+  port: 443
+  uuid: c64a5cfa-0fd6-4978-b062-6e89da013260
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: gateway.icloud.com
+  client-fingerprint: random
+  reality-opts:
+    public-key: C4ky4RduL1cfjZ3okHXDkpD2Ns4DViMkB-mDlisBrzc
+    short-id: 8a17287288cf25e5
+  network: tcp
+- name: SQUAD vless 032 vless 896c0d
+  type: vless
+  server: 62.60.159.81
+  port: 2053
+  uuid: fc00adfb-232a-46ce-8b93-0c70e516aa8a
+  udp: true
+  encryption: none
+  tls: true
+  servername: www.samsung.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: ygmJxS-Mc7g0buNSUTVGhazT-FoBjyYtLLfUYIQxFTw
+    short-id: d0ea1847066af5a6
+  network: grpc
+  grpc-opts:
+    grpc-service-name: grpce5bb9e71
+- name: SQUAD vless 033 vless 43ab19
+  type: vless
+  server: 82.39.171.12
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: SQUAD vless 034 vless 4b4551
+  type: vless
+  server: 216.195.196.86
+  port: 8443
+  uuid: 7c973569-71da-4d18-8c80-aa4c8ee2f257
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.cloudflare.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 5wGgDloyck_L25Y5rkWorpV3IK00pK0Lki7LR0VY0io
+    short-id: 4fba6fd2c74fd18f
+  network: tcp
+- name: SQUAD vless 035 vless 4dd515
+  type: vless
+  server: milo.rubinaz.xyz
+  port: 8080
+  uuid: 6bceb548-d9b6-461f-8e37-a5a7fbcdc2c8
+  udp: true
+  encryption: none
+  network: tcp
+- name: SQUAD vless 036 vless da479e
+  type: vless
+  server: 169.40.42.104
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: SQUAD vless 037 vless 977c29
+  type: vless
+  server: 162.159.24.131
+  port: 80
+  uuid: 47fcef29-ab4e-4aa6-932b-d95a18f28a4e
+  udp: true
+  encryption: ''
+  packet-encoding: xudp
+  network: ws
+  ws-opts:
+    path: /?ed=2560security=tls
+    headers:
+      Host: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+- name: SQUAD vless 038 vless ba727d
+  type: vless
+  server: 162.159.45.19
+  port: 8880
+  uuid: 47fcef29-ab4e-4aa6-932b-d95a18f28a4e
+  udp: true
+  encryption: ''
+  servername: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+  network: ws
+  ws-opts:
+    path: /?ed=2560security=tls
+    headers:
+      Host: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+- name: SQUAD vless 039 vless 592ca3
+  type: vless
+  server: 162.159.48.32
+  port: 2082
+  uuid: 47fcef29-ab4e-4aa6-932b-d95a18f28a4e
+  udp: true
+  encryption: ''
+  network: ws
+  ws-opts:
+    path: /?ed=2560security=tls
+    headers:
+      Host: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+- name: SQUAD vless 040 vless aba328
+  type: vless
+  server: 162.159.43.187
+  port: 2082
+  uuid: 47fcef29-ab4e-4aa6-932b-d95a18f28a4e
+  udp: true
+  encryption: ''
+  packet-encoding: xudp
+  network: ws
+  ws-opts:
+    path: /?ed=2560security=tls
+    headers:
+      Host: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+- name: SQUAD vless 041 vless 94a351
+  type: vless
+  server: 162.159.0.169
+  port: 80
+  uuid: 47fcef29-ab4e-4aa6-932b-d95a18f28a4e
+  udp: true
+  encryption: ''
+  packet-encoding: none
+  network: ws
+  ws-opts:
+    path: /?ed=2560security=tls
+    headers:
+      Host: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+- name: SQUAD vless 042 vless d26dc6
+  type: vless
+  server: ww9.levikogjgfdd.ir
+  port: 36925
+  uuid: c9fd0fb1-8251-4106-b09a-f4b426736f67
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.cloudflare.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: lJ9INPpO4rdnm2Tek_yg0PGFyUrBB6MoKyvqt_Mfqm0
+    short-id: ''
+  network: tcp
+- name: SQUAD vless 043 vless bc2275
+  type: vless
+  server: 169.40.42.168
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: SQUAD vless 044 vless 3464f5
+  type: vless
+  server: 162.159.39.218
+  port: 8080
+  uuid: 47fcef29-ab4e-4aa6-932b-d95a18f28a4e
+  udp: true
+  encryption: ''
+  network: ws
+  ws-opts:
+    path: /?ed=2560security=tls
+    headers:
+      Host: 8nj2r.2k8t.f88.hh.vavava.kdns.fr
+- name: SQUAD vless 045 vless a40832
+  type: vless
+  server: 169.40.42.75
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: SQUAD vless 046 vless d844d4
+  type: vless
+  server: 169.40.42.235
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: SQUAD vless 047 vless a2f43a
+  type: vless
+  server: 169.40.42.15
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: SQUAD vless 048 vless 31e1db
+  type: vless
+  server: 198.251.78.29
+  port: 2053
+  uuid: c423cc1b-f88e-421c-9a16-c480d84da20f
+  udp: true
+  encryption: none
+  tls: true
+  servername: www.cloudflare.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: Uk5b-Wh_uxeCc7R8NS9iWE40xc0h9wWC04rSB9yhgAw
+    short-id: b5d625695ec82c7e
+  network: tcp
+- name: SQUAD vless 049 vless 513051
+  type: vless
+  server: 172.235.43.210
+  port: 53957
+  uuid: 7ab29f89-6eef-4171-b232-fc4f580ad31b
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.nvidia.com
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: XUHlbk5VH5z4E2wxZBhlpLZ33qevyQgqU7dheRDgoGQ
+    short-id: 44e82fd7b97b14
+  network: tcp
+- name: SQUAD vless 050 vless 06023e
+  type: vless
+  server: 51.81.203.63
+  port: 443
+  uuid: cb2dbb6a-a1ea-4023-9ace-6466cee57241
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.icloud.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: nqwCf6oW49tEtmQ0EzxigZ0uu1pg0E30CS54G40Iti0
+    short-id: 4477382ff6d3d41c
+  network: tcp
+- name: SQUAD vless 051 vless 76e023
+  type: vless
+  server: 137.175.82.40
+  port: 30556
+  uuid: 949d278e-6d98-4014-84e9-59f1c6c93e0e
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  packet-encoding: none
+  tls: true
+  servername: www.lovelive-anime.jp
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: EcmNQqZxyW4GCEQF-7nH54w3qgBkLzsfqFSgafGjB0E
+    short-id: d082f567
+  network: tcp
+- name: SQUAD vless 052 vless 83bcec
+  type: vless
+  server: 51.89.194.151
+  port: 2053
+  uuid: 8e790f25-1d71-4601-9fb0-d503931dcfca
+  udp: true
+  encryption: none
+  tls: true
+  servername: www.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: xPEBx4wUmwAAv4ikUALNBf5wH6TRhyeQ0Q2pcNELsV0
+    short-id: d051f678212f9d54
+  network: tcp
+- name: SQUAD vless 053 vless b3ac5f
+  type: vless
+  server: 51.158.206.26
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: SQUAD vless 054 vless 659618
+  type: vless
+  server: 82.39.171.142
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: SQUAD vless 055 vless 2a5846
+  type: vless
+  server: 64.188.126.56
+  port: 43000
+  uuid: 47f79fc1-0646-40e8-8a58-73e85d183d5a
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: 64.188.126.56
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: jjbMUO41S9JE7ou_zbbDStzSYLzJVN_0O-j0f6b380E
+    short-id: bf4e20af99d3042d
+  network: tcp
+- name: SQUAD vless 056 vless 63476b
+  type: vless
+  server: 51.158.206.8
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: SQUAD vless 057 vless 942500
+  type: vless
+  server: 86.54.28.75
+  port: 443
+  uuid: 44ae52b9-76fc-444d-8e43-186b4384b80a
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: PryGoq51ilG0eLUPl9i0xCvmk1xpwkyFSr_tG4GNLlU
+    short-id: 1d86d17709852910
+  network: tcp
+- name: SQUAD vless 058 vless 9b46f8
+  type: vless
+  server: 51.158.206.103
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: SQUAD vless 059 vless c483dd
+  type: vless
+  server: 66.90.105.211
+  port: 2083
+  uuid: cd3bb7d9-7df3-4644-ac05-c260990ac277
+  udp: true
+  encryption: none
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless
+- name: SQUAD vless 060 vless 17adfc
+  type: vless
+  server: 51.158.206.12
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: SQUAD vless 061 vless a9fdcd
+  type: vless
+  server: 137.74.16.237
+  port: 443
+  uuid: aaec4e42-a095-44b6-a239-f16d234a0798
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.icloud.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 7LSzvilTVKGMtBDuKGeMrLtlhY7tQf5YcG566dEgO0I
+    short-id: b390e0a721d242b0
+  network: tcp
+- name: SQUAD vless 062 vless 4e45b0
+  type: vless
+  server: 138.16.141.59
+  port: 7443
+  uuid: a289a3d3-5833-4b28-8809-ae72898a98d0
+  udp: true
+  encryption: none
+  tls: true
+  servername: ibm.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: RY7zkFQ01lI92jxNAyCa8T33UBW1fgpJgg8ZEqMA10k
+    short-id: a09ff9f8
+  network: tcp
+- name: SQUAD vless 063 vless 285137
+  type: vless
+  server: 2.28.142.170
+  port: 443
+  uuid: f774f037-6320-42e3-a97b-6d4a1f018dd5
+  udp: true
+  encryption: mlkem768x25519plus.native.0rtt.Y0-j5e-CpehUKzhEeat1dTYevroKyHV4g9HML3ujmlQ
+  tls: true
+  servername: germanytest.tulnaro.ir
+  client-fingerprint: chrome
+  alpn:
+  - h3
+  - h2
+  - http/1.1
+  reality-opts:
+    public-key: IqFTx4k5VQydmffvavaOHDXBtdgDxX26A6NtsVvDfhw
+    short-id: d485c3d5248d6b51
+  network: xhttp
+  xhttp-opts:
+    path: /
+    host: germanytest.tulnaro.ir
+    mode: auto
+- name: SQUAD vless 064 vless ddc857
+  type: vless
+  server: 87.58.201.67
+  port: 443
+  uuid: 6e38d9f6-0c9d-437b-8135-20f93f94c572
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: ne3.paledweld.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: G3Ljfvmg8X2VYuxSgGCBdn3Rca207x86GNRBLLmxuUQ
+    short-id: 0aaf3be85ef94749
+  network: tcp
+- name: SQUAD vless 065 vless 396ed5
+  type: vless
+  server: 132.243.231.4
+  port: 443
+  uuid: 87fd990d-ca93-440a-bbd4-e8281c4a0910
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: d3-se1.cloud-cdn.xyz
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: zWDvtTWK-cWWwHDMHMXcOpQy4k3EKp7yw-5e0wTZAUM
+    short-id: 5efa80b939612291
+  network: tcp
+- name: SQUAD vless 066 vless cb5596
+  type: vless
+  server: 179.237.103.152
+  port: 443
+  uuid: e0bd9dfa-0cf9-47c0-92ac-7dba08ebcff8
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.google.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 8PZTYkhNhSgagVdaI-iqSCPXJwDhHU23IUwZIu08zH4
+    short-id: 9de8ae53dabf1dc2
+  network: tcp
+- name: SQUAD vless 067 vless 1f6e8f
+  type: vless
+  server: 2.26.20.71
+  port: 8343
+  uuid: e19b5aa3-16c9-435a-8bc9-76f2f6ddff43
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: main-api-02-c1.kaneki.cfd
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 0D3EUXrbjgFDSKAKFh8MdI_u20RKlpTmsRTfFgUwOj4
+    short-id: a4f8c92d
+  network: tcp
+- name: SQUAD vless 068 vless 8a992b
+  type: vless
+  server: s3.bamans.uk
+  port: 443
+  uuid: 86c0996e-817e-409f-a732-ff9ef94917bd
+  udp: true
+  encryption: none
+  tls: true
+  servername: s3.bamans.uk
+  alpn:
+  - h2
+  skip-cert-verify: false
+  network: xhttp
+  xhttp-opts:
+    path: /3a6b3b038ea34622bd1e13ec5798ab03
+    mode: stream-up
+- name: SQUAD vless 069 vless 319031
+  type: vless
+  server: rubifen.adaspoloandco.com
+  port: 443
+  uuid: cf39fab0-bb85-42cb-9945-2ad69d78e575
+  udp: true
+  encryption: none
+  tls: true
+  servername: rubifen.adaspoloandco.com
+  client-fingerprint: chrome
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /GOrbEh
+- name: SQUAD vless 070 vless 38af47
+  type: vless
+  server: 150.251.113.34
+  port: 443
+  uuid: d7d724b5-17ce-4f3c-877d-dfbf0f07afa1
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.cloudflare.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 8yMLSTbkpJFfbgTjNzotzz7U8OT6AERrclgKdKrXXW8
+    short-id: 150a627d15154cf2
+  network: tcp
+- name: SQUAD vless 071 vless b703f0
+  type: vless
+  server: 31.77.13.19
+  port: 2063
+  uuid: b18d5990-96eb-4587-a386-7f8ef7591e6a
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: rusbid.de
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: MMpt_jWc4J3oySBdf5sPDVRkiWlZmOObth6A1scM9BM
+    short-id: ''
+  network: tcp
+- name: SQUAD vless 072 vless 427373
+  type: vless
+  server: 206.71.158.124
+  port: 443
+  uuid: 3536e1fa-0850-44d1-b123-925ce12476cf
+  udp: true
+  encryption: none
+  tls: true
+  servername: dey.lnmarketplace.net
+  client-fingerprint: chrome
+  alpn:
+  - h2
+  network: xhttp
+  xhttp-opts:
+    path: /kavir
+    host: dey.lnmarketplace.net
+    mode: stream-one
+- name: SQUAD vless 073 vless d03991
+  type: vless
+  server: 185.90.61.12
+  port: 443
+  uuid: 8ee2927b-1be9-404d-9b96-61dcc51bbd37
+  udp: true
+  encryption: none
+  tls: true
+  servername: sberbank.ru
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: PlP5L4lWEh_9h53_U-5kqwzl4C-eCrJoA6BF74cdfk8
+    short-id: 4164bb3d830b817f
+  network: xhttp
+  xhttp-opts:
+    path: /api/v1/292b54c0
+    host: vk.com
+    mode: stream-one
+- name: SQUAD vless 074 vless cac41f
+  type: vless
+  server: 89.125.96.81
+  port: 2053
+  uuid: 6c713691-3ca2-0008-ad25-113d1bed6b03
+  udp: true
+  encryption: none
+  tls: true
+  servername: wss.zazazuza.ru
+  client-fingerprint: chrome
+  alpn:
+  - http/1.1
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /vpn-wss/fluxor/59011/
+    headers:
+      Host: wss.zazazuza.ru
+- name: SQUAD vless 075 vless 2b7803
+  type: vless
+  server: fi1.rovilo.ir
+  port: 443
+  uuid: 452f869f-7720-47c3-a175-b6673e31d3e8
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: store.steampowered.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: i_cD6qpNHvE-j2vFGxEBmXNvX5U8PE4-lBkxcti8Ry8
+    short-id: 714369014b7679bf
+  network: tcp
+- name: SQUAD vless 076 vless aa7248
+  type: vless
+  server: 89.125.96.80
+  port: 2053
+  uuid: 6c713691-3ca2-0008-ad25-113d1bed6b03
+  udp: true
+  encryption: none
+  tls: true
+  servername: wss.zazazuza.ru
+  client-fingerprint: chrome
+  alpn:
+  - http/1.1
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /vpn-wss/fluxor/59011/
+    headers:
+      Host: wss.zazazuza.ru
+- name: SQUAD vless 077 vless 70e861
+  type: vless
+  server: 154.9.30.191
+  port: 18376
+  uuid: 88ee0e1e-a2a2-477e-88ce-4875c058aeba
+  udp: true
+  encryption: ''
+  tls: true
+  servername: 123.714541.xyz
+  client-fingerprint: firefox
+  network: ws
+  ws-opts:
+    path: /Ra-vl
+    headers:
+      Host: 123.714541.xyz
+- name: SQUAD vless 078 vless 022e90
+  type: vless
+  server: platform117.golnamakcert.top
+  port: 80
+  uuid: e13cf851-b4fd-413b-8d49-146e6eb8e5d4
+  udp: true
+  encryption: none
+  network: ws
+  ws-opts:
+    path: /platform117
+    headers:
+      Host: platform117.halalkhor.info
+- name: SQUAD vless 079 vless d408a3
+  type: vless
+  server: 185.166.154.111
+  port: 443
+  uuid: 91d734be-a3d0-4d50-83ab-74cf7b6966fa
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: cdn.bulkavpn.top
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: bQZcMViJWXus9rMSTOa-ZAaUJC0mIlPx7XmzrLp8GQU
+    short-id: 94f32cfc
+  network: tcp
+- name: SQUAD vless 080 vless 212572
+  type: vless
+  server: 94.156.112.43
+  port: 443
+  uuid: f811a2e8-08ed-4b30-b44c-449a7cab54d8
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: newblocksgerm.site
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: _aURfmVUjvCRZipDI2eqMO0VQa64BJRGYFOdlBFi1XQ
+    short-id: ''
+  network: tcp
+- name: SQUAD vless 081 vless 3a4ad8
+  type: vless
+  server: tgfree.rush-server.com
+  port: 443
+  uuid: ebd1c0d6-7ff4-4b9f-8692-237517a27a64
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: anyfile2file.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: mza5Hn1aolSz65qu-UwvBP3oesxMe25r11o4nxvikF0
+    short-id: 64c1fe36c7846400
+  network: tcp
+- name: SQUAD vless 082 vless d1328e
+  type: vless
+  server: 3.114.220.22
+  port: 10583
+  uuid: 814bd064-544d-4255-a070-5705c03f6da9
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  packet-encoding: xudp
+  tls: true
+  servername: www.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: k2hPp0tTW0Da-HK94wYpSCLbuK44LfGqC2MSJIM1Ti0
+    short-id: 48050fab
+  network: tcp
+- name: SQUAD vless 083 vless 1afe4e
+  type: vless
+  server: 185.126.238.87
+  port: 2083
+  uuid: 7668f678-faee-40cc-9b56-9c39dc773388
+  udp: true
+  encryption: none
+  network: grpc
+  grpc-opts:
+    grpc-service-name: security.debian.org
+- name: SQUAD vless 084 vless 1cb95d
+  type: vless
+  server: 172.93.167.45
+  port: 443
+  uuid: 8344360f-0349-4784-a19f-33fd92e89389
+  udp: true
+  encryption: none
+  tls: true
+  servername: api.w2m.ink
+  client-fingerprint: chrome
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /v2
+    headers:
+      Host: api.w2m.ink
+- name: SQUAD vless 085 vless a41894
+  type: vless
+  server: 162.159.254.3
+  port: 443
+  uuid: 4e4f1f70-5e56-4a76-bb9d-db087f4690c4
+  udp: true
+  encryption: none
+  tls: true
+  servername: jp3.yohototo.top
+  client-fingerprint: chrome
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /tyxyws
+    headers:
+      Host: jp3.yohototo.top
+- name: SQUAD vless 086 vless 4b8543
+  type: vless
+  server: 104.16.10.104
+  port: 443
+  uuid: 4e4f1f70-5e56-4a76-bb9d-db087f4690c4
+  udp: true
+  encryption: none
+  tls: true
+  servername: jp3.yohototo.top
+  client-fingerprint: unsafe
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /tyxyws
+    headers:
+      Host: jp3.yohototo.top
+- name: SQUAD vless 087 vless 14d67b
+  type: vless
+  server: 169.40.42.173
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: ios
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: SQUAD vless 088 vless 41e4f1
+  type: vless
+  server: 118.167.235.241
+  port: 24215
+  uuid: 19d5a678-8396-4e3b-93da-ece618d0e83a
+  udp: true
+  encryption: ''
+  tls: true
+  servername: addons.mozilla.org
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: mdWKUPMVTtTbDqK10BPb89OcqBC2-Lx-4NOYtqc1GWE
+    short-id: ''
+  network: tcp
+- name: SQUAD vless 089 vless bbd044
+  type: vless
+  server: hinet1.2yly.com
+  port: 24215
+  uuid: 19d5a678-8396-4e3b-93da-ece618d0e83a
+  udp: true
+  encryption: none
+  tls: true
+  servername: addons.mozilla.org
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: mdWKUPMVTtTbDqK10BPb89OcqBC2-Lx-4NOYtqc1GWE
+    short-id: ''
+  network: tcp
+- name: SQUAD vless 090 vless 06f637
+  type: vless
+  server: 169.40.42.89
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: ios
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: SQUAD vless 091 vless d565e5
+  type: vless
+  server: 103.27.157.120
+  port: 443
+  uuid: 025a80fb-233b-4714-b02d-f4384c653d58
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: download.amd.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: k0883nIGfstbzb8hES-dQ1yPcBwbUbnsyg4w-UA5gkA
+    short-id: 68aaa5222092bbea
+  network: tcp
+- name: SQUAD vless 092 vless b0cd17
+  type: vless
+  server: 31.207.7.74
+  port: 443
+  uuid: 2412bd96-925b-43f2-81d1-0ed4f0793699
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: pkg.go.dev
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: RDL0RVmgFM3fdqXRSHBF2A53YF9TPFu2aeJQhMTaY3s
+    short-id: 457ae5b8bef4d1b3
+  network: tcp
+- name: SQUAD vless 093 vless a5dcb2
+  type: vless
+  server: 5.253.42.164
+  port: 40443
+  uuid: e99ba96d-dec8-42eb-be53-19e71eef7cab
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: deepl.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: g77ZJbm18JEotapmVRjaXi133MzkbhkU2lxhVeXx8zw
+    short-id: 68a8
+  network: tcp
+- name: SQUAD vless 094 vless 60e5c3
+  type: vless
+  server: 5.223.41.93
+  port: 80
+  uuid: f2eada1b-fdec-48c6-8638-18ade32993d4
+  udp: true
+  encryption: none
+  packet-encoding: xudp
+  network: ws
+  ws-opts:
+    path: /
+- name: SQUAD vless 095 vless 6a744a
+  type: vless
+  server: 66.225.252.7
+  port: 8443
+  uuid: 7967bf59-57e3-4cde-9898-527b0fe60022
+  udp: true
+  encryption: none
+  packet-encoding: xudp
+  tls: true
+  servername: speed.dulacloud.store
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /dula?Telegram-WangCai2
+    headers:
+      Host: speed.dulacloud.store
+- name: SQUAD vless 096 vless 3694ed
+  type: vless
+  server: 104.21.60.109
+  port: 443
+  uuid: b8d8a5b0-867f-4491-b4e4-30edc04bb10e
+  udp: true
+  encryption: ''
+  packet-encoding: xudp
+  tls: true
+  servername: u.srilankangrill.online
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: u.srilankangrill.online
+- name: SQUAD vless 097 vless 5a3ff6
+  type: vless
+  server: 5.175.141.7
+  port: 8443
+  uuid: 7967bf59-57e3-4cde-9898-527b0fe60022
+  udp: true
+  encryption: none
+  tls: true
+  servername: speed.dulacloud.store
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /dula?Telegram-WangCai2
+    headers:
+      Host: speed.dulacloud.store
+- name: SQUAD vless 098 vless b0eeb8
+  type: vless
+  server: 45.80.108.7
+  port: 8443
+  uuid: 7967bf59-57e3-4cde-9898-527b0fe60022
+  udp: true
+  encryption: ''
+  tls: true
+  servername: speed.dulacloud.store
+  network: ws
+  ws-opts:
+    path: /dula?Telegram-WangCai2fp=chrome
+    headers:
+      Host: speed.dulacloud.store
+- name: SQUAD vless 099 vless 9b5a84
+  type: vless
+  server: 13.143.185.29
+  port: 8448
+  uuid: 2897717e-55b6-4d3d-8752-72c5fd4614ae
+  udp: true
+  encryption: none
+  tls: true
+  servername: api-maps.yandex.ru
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: SEFnqOIUiHZpOgtXZ3FFFhVTALc1ReEVt78femI770U
+    short-id: c90743ca346c8da7
+  network: xhttp
+  xhttp-opts:
+    path: /assets/v2
+    host: 13.143.185.29
+    mode: auto
+- name: SQUAD vless 100 vless 449c17
+  type: vless
+  server: 179.254.109.69
+  port: 443
+  uuid: 61bd5829-a243-4548-97f0-a210c2069fec
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: m.swegg.daxaryx.fun
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: u9_Ta0DYmqruY94DwuZv4g_gnvY1xGMF1iT1SdV3cT8
+    short-id: d3a09fd1
+  network: tcp
+- name: SQUAD vless 101 vless 588326
+  type: vless
+  server: 83.168.95.145
+  port: 443
+  uuid: f28e0ce1-ed75-4e90-b069-5215a80dfb4a
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: google.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: AcuvO982QLzf76fVydfSuJIiF5520rmj7AxpaxyRwUg
+    short-id: d345ad4657adeef9
+  network: tcp
+- name: SQUAD vless 102 vless 65c605
+  type: vless
+  server: 77.91.68.70
+  port: 55983
+  uuid: f667a096-5231-4cfb-8759-92bb32473139
+  udp: true
+  encryption: none
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: nWQ7b9l9X6N3PrXLgIzOvMM8iSYrqjVHEb9ikWxqYSg
+    short-id: 0e
+  network: tcp
+- name: SQUAD vless 103 vless 9c5190
+  type: vless
+  server: 177.3.212.95
+  port: 443
+  uuid: f811a2e8-08ed-4b30-b44c-449a7cab54d8
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: newhollandsept.online
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 6WOOqE3ZLMVFxve4p7ePdcHhJuzFj0rqtGvNgz2bhzg
+    short-id: ''
+  network: tcp
+- name: SQUAD vless 104 vless 9dca88
+  type: vless
+  server: 31.76.11.83
+  port: 26150
+  uuid: e676c6c8-44a8-4a1d-82cc-821a1f70f0c0
+  udp: true
+  encryption: none
+  network: tcp
+- name: SQUAD vless 105 vless 08a78e
+  type: vless
+  server: 169.40.42.223
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - SQUAD vless 001 vless e231de
+  - SQUAD vless 002 vless 696586
+  - SQUAD vless 003 vless d88448
+  - SQUAD vless 004 vless 10af45
+  - SQUAD vless 005 vless 69f505
+  - SQUAD vless 006 vless 577a84
+  - SQUAD vless 007 vless 76f777
+  - SQUAD vless 008 vless ab6eac
+  - SQUAD vless 009 vless 6ac11a
+  - SQUAD vless 010 vless 174ea5
+  - SQUAD vless 011 vless 8be4bf
+  - SQUAD vless 012 vless ee0e37
+  - SQUAD vless 013 vless 988ce8
+  - SQUAD vless 014 vless c64b5a
+  - SQUAD vless 015 vless c95b63
+  - SQUAD vless 016 vless 951641
+  - SQUAD vless 017 vless 249d5a
+  - SQUAD vless 018 vless 9bcec0
+  - SQUAD vless 019 vless c73f09
+  - SQUAD vless 020 vless 151bdb
+  - SQUAD vless 021 vless 587481
+  - SQUAD vless 022 vless b6d13c
+  - SQUAD vless 023 vless f3cc0c
+  - SQUAD vless 024 vless 25913c
+  - SQUAD vless 025 vless edf323
+  - SQUAD vless 026 vless 9d57d7
+  - SQUAD vless 027 vless ca826e
+  - SQUAD vless 028 vless 15396e
+  - SQUAD vless 029 vless 7585e3
+  - SQUAD vless 030 vless c8f76e
+  - SQUAD vless 031 vless 5b6d94
+  - SQUAD vless 032 vless 896c0d
+  - SQUAD vless 033 vless 43ab19
+  - SQUAD vless 034 vless 4b4551
+  - SQUAD vless 035 vless 4dd515
+  - SQUAD vless 036 vless da479e
+  - SQUAD vless 037 vless 977c29
+  - SQUAD vless 038 vless ba727d
+  - SQUAD vless 039 vless 592ca3
+  - SQUAD vless 040 vless aba328
+  - SQUAD vless 041 vless 94a351
+  - SQUAD vless 042 vless d26dc6
+  - SQUAD vless 043 vless bc2275
+  - SQUAD vless 044 vless 3464f5
+  - SQUAD vless 045 vless a40832
+  - SQUAD vless 046 vless d844d4
+  - SQUAD vless 047 vless a2f43a
+  - SQUAD vless 048 vless 31e1db
+  - SQUAD vless 049 vless 513051
+  - SQUAD vless 050 vless 06023e
+  - SQUAD vless 051 vless 76e023
+  - SQUAD vless 052 vless 83bcec
+  - SQUAD vless 053 vless b3ac5f
+  - SQUAD vless 054 vless 659618
+  - SQUAD vless 055 vless 2a5846
+  - SQUAD vless 056 vless 63476b
+  - SQUAD vless 057 vless 942500
+  - SQUAD vless 058 vless 9b46f8
+  - SQUAD vless 059 vless c483dd
+  - SQUAD vless 060 vless 17adfc
+  - SQUAD vless 061 vless a9fdcd
+  - SQUAD vless 062 vless 4e45b0
+  - SQUAD vless 063 vless 285137
+  - SQUAD vless 064 vless ddc857
+  - SQUAD vless 065 vless 396ed5
+  - SQUAD vless 066 vless cb5596
+  - SQUAD vless 067 vless 1f6e8f
+  - SQUAD vless 068 vless 8a992b
+  - SQUAD vless 069 vless 319031
+  - SQUAD vless 070 vless 38af47
+  - SQUAD vless 071 vless b703f0
+  - SQUAD vless 072 vless 427373
+  - SQUAD vless 073 vless d03991
+  - SQUAD vless 074 vless cac41f
+  - SQUAD vless 075 vless 2b7803
+  - SQUAD vless 076 vless aa7248
+  - SQUAD vless 077 vless 70e861
+  - SQUAD vless 078 vless 022e90
+  - SQUAD vless 079 vless d408a3
+  - SQUAD vless 080 vless 212572
+  - SQUAD vless 081 vless 3a4ad8
+  - SQUAD vless 082 vless d1328e
+  - SQUAD vless 083 vless 1afe4e
+  - SQUAD vless 084 vless 1cb95d
+  - SQUAD vless 085 vless a41894
+  - SQUAD vless 086 vless 4b8543
+  - SQUAD vless 087 vless 14d67b
+  - SQUAD vless 088 vless 41e4f1
+  - SQUAD vless 089 vless bbd044
+  - SQUAD vless 090 vless 06f637
+  - SQUAD vless 091 vless d565e5
+  - SQUAD vless 092 vless b0cd17
+  - SQUAD vless 093 vless a5dcb2
+  - SQUAD vless 094 vless 60e5c3
+  - SQUAD vless 095 vless 6a744a
+  - SQUAD vless 096 vless 3694ed
+  - SQUAD vless 097 vless 5a3ff6
+  - SQUAD vless 098 vless b0eeb8
+  - SQUAD vless 099 vless 9b5a84
+  - SQUAD vless 100 vless 449c17
+  - SQUAD vless 101 vless 588326
+  - SQUAD vless 102 vless 65c605
+  - SQUAD vless 103 vless 9c5190
+  - SQUAD vless 104 vless 9dca88
+  - SQUAD vless 105 vless 08a78e
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - SQUAD vless 001 vless e231de
+  - SQUAD vless 002 vless 696586
+  - SQUAD vless 003 vless d88448
+  - SQUAD vless 004 vless 10af45
+  - SQUAD vless 005 vless 69f505
+  - SQUAD vless 006 vless 577a84
+  - SQUAD vless 007 vless 76f777
+  - SQUAD vless 008 vless ab6eac
+  - SQUAD vless 009 vless 6ac11a
+  - SQUAD vless 010 vless 174ea5
+  - SQUAD vless 011 vless 8be4bf
+  - SQUAD vless 012 vless ee0e37
+  - SQUAD vless 013 vless 988ce8
+  - SQUAD vless 014 vless c64b5a
+  - SQUAD vless 015 vless c95b63
+  - SQUAD vless 016 vless 951641
+  - SQUAD vless 017 vless 249d5a
+  - SQUAD vless 018 vless 9bcec0
+  - SQUAD vless 019 vless c73f09
+  - SQUAD vless 020 vless 151bdb
+  - SQUAD vless 021 vless 587481
+  - SQUAD vless 022 vless b6d13c
+  - SQUAD vless 023 vless f3cc0c
+  - SQUAD vless 024 vless 25913c
+  - SQUAD vless 025 vless edf323
+  - SQUAD vless 026 vless 9d57d7
+  - SQUAD vless 027 vless ca826e
+  - SQUAD vless 028 vless 15396e
+  - SQUAD vless 029 vless 7585e3
+  - SQUAD vless 030 vless c8f76e
+  - SQUAD vless 031 vless 5b6d94
+  - SQUAD vless 032 vless 896c0d
+  - SQUAD vless 033 vless 43ab19
+  - SQUAD vless 034 vless 4b4551
+  - SQUAD vless 035 vless 4dd515
+  - SQUAD vless 036 vless da479e
+  - SQUAD vless 037 vless 977c29
+  - SQUAD vless 038 vless ba727d
+  - SQUAD vless 039 vless 592ca3
+  - SQUAD vless 040 vless aba328
+  - SQUAD vless 041 vless 94a351
+  - SQUAD vless 042 vless d26dc6
+  - SQUAD vless 043 vless bc2275
+  - SQUAD vless 044 vless 3464f5
+  - SQUAD vless 045 vless a40832
+  - SQUAD vless 046 vless d844d4
+  - SQUAD vless 047 vless a2f43a
+  - SQUAD vless 048 vless 31e1db
+  - SQUAD vless 049 vless 513051
+  - SQUAD vless 050 vless 06023e
+  - SQUAD vless 051 vless 76e023
+  - SQUAD vless 052 vless 83bcec
+  - SQUAD vless 053 vless b3ac5f
+  - SQUAD vless 054 vless 659618
+  - SQUAD vless 055 vless 2a5846
+  - SQUAD vless 056 vless 63476b
+  - SQUAD vless 057 vless 942500
+  - SQUAD vless 058 vless 9b46f8
+  - SQUAD vless 059 vless c483dd
+  - SQUAD vless 060 vless 17adfc
+  - SQUAD vless 061 vless a9fdcd
+  - SQUAD vless 062 vless 4e45b0
+  - SQUAD vless 063 vless 285137
+  - SQUAD vless 064 vless ddc857
+  - SQUAD vless 065 vless 396ed5
+  - SQUAD vless 066 vless cb5596
+  - SQUAD vless 067 vless 1f6e8f
+  - SQUAD vless 068 vless 8a992b
+  - SQUAD vless 069 vless 319031
+  - SQUAD vless 070 vless 38af47
+  - SQUAD vless 071 vless b703f0
+  - SQUAD vless 072 vless 427373
+  - SQUAD vless 073 vless d03991
+  - SQUAD vless 074 vless cac41f
+  - SQUAD vless 075 vless 2b7803
+  - SQUAD vless 076 vless aa7248
+  - SQUAD vless 077 vless 70e861
+  - SQUAD vless 078 vless 022e90
+  - SQUAD vless 079 vless d408a3
+  - SQUAD vless 080 vless 212572
+  - SQUAD vless 081 vless 3a4ad8
+  - SQUAD vless 082 vless d1328e
+  - SQUAD vless 083 vless 1afe4e
+  - SQUAD vless 084 vless 1cb95d
+  - SQUAD vless 085 vless a41894
+  - SQUAD vless 086 vless 4b8543
+  - SQUAD vless 087 vless 14d67b
+  - SQUAD vless 088 vless 41e4f1
+  - SQUAD vless 089 vless bbd044
+  - SQUAD vless 090 vless 06f637
+  - SQUAD vless 091 vless d565e5
+  - SQUAD vless 092 vless b0cd17
+  - SQUAD vless 093 vless a5dcb2
+  - SQUAD vless 094 vless 60e5c3
+  - SQUAD vless 095 vless 6a744a
+  - SQUAD vless 096 vless 3694ed
+  - SQUAD vless 097 vless 5a3ff6
+  - SQUAD vless 098 vless b0eeb8
+  - SQUAD vless 099 vless 9b5a84
+  - SQUAD vless 100 vless 449c17
+  - SQUAD vless 101 vless 588326
+  - SQUAD vless 102 vless 65c605
+  - SQUAD vless 103 vless 9c5190
+  - SQUAD vless 104 vless 9dca88
+  - SQUAD vless 105 vless 08a78e
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

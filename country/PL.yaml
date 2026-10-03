@@ -1,0 +1,75 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: SQUAD PL 001 vless 38af47
+  type: vless
+  server: 150.251.113.34
+  port: 443
+  uuid: d7d724b5-17ce-4f3c-877d-dfbf0f07afa1
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.cloudflare.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 8yMLSTbkpJFfbgTjNzotzz7U8OT6AERrclgKdKrXXW8
+    short-id: 150a627d15154cf2
+  network: tcp
+- name: SQUAD PL 002 vless b703f0
+  type: vless
+  server: 31.77.13.19
+  port: 2063
+  uuid: b18d5990-96eb-4587-a386-7f8ef7591e6a
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: rusbid.de
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: MMpt_jWc4J3oySBdf5sPDVRkiWlZmOObth6A1scM9BM
+    short-id: ''
+  network: tcp
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - SQUAD PL 001 vless 38af47
+  - SQUAD PL 002 vless b703f0
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - SQUAD PL 001 vless 38af47
+  - SQUAD PL 002 vless b703f0
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD
