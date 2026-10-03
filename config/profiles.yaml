@@ -16,6 +16,10 @@
 #   per_host             — сколько узлов с одного сервера (null = без ограничения)
 #   per_exit_ip          — сколько узлов с одним IP выхода (null = без ограничения)
 #   max_asn_share        — максимальная доля одного провайдера (ASN), 0..1
+#   require_regions      — только узлы, живые по проверке пробников из этих
+#                          стран за последние 24 часа, например [RU]
+#   avoid_blocked_in     — убрать узлы, которые пробники из этих стран видят
+#                          мёртвыми, хотя из других стран они живые
 #
 # Узлы с выходом в России не помогают обходить блокировки, поэтому основные
 # профили их исключают.
@@ -27,6 +31,7 @@ profiles:
     min_stability: 55
     max_latency: 500
     exclude_countries: [RU]
+    avoid_blocked_in: [RU]
 
   - name: fast
     description: Самые быстрые
@@ -35,6 +40,7 @@ profiles:
     max_latency: 150
     limit: 150
     exclude_countries: [RU]
+    avoid_blocked_in: [RU]
 
   - name: stable
     description: Стабильно живые много проверок подряд
@@ -42,12 +48,24 @@ profiles:
     min_stability: 75
     max_latency: 800
     exclude_countries: [RU]
+    avoid_blocked_in: [RU]
 
   - name: europe
     description: Выход в Европе
     min_score: 60
     max_latency: 600
     countries: [DE, NL, FI, FR, GB, SE, PL, CZ, AT, CH, IE, EE, LV, LT]
+    avoid_blocked_in: [RU]
+
+  # Только узлы, которые реально открываются из России: их подтверждает
+  # пробник на компьютере в России (агент SQUAD VPN). Пока такого отчёта
+  # нет или он старше суток, подписка пустая.
+  - name: russia
+    description: Проверено из России
+    exclude_countries: [RU]
+    require_regions: [RU]
+    max_latency: 1500
+    limit: 200
 
   - name: all
     description: Все живые узлы

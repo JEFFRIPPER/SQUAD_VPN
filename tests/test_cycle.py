@@ -183,10 +183,21 @@ def test_cycle_survives_failing_steps_and_still_exports(tmp_path):
         binary=tmp_path / "missing-mihomo",
         install_mihomo=False,
         publish=PublishTarget(str(remote), branch="subs", workdir=tmp_path / "work"),
+        probe_id="test-probe",
+        probe_region="US",
+        probe_identity_file=tmp_path / "probe.json",
+        probe_publish=True,
     )
     logs = []
     report = asyncio.run(run_cycle(options, log=logs.append))
-    assert set(report.steps) == {"collect", "validate", "cleanup", "export", "publish"}
+    assert set(report.steps) == {
+        "probe", "collect", "validate", "probes", "cleanup", "export", "publish", "probe_publish",
+    }
+    assert report.steps["probe"] == {"probe_id": "test-probe", "region": "US"}
+    assert "probe-test-probe" in subprocess.run(
+        ["git", "--git-dir", str(remote), "branch", "--list"],
+        check=True, capture_output=True, text=True,
+    ).stdout
     assert not report.ok
     assert any(error.startswith("validate:") for error in report.errors)
     assert report.steps["collect"]["ok"] == 0
@@ -205,6 +216,10 @@ def test_api_cycle_status(tmp_path):
     assert off.post("/api/cycle/run").status_code == 409
 
     options = CycleOptions(
+        probe_id="api-probe",
+        probe_region="US",
+        probe_identity_file=tmp_path / "probe.json",
+        probe_sync=False,
         sources=tmp_path / "none.yaml",
         database=database,
         output=tmp_path / "out",

@@ -63,6 +63,30 @@ CREATE TABLE IF NOT EXISTS health_checks (
 CREATE INDEX IF NOT EXISTS idx_health_fingerprint ON health_checks(fingerprint);
 CREATE INDEX IF NOT EXISTS idx_health_checked_at ON health_checks(checked_at);
 
+CREATE TABLE IF NOT EXISTS probes (
+    probe_id TEXT PRIMARY KEY,
+    region TEXT NOT NULL DEFAULT '??',
+    kind TEXT NOT NULL DEFAULT 'local',
+    version TEXT,
+    last_report TEXT,
+    nodes INTEGER NOT NULL DEFAULT 0,
+    is_self INTEGER NOT NULL DEFAULT 0
+);
+
+-- Latest view of every node from every probe (own and imported).
+CREATE TABLE IF NOT EXISTS node_probe_status (
+    fingerprint TEXT NOT NULL,
+    probe_id TEXT NOT NULL,
+    alive INTEGER NOT NULL,
+    latency_ms REAL,
+    checked_at TEXT NOT NULL,
+    success_rate REAL NOT NULL DEFAULT 0,
+    checks INTEGER NOT NULL DEFAULT 0,
+    error TEXT,
+    PRIMARY KEY (fingerprint, probe_id)
+);
+CREATE INDEX IF NOT EXISTS idx_nps_probe ON node_probe_status(probe_id, checked_at);
+
 CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -101,6 +125,7 @@ MIGRATION_COLUMNS = {
     "quality_score": "REAL NOT NULL DEFAULT 0",
     "last_checked": "TEXT",
     "last_alive": "TEXT",
+    "remote_alive_at": "TEXT",
     "exit_ip": "TEXT",
     "country": "TEXT",
     "asn": "TEXT",
@@ -366,9 +391,195 @@ class NodeStore:
                 result.fingerprint,
             ),
         )
+        self._record_probe_status(result)
         self._prune_history(result.fingerprint)
         self.connection.commit()
         return score
+
+    def _record_probe_status(self, result: ValidationResult) -> None:
+        # EWMA keeps a per-probe success rate without per-probe history.
+        self.connection.execute(
+            """
+            INSERT INTO node_probe_status (
+                fingerprint, probe_id, alive, latency_ms, checked_at,
+                success_rate, checks, error
+            ) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, 1, ?)
+            ON CONFLICT(fingerprint, probe_id) DO UPDATE SET
+                alive = excluded.alive,
+                latency_ms = excluded.latency_ms,
+                checked_at = excluded.checked_at,
+                success_rate = 0.65 * node_probe_status.success_rate
+                    + 0.35 * excluded.success_rate,
+                checks = node_probe_status.checks + 1,
+                error = excluded.error
+            """,
+            (
+                result.fingerprint,
+                result.probe_id or "local",
+                int(result.alive),
+                result.latency_ms,
+                float(result.alive),
+                (result.error or "")[:200] or None,
+            ),
+        )
+
+    # --- probes -----------------------------------------------------------
+
+    def register_probe(
+        self, probe_id: str, region: str, *, kind: str = "local", version: str | None = None
+    ) -> None:
+        self.connection.execute(
+            """
+            INSERT INTO probes (probe_id, region, kind, version, is_self)
+            VALUES (?, ?, ?, ?, 1)
+            ON CONFLICT(probe_id) DO UPDATE SET
+                region = excluded.region, kind = excluded.kind,
+                version = excluded.version, is_self = 1
+            """,
+            (probe_id, region.upper(), kind, version),
+        )
+        self.connection.commit()
+
+    def probe_report_rows(self, probe_id: str, *, hours: int = 24) -> list[dict[str, object]]:
+        rows = self.connection.execute(
+            """
+            SELECT fingerprint, alive, latency_ms, checked_at, success_rate, checks, error
+            FROM node_probe_status
+            WHERE probe_id = ? AND checked_at >= datetime('now', ?)
+            ORDER BY checked_at DESC
+            """,
+            (probe_id, f"-{int(hours)} hours"),
+        ).fetchall()
+        return [
+            {
+                "fp": row["fingerprint"],
+                "alive": bool(row["alive"]),
+                "latency_ms": row["latency_ms"],
+                "checked_at": row["checked_at"],
+                "rate": round(float(row["success_rate"]), 3),
+                "checks": int(row["checks"]),
+                "error": row["error"],
+            }
+            for row in rows
+        ]
+
+    def import_probe_results(
+        self,
+        probe_id: str,
+        region: str,
+        results: list[dict[str, object]],
+        *,
+        kind: str = "remote",
+        version: str | None = None,
+        generated_at: str | None = None,
+    ) -> int:
+        """Merge another probe's report; only newer results for known nodes."""
+        self.connection.execute(
+            """
+            INSERT INTO probes (probe_id, region, kind, version, last_report, nodes, is_self)
+            VALUES (?, ?, ?, ?, ?, ?, 0)
+            ON CONFLICT(probe_id) DO UPDATE SET
+                region = excluded.region, kind = excluded.kind,
+                version = excluded.version, last_report = excluded.last_report,
+                nodes = excluded.nodes
+            """,
+            (probe_id, region.upper(), kind, version, generated_at, len(results)),
+        )
+        imported = 0
+        for item in results:
+            cursor = self.connection.execute(
+                """
+                INSERT INTO node_probe_status (
+                    fingerprint, probe_id, alive, latency_ms, checked_at,
+                    success_rate, checks, error
+                )
+                SELECT ?, ?, ?, ?, ?, ?, ?, ?
+                WHERE EXISTS (SELECT 1 FROM nodes WHERE fingerprint = ?)
+                ON CONFLICT(fingerprint, probe_id) DO UPDATE SET
+                    alive = excluded.alive, latency_ms = excluded.latency_ms,
+                    checked_at = excluded.checked_at,
+                    success_rate = excluded.success_rate,
+                    checks = excluded.checks, error = excluded.error
+                WHERE excluded.checked_at > node_probe_status.checked_at
+                """,
+                (
+                    item["fp"], probe_id, int(bool(item["alive"])), item.get("latency_ms"),
+                    item["checked_at"], float(item.get("rate") or 0.0),  # type: ignore[arg-type]
+                    int(item.get("checks") or 0), item.get("error"),  # type: ignore[call-overload]
+                    item["fp"],
+                ),
+            )
+            imported += cursor.rowcount
+        self.connection.execute(
+            """
+            UPDATE nodes SET remote_alive_at = (
+                SELECT MAX(s.checked_at) FROM node_probe_status s
+                JOIN probes p ON p.probe_id = s.probe_id
+                WHERE s.fingerprint = nodes.fingerprint AND s.alive = 1 AND p.is_self = 0
+            )
+            """
+        )
+        self.connection.commit()
+        return imported
+
+    def list_probes(self) -> list[dict[str, object]]:
+        rows = self.connection.execute(
+            """
+            SELECT p.probe_id, p.region, p.kind, p.version, p.last_report, p.is_self,
+                   COUNT(s.fingerprint) AS checked,
+                   SUM(CASE WHEN s.alive = 1 THEN 1 ELSE 0 END) AS alive,
+                   MAX(s.checked_at) AS last_check
+            FROM probes p
+            LEFT JOIN node_probe_status s
+              ON s.probe_id = p.probe_id AND s.checked_at >= datetime('now', '-24 hours')
+            GROUP BY p.probe_id
+            ORDER BY p.is_self DESC, p.region, p.probe_id
+            """
+        ).fetchall()
+        return [
+            {**dict(row), "is_self": bool(row["is_self"]), "alive": int(row["alive"] or 0)}
+            for row in rows
+        ]
+
+    def node_regions(
+        self, fingerprints: list[str], *, within_hours: int = 24
+    ) -> dict[str, dict[str, dict[str, object]]]:
+        """fingerprint -> region -> aggregated fresh status across that region's probes."""
+        if not fingerprints:
+            return {}
+        result: dict[str, dict[str, dict[str, object]]] = {}
+        # Chunked IN-lists keep under SQLite's variable limit.
+        for start in range(0, len(fingerprints), 500):
+            chunk = fingerprints[start:start + 500]
+            marks = ",".join("?" for _ in chunk)
+            rows = self.connection.execute(
+                f"""
+                SELECT s.fingerprint, COALESCE(p.region, '??') AS region, s.alive,
+                       s.latency_ms, s.checked_at
+                FROM node_probe_status s
+                LEFT JOIN probes p ON p.probe_id = s.probe_id
+                WHERE s.fingerprint IN ({marks})
+                  AND s.checked_at >= datetime('now', ?)
+                """,
+                [*chunk, f"-{int(within_hours)} hours"],
+            ).fetchall()
+            for row in rows:
+                regions = result.setdefault(row["fingerprint"], {})
+                info = regions.setdefault(
+                    row["region"],
+                    {"alive": False, "latency_ms": None, "checked_at": None, "probes": 0},
+                )
+                info["probes"] = int(info["probes"]) + 1  # type: ignore[call-overload]
+                if row["alive"]:
+                    info["alive"] = True
+                    latency = row["latency_ms"]
+                    if latency is not None and (
+                        info["latency_ms"] is None or latency < info["latency_ms"]  # type: ignore[operator]
+                    ):
+                        info["latency_ms"] = latency
+                if info["checked_at"] is None or row["checked_at"] > info["checked_at"]:  # type: ignore[operator]
+                    info["checked_at"] = row["checked_at"]
+        return result
 
     def _compute_scores(
         self,
@@ -537,7 +748,11 @@ class NodeStore:
             sql += " LIMIT ? OFFSET ?"
             params.extend([-1 if limit is None else int(limit), max(0, int(offset))])
         rows = self.connection.execute(sql, params).fetchall()
-        return [self._row_to_ranked(row) for row in rows]
+        records = [self._row_to_ranked(row) for row in rows]
+        regions = self.node_regions([item.node.fingerprint for item in records])
+        for item in records:
+            item.regions = regions.get(item.node.fingerprint, {})
+        return records
 
     def count_ranked(self, **filters: object) -> int:
         where, params = self._ranked_filters(**filters)  # type: ignore[arg-type]
@@ -550,7 +765,11 @@ class NodeStore:
         row = self.connection.execute(
             "SELECT * FROM nodes WHERE fingerprint = ?", (fingerprint,)
         ).fetchone()
-        return None if row is None else self._row_to_ranked(row)
+        if row is None:
+            return None
+        record = self._row_to_ranked(row)
+        record.regions = self.node_regions([fingerprint]).get(fingerprint, {})
+        return record
 
     def node_history(self, fingerprint: str, limit: int = 50) -> list[dict[str, object]]:
         rows = self.connection.execute(
@@ -678,7 +897,9 @@ class NodeStore:
             sql = (
                 "SELECT * FROM nodes WHERE last_checked IS NULL"
                 + seen_clause
-                + " ORDER BY last_seen DESC, RANDOM()"
+                # Nodes another probe already saw alive first: the local probe
+                # then spends its budget confirming them from its own network.
+                + " ORDER BY remote_alive_at IS NULL, last_seen DESC, RANDOM()"
             )
             params = list(seen_params)
             if count is not None:
@@ -751,8 +972,16 @@ class NodeStore:
                 f"(SELECT fingerprint FROM nodes WHERE {where})",
                 params,
             )
+            self.connection.execute(
+                f"DELETE FROM node_probe_status WHERE fingerprint IN "
+                f"(SELECT fingerprint FROM nodes WHERE {where})",
+                params,
+            )
             cursor = self.connection.execute(f"DELETE FROM nodes WHERE {where}", params)
             removed[reason] = cursor.rowcount
+        self.connection.execute(
+            "DELETE FROM node_probe_status WHERE checked_at < datetime('now', '-7 days')"
+        )
         self.connection.commit()
         removed["total"] = sum(removed.values())
         return removed

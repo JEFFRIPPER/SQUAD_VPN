@@ -7,6 +7,7 @@ import shutil
 import stat
 import subprocess
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -159,16 +160,21 @@ def build_site(store: NodeStore, directory: Path, target: PublishTarget) -> dict
     return index
 
 
-def publish(store: NodeStore, target: PublishTarget) -> dict[str, object]:
-    """Publish subscriptions as a single orphan commit on ``target.branch``.
+def force_push_tree(
+    repo: str,
+    branch: str,
+    workdir: Path,
+    build: Callable[[Path], object],
+    message: str,
+) -> object:
+    """Write files with ``build(workdir)`` and force-push them as one orphan commit.
 
-    The branch only ever holds generated files, so each publish force-pushes
-    one fresh commit: history does not grow and concurrent runs cannot
-    conflict (the last one wins).
+    Used for generated-only branches (subscriptions, probe reports): history
+    does not grow and concurrent writers cannot conflict (the last one wins).
     """
-    if target.branch in PROTECTED_BRANCHES:
-        raise PublishError(f"Публикация в ветку {target.branch} запрещена")
-    workdir = Path(target.workdir)
+    if branch in PROTECTED_BRANCHES:
+        raise PublishError(f"Публикация в ветку {branch} запрещена")
+    workdir = Path(workdir)
     if workdir.exists():
         _rmtree(workdir)
     workdir.mkdir(parents=True)
@@ -176,19 +182,23 @@ def publish(store: NodeStore, target: PublishTarget) -> dict[str, object]:
     _git(workdir, "config", "user.name", BOT_NAME)
     _git(workdir, "config", "user.email", BOT_EMAIL)
     _git(workdir, "config", "core.autocrlf", "false")
-    _git(workdir, "checkout", "-q", "--orphan", target.branch)
-
-    index = build_site(store, workdir, target)
+    _git(workdir, "checkout", "-q", "--orphan", branch)
+    result = build(workdir)
     _git(workdir, "add", "-A")
+    _git(workdir, "commit", "-q", "-m", message)
+    _git(workdir, "push", "--force", "--quiet", repo, f"HEAD:refs/heads/{branch}")
+    return result
+
+
+def publish(store: NodeStore, target: PublishTarget) -> dict[str, object]:
+    """Publish subscriptions as a single orphan commit on ``target.branch``."""
     stamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
-    _git(workdir, "commit", "-q", "-m", f"subs: {stamp}")
-    _git(
-        workdir,
-        "push",
-        "--force",
-        "--quiet",
+    index = force_push_tree(
         target.repo,
-        f"HEAD:refs/heads/{target.branch}",
+        target.branch,
+        Path(target.workdir),
+        lambda directory: build_site(store, directory, target),
+        f"subs: {stamp}",
     )
     _purge_cdn(target)
     return {
@@ -197,7 +207,7 @@ def publish(store: NodeStore, target: PublishTarget) -> dict[str, object]:
         "cdn_base": target.cdn_base(),
         "profiles": {
             name: meta["count"]  # type: ignore[index]
-            for name, meta in index["profiles"].items()  # type: ignore[union-attr]
+            for name, meta in index["profiles"].items()  # type: ignore[union-attr,index]
         },
     }
 

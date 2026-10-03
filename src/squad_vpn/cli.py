@@ -178,6 +178,11 @@ def _cycle_options(args: argparse.Namespace) -> CycleOptions:
         unseen_days=args.unseen_days,
         publish=_publish_target(args),
         profiles=args.profiles,
+        probe_id=args.probe_id,
+        probe_region=args.probe_region,
+        probe_sync=not args.no_probe_sync,
+        probe_publish=args.probe_publish,
+        probe_repo=args.probe_repo,
     )
 
 
@@ -188,6 +193,25 @@ async def _run(args: argparse.Namespace) -> int:
         print(f"  ! {error}")
     if args.strict and not report.ok:
         return 1
+    return 0
+
+
+def _probes(args: argparse.Namespace) -> int:
+    store = NodeStore(args.database)
+    try:
+        rows = store.list_probes()
+    finally:
+        store.close()
+    if not rows:
+        print("Пробников пока нет: они появятся после первого цикла")
+        return 0
+    for row in rows:
+        me = " (этот)" if row["is_self"] else ""
+        print(
+            f"{row['probe_id']}{me} [{row['region']}, {row['kind']}]: "
+            f"за 24 ч проверено {row['checked']}, живых {row['alive']}, "
+            f"последняя проверка {row['last_check'] or '—'}"
+        )
     return 0
 
 
@@ -352,6 +376,16 @@ def _add_cycle_args(parser: argparse.ArgumentParser, *, with_database: bool = Tr
         "--publish", action="store_true", help="Публиковать подписки в git-ветку"
     )
     _add_publish_args(parser)
+    probe = parser.add_argument_group("сеть пробников")
+    probe.add_argument("--probe-id", help="id этого пробника (по умолчанию создаётся сам)")
+    probe.add_argument("--probe-region", help="страна пробника, например RU (по умолчанию по IP)")
+    probe.add_argument(
+        "--probe-publish", action="store_true", help="Публиковать свой отчёт в ветку probe-<id>"
+    )
+    probe.add_argument(
+        "--no-probe-sync", action="store_true", help="Не забирать отчёты других пробников"
+    )
+    probe.add_argument("--probe-repo", help="git-репозиторий обмена отчётами")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -425,6 +459,9 @@ def build_parser() -> argparse.ArgumentParser:
     watch.add_argument("--stop-on-error", action="store_true")
     watch.add_argument("--strict", action="store_true", help=argparse.SUPPRESS)
 
+    probes = sub.add_parser("probes", help="Показать пробники и их отчёты")
+    probes.add_argument("--database", type=Path, default=DEFAULT_DB)
+
     clean = sub.add_parser("cleanup", help="Удалить узлы, пропавшие из источников")
     clean.add_argument("--database", type=Path, default=DEFAULT_DB)
     clean.add_argument("--unseen-days", type=int, default=3)
@@ -496,6 +533,8 @@ def main() -> int:
         return _autostart(args)
     if args.command == "agent":
         return _agent(args)
+    if args.command == "probes":
+        return _probes(args)
     if args.command == "cleanup":
         return _cleanup(args)
     if args.command == "publish":

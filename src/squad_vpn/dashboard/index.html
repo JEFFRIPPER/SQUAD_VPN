@@ -46,6 +46,8 @@
     font: inherit; color: var(--text); background: var(--bg);
     border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px;
   }
+  select { max-width: 100%; text-overflow: ellipsis; }
+  label.ctl { min-width: 0; max-width: 100%; }
   button { cursor: pointer; background: var(--accent); color: #fff; border-color: transparent; }
   button.ghost { background: transparent; color: var(--text); border-color: var(--line); }
   button:disabled { opacity: .5; cursor: default; }
@@ -177,7 +179,7 @@
         <table>
           <thead><tr>
             <th>Узел</th><th>Протокол</th><th>Страна</th><th>Ping</th><th>Jitter</th>
-            <th>Score</th><th>Stability</th><th>Успех</th><th>Проверен</th>
+            <th>Score</th><th>Stability</th><th>Успех</th><th>Регионы</th><th>Проверен</th>
           </tr></thead>
           <tbody id="nodes"></tbody>
         </table>
@@ -200,6 +202,22 @@
       </div>
     </section>
   </div>
+
+  <section>
+    <h2>Пробники</h2>
+    <div class="muted" style="font-size:12px;margin-bottom:8px">
+      Точки, из которых проверяются узлы. ✓ — работает из этой страны,
+      ⛔ — заблокирован (из других стран работает), ✗ — не работает нигде.
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Пробник</th><th>Страна</th><th>Тип</th><th>Живых / проверено за 24 ч</th><th>Последняя проверка</th>
+        </tr></thead>
+        <tbody id="probes"></tbody>
+      </table>
+    </div>
+  </section>
 
   <section>
     <h2>Источники</h2>
@@ -368,7 +386,7 @@
     if (!data.items.length) {
       const tr = document.createElement("tr");
       const td = cell("Нет узлов под эти фильтры", "muted");
-      td.colSpan = 9;
+      td.colSpan = 10;
       tr.appendChild(td);
       body.appendChild(tr);
     }
@@ -390,6 +408,7 @@
         cell(fmt.num(item.quality_score)),
         cell(fmt.num(item.stability_score)),
         cell(attempts ? `${item.success_count}/${attempts}` : "—"),
+        regionsCell(item.regions),
         cell(fmt.time(item.last_checked)),
       );
       tr.addEventListener("click", () => {
@@ -405,6 +424,53 @@
     $("page-info").textContent = `${from}–${to} из ${data.total}`;
     $("prev").disabled = state.offset === 0;
     $("next").disabled = state.offset + PAGE >= data.total;
+  }
+
+  const REGION_MARK = { ok: "✓", blocked: "⛔", down: "✗", unknown: "?" };
+  const REGION_CLASS = { ok: "ok", blocked: "bad", down: "muted", unknown: "muted" };
+
+  function regionsCell(regions) {
+    const td = document.createElement("td");
+    const entries = Object.entries(regions || {});
+    if (!entries.length) {
+      td.textContent = "—";
+      td.className = "muted";
+      return td;
+    }
+    for (const [code, info] of entries) {
+      const chip = document.createElement("span");
+      chip.className = `chip ${REGION_CLASS[info.status] || ""}`;
+      chip.textContent = `${code} ${REGION_MARK[info.status] || ""}`;
+      chip.title = `${code}: ${{ ok: "работает", blocked: "заблокирован (из других стран работает)", down: "не работает", unknown: "нет данных" }[info.status]}`
+        + (info.latency_ms != null ? `, ${Math.round(info.latency_ms)} ms` : "");
+      td.appendChild(chip);
+    }
+    return td;
+  }
+
+  async function loadProbes() {
+    const probes = await (await api("/api/probes")).json();
+    const body = $("probes");
+    body.replaceChildren();
+    if (!probes.length) {
+      const tr = document.createElement("tr");
+      const td = cell("Пробники появятся после первого цикла", "muted");
+      td.colSpan = 5;
+      tr.appendChild(td);
+      body.appendChild(tr);
+      return;
+    }
+    for (const probe of probes) {
+      const tr = document.createElement("tr");
+      tr.append(
+        cell(probe.probe_id + (probe.is_self ? " (этот)" : "")),
+        cell(probe.region),
+        cell(probe.kind),
+        cell(`${probe.alive}/${probe.checked}`),
+        cell(fmt.time(probe.last_check)),
+      );
+      body.appendChild(tr);
+    }
   }
 
   function drawSpark(history) {
@@ -470,6 +536,7 @@
       ["Проверен", fmt.time(item.last_checked)],
       ["Появлялся", fmt.time(item.last_seen)],
       ["Ошибка", item.validation_error || "—"],
+      ["Регионы", Object.entries(item.regions || {}).map(([c, i]) => `${c}: ${i.status}`).join(", ") || "—"],
       ["Fingerprint", item.fingerprint],
     ];
     for (const [key, value] of rows) {
@@ -568,7 +635,7 @@
       await loadCycle();
       await loadProfiles();
       await loadStats();
-      await Promise.all([loadNodes(), loadSources()]);
+      await Promise.all([loadNodes(), loadSources(), loadProbes()]);
       updateSub();
       if (state.selected) await loadDetail(state.selected);
       showError("");

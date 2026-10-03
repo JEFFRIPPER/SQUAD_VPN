@@ -190,7 +190,7 @@ class Agent:
 
     def _server_command(self) -> list[str]:
         return [
-            sys.executable, "-m", "squad_vpn", "serve", "--watch",
+            sys.executable, "-m", "squad_vpn", "serve", "--watch", "--probe-publish",
             "--port", str(self.port),
             "--interval-minutes", str(self.interval_minutes),
         ]

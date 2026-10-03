@@ -64,7 +64,7 @@ async def collect_source_specs(
     concurrency: int = DEFAULT_CONCURRENCY,
 ) -> tuple[list[ProxyNode], list[SourceReport]]:
     semaphore = asyncio.Semaphore(max(1, concurrency))
-    headers = {"User-Agent": "SQUAD-VPN/0.6"}
+    headers = {"User-Agent": "SQUAD-VPN/0.7"}
     async with httpx.AsyncClient(timeout=timeout, headers=headers) as client:
         results = await asyncio.gather(
             *[_fetch_spec(client, spec, semaphore) for spec in specs]

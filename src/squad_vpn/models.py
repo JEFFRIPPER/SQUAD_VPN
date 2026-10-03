@@ -67,6 +67,24 @@ class RankedNode:
     success_count: int = 0
     failure_count: int = 0
     validation_error: str | None = None
+    # Region code -> {"alive", "latency_ms", "checked_at", "probes"} from probes.
+    regions: dict[str, dict[str, object]] = field(default_factory=dict)
+
+    def region_status(self, region: str) -> str:
+        """ok | blocked | down | unknown for one probe region (e.g. "RU").
+
+        blocked = probes in this region fail while another region sees the
+        node alive, i.e. the node works but not from there.
+        """
+        here = self.regions.get(region.upper())
+        if here is None:
+            return "unknown"
+        if here["alive"]:
+            return "ok"
+        elsewhere = any(
+            info["alive"] for code, info in self.regions.items() if code != region.upper()
+        )
+        return "blocked" if elsewhere else "down"
 
     @property
     def attempts(self) -> int:

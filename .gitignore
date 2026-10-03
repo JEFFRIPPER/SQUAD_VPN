@@ -19,3 +19,6 @@ data/mihomo-*
 data/logs/
 data/agent.json
 data/publish/
+data/probe.json
+data/probe-publish/
+data/probes-cache/

@@ -283,6 +283,10 @@ def create_app(
             )
         return {"started": runner.trigger()}
 
+    @app.get("/api/probes", dependencies=protected)
+    def probes_list(store: NodeStore = Depends(get_store)) -> list[dict[str, object]]:
+        return store.list_probes()
+
     @app.get("/api/agent", dependencies=protected)
     def agent_status() -> dict[str, object]:
         from .agent import read_status

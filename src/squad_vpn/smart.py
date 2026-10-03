@@ -30,6 +30,10 @@ class SmartProfile:
     countries: tuple[str, ...] = field(default_factory=tuple)
     exclude_countries: tuple[str, ...] = field(default_factory=tuple)
     protocols: tuple[str, ...] = field(default_factory=tuple)
+    # Probe network: node must be confirmed alive from these regions...
+    require_regions: tuple[str, ...] = field(default_factory=tuple)
+    # ...and must not be known as blocked there (works elsewhere, fails here).
+    avoid_blocked_in: tuple[str, ...] = field(default_factory=tuple)
     # Diversity: duplicates of one server make failover useless.
     per_host: int | None = 1
     per_exit_ip: int | None = 1
@@ -58,7 +62,9 @@ DEFAULT_PROFILES = (
 # Used for per-country and per-protocol subscriptions.
 GROUP_PROFILE = SmartProfile("group", limit=300)
 
-_TUPLE_FIELDS = {"countries", "exclude_countries", "protocols"}
+_TUPLE_FIELDS = {
+    "countries", "exclude_countries", "protocols", "require_regions", "avoid_blocked_in",
+}
 _FIELD_NAMES = {item.name for item in fields(SmartProfile)}
 
 
@@ -137,14 +143,17 @@ def select_profile(store: NodeStore, profile: SmartProfile) -> list[RankedNode]:
     """Ranked, filtered and diversified nodes for one profile."""
     single_country = profile.countries[0] if len(profile.countries) == 1 else None
     single_protocol = profile.protocols[0] if len(profile.protocols) == 1 else None
+    # With required regions, liveness comes from those regions' probes,
+    # not from this machine's own checks (a node may work only from there).
+    by_region = bool(profile.require_regions)
     records = store.list_ranked(
-        alive_only=True,
+        alive_only=not by_region,
         min_score=profile.min_score,
         min_stability=profile.min_stability,
-        max_latency=profile.max_latency,
+        max_latency=None if by_region else profile.max_latency,
         country=single_country,
         protocol=single_protocol,
-        checked_within_hours=profile.checked_within_hours,
+        checked_within_hours=None if by_region else profile.checked_within_hours,
         seen_within_hours=profile.seen_within_hours,
     )
     countries = {item.upper() for item in profile.countries}
@@ -155,7 +164,20 @@ def select_profile(store: NodeStore, profile: SmartProfile) -> list[RankedNode]:
         if (not countries or (item.country or "").upper() in countries)
         and (item.country or "").upper() not in excluded
         and (not protocols or item.node.protocol.lower() in protocols)
+        and all(item.region_status(region) == "ok" for region in profile.require_regions)
+        and not any(item.region_status(region) == "blocked" for region in profile.avoid_blocked_in)
     ]
+    if by_region:
+        # Rank and cap by the latency measured from the required region itself.
+        region = profile.require_regions[0].upper()
+
+        def region_latency(item: RankedNode) -> float:
+            value = item.regions.get(region, {}).get("latency_ms")
+            return float(value) if value is not None else 1e9  # type: ignore[arg-type]
+
+        if profile.max_latency is not None:
+            filtered = [i for i in filtered if region_latency(i) <= profile.max_latency]
+        filtered.sort(key=lambda item: (region_latency(item), -item.quality_score))
     return diversify(
         filtered,
         profile.limit,

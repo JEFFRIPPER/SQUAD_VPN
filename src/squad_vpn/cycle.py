@@ -1,15 +1,25 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
+from . import __version__
 from .collector import collect_source_specs
 from .exporter import export_ranked_catalog, export_sources
-from .publish import PublishTarget, publish
+from .probe import (
+    IDENTITY_FILE,
+    ProbeIdentity,
+    default_kind,
+    load_identity,
+    publish_report,
+    sync_probes,
+)
+from .publish import PublishTarget, detect_origin, publish
 from .smart import DEFAULT_PROFILES_PATH, export_smart_catalog, load_profiles
 from .sources import load_source_specs
 from .store import NodeStore
@@ -37,6 +47,20 @@ class CycleOptions:
     unseen_days: int = 3
     publish: PublishTarget | None = None
     profiles: Path | None = DEFAULT_PROFILES_PATH
+    # Probe network (v0.7): own id/region overrides, exchange of reports.
+    probe_id: str | None = None
+    probe_region: str | None = None
+    probe_sync: bool = True
+    probe_publish: bool = False
+    probe_repo: str | None = None
+    probe_identity_file: Path = IDENTITY_FILE
+
+    def resolve_probe_repo(self) -> str | None:
+        if self.probe_repo:
+            return self.probe_repo
+        if self.publish is not None:
+            return self.publish.repo
+        return os.environ.get("SQUAD_PUBLISH_REPO") or detect_origin()
 
 
 @dataclass(slots=True)
@@ -109,6 +133,7 @@ async def validate_step(
     geo_limit: int = 10,
     limit: int | None = 200,
     recheck_minutes: int = 60,
+    probe: ProbeIdentity | None = None,
     log: Log = print,
 ) -> dict[str, object]:
     if not Path(binary).exists():
@@ -128,8 +153,12 @@ async def validate_step(
         results = await validator.validate(
             nodes, concurrency=concurrency, geo_limit=geo_limit, geo_known=geo_known
         )
+        if probe is not None:
+            store.register_probe(probe.probe_id, probe.region, kind=probe.kind, version=__version__)
         alive = 0
         for result in results:
+            if probe is not None:
+                result.probe_id = probe.probe_id
             store.record_validation(result)
             alive += int(result.alive)
         store.prune_history()
@@ -191,6 +220,36 @@ def publish_step(database: Path, target: PublishTarget, *, log: Log = print) -> 
     return result
 
 
+def probes_sync_step(
+    database: Path, identity: ProbeIdentity, repo: str, *, log: Log = print
+) -> dict[str, object]:
+    store = NodeStore(database)
+    try:
+        result = sync_probes(store, identity, repo)
+    finally:
+        store.close()
+    imported = result["imported"]
+    log(
+        "Пробники: "
+        + (", ".join(f"{name} ({count})" for name, count in imported.items()) or "чужих отчётов нет")  # type: ignore[union-attr]
+    )
+    for name, reason in result["skipped"].items():  # type: ignore[union-attr]
+        log(f"  отчёт {name} пропущен: {reason}")
+    return result
+
+
+def probe_publish_step(
+    database: Path, identity: ProbeIdentity, repo: str, *, log: Log = print
+) -> dict[str, object]:
+    store = NodeStore(database)
+    try:
+        result = publish_report(store, identity, repo)
+    finally:
+        store.close()
+    log(f"Отчёт пробника {identity.probe_id} ({identity.region}) опубликован: {result['results']} узлов")
+    return result
+
+
 async def _install(binary: Path, log: Log) -> dict[str, object]:
     from .setup_mihomo import install_mihomo
 
@@ -231,6 +290,20 @@ async def run_cycle(options: CycleOptions, *, log: Log = print) -> CycleReport:
             log=log,
         ),
     )
+    identity: ProbeIdentity | None = None
+    try:
+        identity = await asyncio.to_thread(
+            load_identity,
+            options.probe_identity_file,
+            probe_id=options.probe_id,
+            region=options.probe_region,
+            kind=default_kind(),
+        )
+        report.steps["probe"] = {"probe_id": identity.probe_id, "region": identity.region}
+    except Exception as exc:
+        log(f"Идентичность пробника не определена: {exc}")
+    probe_repo = options.resolve_probe_repo()
+
     if options.install_mihomo and not Path(options.binary).exists():
         await step("setup_mihomo", lambda: _install(options.binary, log))
     await step(
@@ -244,9 +317,16 @@ async def run_cycle(options: CycleOptions, *, log: Log = print) -> CycleReport:
             geo_limit=options.geo_limit,
             limit=options.limit,
             recheck_minutes=options.recheck_minutes,
+            probe=identity,
             log=log,
         ),
     )
+    if options.probe_sync and identity is not None and probe_repo:
+        await step(
+            "probes",
+            lambda: probes_sync_step(options.database, identity, probe_repo, log=log),
+            blocking=True,
+        )
     if options.cleanup:
         await step(
             "cleanup",
@@ -265,6 +345,13 @@ async def run_cycle(options: CycleOptions, *, log: Log = print) -> CycleReport:
         await step(
             "publish",
             lambda: publish_step(options.database, target, log=log),
+            blocking=True,
+        )
+
+    if options.probe_publish and identity is not None and probe_repo:
+        await step(
+            "probe_publish",
+            lambda: probe_publish_step(options.database, identity, probe_repo, log=log),
             blocking=True,
         )
 

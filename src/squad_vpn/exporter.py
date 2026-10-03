@@ -101,6 +101,10 @@ def ranked_to_dict(item: RankedNode) -> dict[str, object]:
         "success_count": item.success_count,
         "failure_count": item.failure_count,
         "validation_error": item.validation_error,
+        "regions": {
+            code: {**info, "status": item.region_status(code)}
+            for code, info in sorted(item.regions.items())
+        },
     }
 
 
@@ -189,7 +193,7 @@ def export_manifest(records: list[RankedNode], path: str | Path) -> Path:
     latencies = [item.latency_ms for item in alive if item.latency_ms is not None]
     jitters = [item.jitter_ms for item in alive if item.jitter_ms is not None]
     payload = {
-        "version": "0.6",
+        "version": "0.7",
         "updated_at": datetime.now(UTC).isoformat(),
         "total": len(records),
         "alive": len(alive),
