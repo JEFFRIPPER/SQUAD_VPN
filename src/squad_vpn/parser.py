@@ -9,6 +9,10 @@ from .models import ProxyNode
 SUPPORTED = {"vless", "vmess", "trojan", "ss", "hysteria2", "hy2"}
 
 
+def _valid_port(port: int) -> bool:
+    return 0 < port <= 65535
+
+
 def _b64decode(value: str) -> bytes:
     value = value.strip()
     padding = "=" * (-len(value) % 4)
@@ -39,6 +43,8 @@ def _parse_standard(uri: str, source: str) -> ProxyNode | None:
         protocol = "hysteria2"
     if protocol not in SUPPORTED or not parsed.hostname or not parsed.port:
         return None
+    if not _valid_port(int(parsed.port)):
+        return None
     return ProxyNode(
         protocol=protocol,
         host=parsed.hostname,
@@ -56,11 +62,13 @@ def _parse_vmess(uri: str, source: str) -> ProxyNode | None:
     try:
         decoded = _b64decode(payload).decode("utf-8")
         data = json.loads(decoded)
+        if not isinstance(data, dict):
+            return None
         host = str(data.get("add", "")).strip()
         port = int(data.get("port", 0))
     except (ValueError, TypeError, json.JSONDecodeError, UnicodeDecodeError):
         return None
-    if not host or not port:
+    if not host or not _valid_port(port):
         return None
     params = {
         str(k): str(v)
@@ -104,9 +112,12 @@ def _parse_ss(uri: str, source: str) -> ProxyNode | None:
         port_i = int(port)
     except ValueError:
         return None
+    host = host.strip("[]")
+    if not host or not _valid_port(port_i):
+        return None
     return ProxyNode(
         protocol="ss",
-        host=host.strip("[]"),
+        host=host,
         port=port_i,
         userinfo=f"{method}:{password}",
         params=_params(query),

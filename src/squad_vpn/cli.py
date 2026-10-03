@@ -40,6 +40,7 @@ async def _collect(args: argparse.Namespace) -> int:
         saved = store.upsert_many(nodes)
         for report in reports:
             store.record_source_report(report)
+        store.prune_sources([spec.name for spec in specs])
     finally:
         store.close()
 
@@ -75,6 +76,9 @@ async def _setup_mihomo(args: argparse.Namespace) -> int:
 
 
 async def _validate(args: argparse.Namespace) -> int:
+    if not Path(args.binary).exists():
+        print(f"Mihomo не найден: {args.binary}. Выполни squad-vpn setup-mihomo")
+        return 1
     store = NodeStore(args.database)
     try:
         nodes = store.list_validation_candidates(
@@ -98,10 +102,9 @@ async def _validate(args: argparse.Namespace) -> int:
         for result in results:
             store.record_validation(result)
             alive += int(result.alive)
+        store.prune_history()
         print(f"Проверено через Mihomo: {len(results)}")
         print(f"Живых: {alive}; мёртвых: {len(results) - alive}")
-        if len(results) < len(nodes):
-            print(f"Не конвертировано в Mihomo: {len(nodes) - len(results)}")
     finally:
         store.close()
     return 0
@@ -191,7 +194,11 @@ async def _run(args: argparse.Namespace) -> int:
         limit=args.limit,
         recheck_minutes=args.recheck_minutes,
     )
-    await _validate(validate_args)
+    try:
+        await _validate(validate_args)
+    except (FileNotFoundError, RuntimeError, TimeoutError) as exc:
+        # Export still runs so subscriptions are refreshed from existing data.
+        print(f"Проверка пропущена: {exc}")
     export_args = argparse.Namespace(
         database=args.database,
         output=args.output,

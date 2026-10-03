@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import io
-import subprocess
 import zipfile
 from pathlib import Path
 
@@ -16,7 +15,7 @@ LATEST_RELEASE = "https://api.github.com/repos/MetaCubeX/mihomo/releases/latest"
 
 async def install_mihomo(target: str | Path = DEFAULT_BINARY) -> tuple[Path, str]:
     target = Path(target)
-    headers = {"User-Agent": "SQUAD-VPN/0.2"}
+    headers = {"User-Agent": "SQUAD-VPN/0.3"}
     async with httpx.AsyncClient(follow_redirects=True, headers=headers, timeout=60.0) as client:
         response = await client.get(LATEST_RELEASE)
         response.raise_for_status()
@@ -44,5 +43,7 @@ async def install_mihomo(target: str | Path = DEFAULT_BINARY) -> tuple[Path, str
         binary_data = archive.read(candidates[0])
 
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_bytes(binary_data)
+    partial = target.with_name(target.name + ".part")
+    partial.write_bytes(binary_data)
+    partial.replace(target)
     return target, tag

@@ -37,3 +37,14 @@ def test_source_limit_spreads_across_feed():
     nodes = [ProxyNode("vless", f"host{i}", 443) for i in range(100)]
     selected = _spread_limit(nodes, 4)
     assert [node.host for node in selected] == ["host0", "host25", "host50", "host75"]
+
+
+def test_removed_sources_are_pruned(tmp_path):
+    store = NodeStore(tmp_path / "prune.sqlite3")
+    try:
+        for name in ("keep", "drop"):
+            store.record_source_report(SourceReport(SourceSpec(name, f"https://{name}.example"), True))
+        store.prune_sources(["keep"])
+        assert [row["name"] for row in store.list_source_status()] == ["keep"]
+    finally:
+        store.close()
