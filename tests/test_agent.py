@@ -111,5 +111,5 @@ def test_autostart_enable_and_disable(tmp_path, monkeypatch):
     created = autostart.enable(tmp_path)
     assert all(path.exists() for path in created)
     assert "squad_vpn agent" in created[0].read_text(encoding="utf-16")
-    assert len(autostart.disable()) == 2
+    assert len(autostart.disable()) >= 2
     assert not any(path.exists() for path in created)

@@ -1,0 +1,764 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQUAD VPN</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%227%22 fill=%22%234355B9%22/%3E%3Cpath d=%22M12 5l6 2.5v4c0 3.6-2.5 6.6-6 7.5-3.5-.9-6-3.9-6-7.5v-4z%22 fill=%22white%22/%3E%3C/svg%3E">
+<style>
+  /* Material Design 3 color roles, seed #4355B9 */
+  :root {
+    --md-primary: #4355B9; --md-on-primary: #FFFFFF;
+    --md-primary-container: #DEE0FF; --md-on-primary-container: #00105C;
+    --md-secondary-container: #E0E1F9; --md-on-secondary-container: #181A2C;
+    --md-tertiary-container: #FFD7F1; --md-on-tertiary-container: #2D1228;
+    --md-surface: #FBF8FF; --md-on-surface: #1B1B21; --md-on-surface-variant: #46464F;
+    --md-surface-lowest: #FFFFFF; --md-surface-low: #F5F2FA; --md-surface-container: #EFEDF4;
+    --md-surface-high: #E9E7EF; --md-surface-highest: #E4E1E9;
+    --md-outline: #767680; --md-outline-variant: #C6C5D0;
+    --md-error: #BA1A1A; --md-error-container: #FFDAD6; --md-on-error-container: #410002;
+    --md-success: #1E6B3A; --md-success-container: #B4F1C2; --md-on-success-container: #00210C;
+    --md-inverse-surface: #303036; --md-inverse-on-surface: #F2EFF7; --md-inverse-primary: #BAC3FF;
+    --md-scrim: rgba(0,0,0,.32);
+    --radius-xl: 28px; --radius-l: 16px; --radius-m: 12px; --radius-full: 999px;
+    --elev-1: 0 1px 2px rgba(0,0,0,.18), 0 1px 3px 1px rgba(0,0,0,.08);
+    --elev-3: 0 4px 8px 3px rgba(0,0,0,.12), 0 1px 3px rgba(0,0,0,.2);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --md-primary: #BAC3FF; --md-on-primary: #08218A;
+      --md-primary-container: #293CA0; --md-on-primary-container: #DEE0FF;
+      --md-secondary-container: #434659; --md-on-secondary-container: #E0E1F9;
+      --md-tertiary-container: #5D3C55; --md-on-tertiary-container: #FFD7F1;
+      --md-surface: #121318; --md-on-surface: #E4E1E9; --md-on-surface-variant: #C6C5D0;
+      --md-surface-lowest: #0D0E13; --md-surface-low: #1B1B21; --md-surface-container: #1F1F25;
+      --md-surface-high: #292A2F; --md-surface-highest: #34343A;
+      --md-outline: #90909A; --md-outline-variant: #46464F;
+      --md-error: #FFB4AB; --md-error-container: #93000A; --md-on-error-container: #FFDAD6;
+      --md-success: #8AD69B; --md-success-container: #00522A; --md-on-success-container: #A5F2B5;
+      --md-inverse-surface: #E4E1E9; --md-inverse-on-surface: #303036; --md-inverse-primary: #4355B9;
+      --md-scrim: rgba(0,0,0,.5);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--md-surface); color: var(--md-on-surface);
+    font: 14px/20px "Roboto", "Segoe UI", system-ui, -apple-system, sans-serif;
+    letter-spacing: .25px; -webkit-font-smoothing: antialiased;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  svg.icon { width: 24px; height: 24px; fill: currentColor; flex: none; }
+
+  /* layout */
+  .shell { display: grid; grid-template-columns: 88px minmax(0, 1fr); height: 100%; }
+  .rail {
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 20px 0; background: var(--md-surface);
+  }
+  .rail .brand {
+    width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center;
+    background: var(--md-primary-container); color: var(--md-on-primary-container); margin-bottom: 20px;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px; width: 80px;
+    border: 0; background: none; cursor: pointer; padding: 0; color: var(--md-on-surface-variant);
+    font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: .5px;
+  }
+  .nav-item .pill {
+    width: 56px; height: 32px; border-radius: var(--radius-full); display: grid; place-items: center;
+    transition: background .2s;
+  }
+  .nav-item:hover .pill { background: color-mix(in srgb, var(--md-on-surface) 8%, transparent); }
+  .nav-item[aria-current="page"] { color: var(--md-on-surface); }
+  .nav-item[aria-current="page"] .pill { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+  main { overflow-y: auto; padding: 24px 24px 96px; }
+  .content { max-width: 1080px; margin: 0 auto; }
+  .topbar { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .topbar h1 { font-size: 28px; line-height: 36px; font-weight: 400; margin: 0; }
+  .topbar .spacer { flex: 1; }
+  .page { display: none; }
+  .page.active { display: block; animation: enter .25s ease-out; }
+  @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* cards */
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .card {
+    background: var(--md-surface-low); border-radius: var(--radius-l); padding: 20px; min-width: 0;
+  }
+  .card.filled { background: var(--md-surface-highest); }
+  .card.outlined { background: var(--md-surface); border: 1px solid var(--md-outline-variant); }
+  .card h2 { font-size: 22px; line-height: 28px; font-weight: 400; margin: 0 0 4px; }
+  .card h3 { font-size: 16px; line-height: 24px; font-weight: 500; margin: 0; letter-spacing: .15px; }
+  .label { font-size: 12px; line-height: 16px; letter-spacing: .5px; font-weight: 500; color: var(--md-on-surface-variant); }
+  .display { font-size: 36px; line-height: 44px; font-weight: 400; font-variant-numeric: tabular-nums; }
+  .muted { color: var(--md-on-surface-variant); }
+  .stack { display: flex; flex-direction: column; gap: 16px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  .hero {
+    background: var(--md-primary-container); color: var(--md-on-primary-container);
+    border-radius: var(--radius-xl); padding: 28px; display: flex; gap: 24px;
+    align-items: center; flex-wrap: wrap;
+  }
+  .hero.stopped { background: var(--md-error-container); color: var(--md-on-error-container); }
+  .hero .status-icon {
+    width: 72px; height: 72px; border-radius: 50%; display: grid; place-items: center;
+    background: color-mix(in srgb, currentColor 12%, transparent);
+  }
+  .hero .status-icon svg { width: 40px; height: 40px; }
+  .hero .text { flex: 1; min-width: 220px; }
+  .hero h2 { font-size: 28px; line-height: 36px; margin: 0 0 4px; font-weight: 400; }
+  .hero p { margin: 0; opacity: .85; }
+
+  /* buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 40px; padding: 0 24px; border-radius: var(--radius-full); border: 0; cursor: pointer;
+    font-weight: 500; letter-spacing: .1px; white-space: nowrap; position: relative; overflow: hidden;
+    transition: box-shadow .2s;
+  }
+  .btn svg.icon { width: 18px; height: 18px; margin-left: -8px; }
+  .btn::after { content: ""; position: absolute; inset: 0; background: currentColor; opacity: 0; transition: opacity .15s; }
+  .btn:hover::after { opacity: .08; } .btn:active::after { opacity: .12; }
+  .btn:disabled { opacity: .38; cursor: default; } .btn:disabled::after { opacity: 0; }
+  .btn.filled { background: var(--md-primary); color: var(--md-on-primary); }
+  .btn.filled:hover { box-shadow: var(--elev-1); }
+  .btn.tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+  .btn.outlined { background: transparent; color: var(--md-primary); border: 1px solid var(--md-outline); }
+  .btn.text { background: transparent; color: var(--md-primary); padding: 0 12px; }
+  .btn.large { height: 56px; padding: 0 28px; border-radius: 16px; font-size: 16px; }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 50%; border: 0; background: none; cursor: pointer;
+    display: inline-grid; place-items: center; color: var(--md-on-surface-variant); position: relative; overflow: hidden;
+  }
+  .icon-btn::after { content: ""; position: absolute; inset: 0; background: currentColor; opacity: 0; border-radius: 50%; }
+  .icon-btn:hover::after { opacity: .08; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
+    border-radius: 8px; border: 1px solid var(--md-outline-variant); font-weight: 500; font-size: 14px;
+    background: transparent; color: var(--md-on-surface-variant);
+  }
+  .chip svg.icon { width: 18px; height: 18px; }
+  .chip.ok { background: var(--md-success-container); color: var(--md-on-success-container); border-color: transparent; }
+  .chip.bad { background: var(--md-error-container); color: var(--md-on-error-container); border-color: transparent; }
+
+  /* segmented buttons */
+  .segmented { display: inline-flex; border: 1px solid var(--md-outline); border-radius: var(--radius-full); overflow: hidden; }
+  .segmented button {
+    height: 40px; padding: 0 16px; border: 0; background: transparent; cursor: pointer;
+    font-weight: 500; display: inline-flex; align-items: center; gap: 6px; color: var(--md-on-surface);
+  }
+  .segmented button + button { border-left: 1px solid var(--md-outline); }
+  .segmented button[aria-pressed="true"] { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+  .segmented button svg.icon { width: 18px; height: 18px; display: none; }
+  .segmented button[aria-pressed="true"] svg.icon { display: inline; }
+
+  /* lists */
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .list-item {
+    display: flex; align-items: center; gap: 16px; padding: 12px 8px 12px 16px;
+    border-radius: var(--radius-l); background: var(--md-surface-low); min-width: 0;
+  }
+  .list-item .lead {
+    width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: var(--md-primary-container); color: var(--md-on-primary-container); font-weight: 500;
+  }
+  .list-item .body { flex: 1; min-width: 0; }
+  .list-item .headline { font-size: 16px; line-height: 24px; letter-spacing: .5px; }
+  .list-item .supporting { color: var(--md-on-surface-variant); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge {
+    min-width: 28px; height: 20px; padding: 0 8px; border-radius: 10px; display: inline-grid; place-items: center;
+    background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); font-size: 12px; font-weight: 500;
+  }
+
+  /* switch */
+  .setting { display: flex; align-items: center; gap: 16px; padding: 16px 0; border-bottom: 1px solid var(--md-outline-variant); }
+  .setting:last-child { border-bottom: 0; }
+  .setting .body { flex: 1; min-width: 0; }
+  .setting .title { font-size: 16px; line-height: 24px; }
+  .switch { position: relative; width: 52px; height: 32px; flex: none; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; position: relative; z-index: 1; }
+  .switch .track {
+    position: absolute; inset: 0; border-radius: 16px; background: var(--md-surface-highest);
+    border: 2px solid var(--md-outline); transition: background .2s, border-color .2s;
+  }
+  .switch .thumb {
+    position: absolute; top: 8px; left: 8px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--md-outline); transition: all .2s;
+  }
+  .switch input:checked ~ .track { background: var(--md-primary); border-color: var(--md-primary); }
+  .switch input:checked ~ .thumb { left: 24px; top: 4px; width: 24px; height: 24px; background: var(--md-on-primary); }
+  .switch input:disabled ~ .track, .switch input:disabled ~ .thumb { opacity: .38; }
+  .select {
+    height: 48px; padding: 0 12px; border-radius: 4px; border: 1px solid var(--md-outline);
+    background: transparent; min-width: 150px;
+  }
+  .select option { background: var(--md-surface-container); }
+
+  /* log */
+  .log {
+    background: var(--md-surface-lowest); border-radius: var(--radius-m); padding: 16px;
+    font: 12px/18px ui-monospace, "Cascadia Mono", Consolas, monospace; white-space: pre-wrap;
+    overflow-wrap: anywhere; max-height: 60vh; overflow-y: auto; border: 1px solid var(--md-outline-variant);
+  }
+  .log .warn { color: var(--md-error); }
+
+  iframe.panel { width: 100%; height: calc(100vh - 170px); border: 0; border-radius: var(--radius-l); background: var(--md-surface-low); }
+
+  /* dialog, snackbar */
+  .scrim { position: fixed; inset: 0; background: var(--md-scrim); display: none; place-items: center; z-index: 20; padding: 16px; }
+  .scrim.open { display: grid; }
+  .dialog {
+    background: var(--md-surface-high); border-radius: var(--radius-xl); padding: 24px; width: min(420px, 100%);
+    box-shadow: var(--elev-3); text-align: center;
+  }
+  .dialog h3 { font-size: 24px; line-height: 32px; font-weight: 400; margin: 0 0 8px; }
+  .dialog .qr { background: #fff; border-radius: var(--radius-l); padding: 12px; margin: 16px auto; width: 260px; height: 260px; }
+  .dialog .qr img { width: 100%; height: 100%; display: block; }
+  .dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .snackbar {
+    position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 24px); opacity: 0;
+    background: var(--md-inverse-surface); color: var(--md-inverse-on-surface); border-radius: 4px;
+    padding: 14px 16px; min-width: 280px; max-width: calc(100vw - 32px); box-shadow: var(--elev-3);
+    transition: all .2s; z-index: 30; pointer-events: none;
+  }
+  .snackbar.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .spinner { width: 20px; height: 20px; border-radius: 50%; border: 3px solid currentColor; border-right-color: transparent; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 720px) {
+    .shell { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+    .rail {
+      order: 2; flex-direction: row; justify-content: space-around; padding: 12px 0 16px;
+      background: var(--md-surface-container); gap: 0;
+    }
+    .rail .brand { display: none; }
+    .nav-item { width: auto; flex: 1; }
+    main { padding: 16px 16px 24px; }
+    .topbar h1 { font-size: 24px; line-height: 32px; }
+    .hero { padding: 20px; }
+    iframe.panel { height: calc(100vh - 230px); }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3z"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M3.9 12a3.1 3.1 0 0 1 3.1-3.1h4V7H7a5 5 0 0 0 0 10h4v-1.9H7A3.1 3.1 0 0 1 3.9 12M8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 0 1 0 6.2h-4V17h4a5 5 0 0 0 0-10"/></symbol>
+  <symbol id="i-dns" viewBox="0 0 24 24"><path d="M20 13H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1M7 19a2 2 0 1 1 0-4 2 2 0 0 1 0 4M20 3H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1M7 9a2 2 0 1 1 0-4 2 2 0 0 1 0 4"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.4 2.9a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1L11 21h4l.4-2.9a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7" transform="translate(-1 0)"/></symbol>
+  <symbol id="i-notes" viewBox="0 0 24 24"><path d="M3 18h12v-2H3zM3 6v2h18V6zm0 7h18v-2H3z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5zm-1.5 14.5-4-4 1.4-1.4 2.6 2.6 5.6-5.6 1.4 1.4z"/></symbol>
+  <symbol id="i-shield-off" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5zm3.5 13.1-1.4 1.4-2.1-2.1-2.1 2.1-1.4-1.4 2.1-2.1-2.1-2.1 1.4-1.4 2.1 2.1 2.1-2.1 1.4 1.4-2.1 2.1z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M17.65 6.35A8 8 0 1 0 19.73 14h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M5 20h14v-2H5zM19 9h-4V3H9v6H5l7 7z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m0 16H8V7h11z"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><path d="M3 11h8V3H3zm2-6h4v4H5zM3 21h8v-8H3zm2-6h4v4H5zm8-12v8h8V3zm6 6h-4V5h4zm0 10h2v2h-2zm-6-6h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm2 2h2v2h-2zm2-2h2v2h-2zm0-4h2v2h-2zm2 2h2v2h-2z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8z"/></symbol>
+  <symbol id="i-restart" viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7a6 6 0 1 1-6 6H4a8 8 0 1 0 8-8"/></symbol>
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2zM14 3v2h3.6l-9.8 9.8 1.4 1.4L19 6.4V10h2V3z"/></symbol>
+  <symbol id="i-public" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m-1 17.9A8 8 0 0 1 4 12l1-1 5 5v1a2 2 0 0 0 1 2zm6.9-2.5A2 2 0 0 0 16 16h-1v-3a1 1 0 0 0-1-1H8v-2h2a1 1 0 0 0 1-1V7h2a2 2 0 0 0 2-2v-.4a8 8 0 0 1 2.9 12.8"/></symbol>
+  <symbol id="i-computer" viewBox="0 0 24 24"><path d="M20 18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2H0v2h24v-2zM4 6h16v10H4z"/></symbol>
+</svg>
+
+<div class="shell">
+  <nav class="rail" aria-label="Разделы">
+    <div class="brand"><svg class="icon"><use href="#i-shield"/></svg></div>
+    <button class="nav-item" data-page="home" aria-current="page"><span class="pill"><svg class="icon"><use href="#i-home"/></svg></span>Главная</button>
+    <button class="nav-item" data-page="subs"><span class="pill"><svg class="icon"><use href="#i-link"/></svg></span>Подписки</button>
+    <button class="nav-item" data-page="nodes"><span class="pill"><svg class="icon"><use href="#i-dns"/></svg></span>Узлы</button>
+    <button class="nav-item" data-page="settings"><span class="pill"><svg class="icon"><use href="#i-settings"/></svg></span>Настройки</button>
+    <button class="nav-item" data-page="log"><span class="pill"><svg class="icon"><use href="#i-notes"/></svg></span>Журнал</button>
+  </nav>
+
+  <main>
+    <div class="content">
+      <div class="topbar">
+        <h1 id="page-title">SQUAD VPN</h1>
+        <span class="spacer"></span>
+        <span class="chip" id="version-chip">—</span>
+      </div>
+
+      <!-- Главная -->
+      <section class="page active" id="page-home">
+        <div class="stack">
+          <div class="hero" id="hero">
+            <div class="status-icon"><svg class="icon" id="hero-icon"><use href="#i-shield"/></svg></div>
+            <div class="text">
+              <h2 id="hero-title">Подключение…</h2>
+              <p id="hero-text">Проверяю, работает ли SQUAD VPN</p>
+            </div>
+            <div class="row">
+              <button class="btn filled large" id="run-cycle"><svg class="icon"><use href="#i-refresh"/></svg>Обновить узлы</button>
+              <button class="btn tonal large" id="check-update"><svg class="icon"><use href="#i-download"/></svg>Проверить обновления</button>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="card"><div class="label">Живых узлов</div><div class="display" id="st-alive">—</div><div class="muted" id="st-total">из —</div></div>
+            <div class="card"><div class="label">Средний ping</div><div class="display" id="st-ping">—</div><div class="muted" id="st-jitter">jitter —</div></div>
+            <div class="card"><div class="label">Последнее обновление</div><div class="display" id="st-cycle" style="font-size:28px;line-height:44px">—</div><div class="muted" id="st-next">—</div></div>
+            <div class="card"><div class="label">Пробники</div><div class="row" id="st-probes" style="margin-top:12px"><span class="muted">—</span></div></div>
+          </div>
+
+          <div class="card outlined">
+            <div class="row" style="justify-content:space-between">
+              <div style="min-width:0">
+                <h3>Подписка для телефона</h3>
+                <div class="muted">Работает откуда угодно, обновляется каждый час — компьютер для этого не нужен</div>
+              </div>
+              <div class="row">
+                <button class="btn outlined" id="home-copy"><svg class="icon"><use href="#i-copy"/></svg>Копировать</button>
+                <button class="btn filled" id="home-qr"><svg class="icon"><use href="#i-qr"/></svg>QR-код</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Подписки -->
+      <section class="page" id="page-subs">
+        <div class="stack">
+          <div class="row" style="justify-content:space-between">
+            <div class="segmented" role="group" aria-label="Откуда">
+              <button aria-pressed="true" data-source="github"><svg class="icon"><use href="#i-check"/></svg>Откуда угодно</button>
+              <button aria-pressed="false" data-source="local"><svg class="icon"><use href="#i-check"/></svg>Этот компьютер</button>
+            </div>
+            <div class="segmented" role="group" aria-label="Формат">
+              <button aria-pressed="true" data-format="base64"><svg class="icon"><use href="#i-check"/></svg>v2rayNG / INCY</button>
+              <button aria-pressed="false" data-format="mihomo"><svg class="icon"><use href="#i-check"/></svg>Clash</button>
+            </div>
+          </div>
+          <div class="muted" id="subs-hint"></div>
+          <div class="list" id="subs-list"></div>
+        </div>
+      </section>
+
+      <!-- Узлы -->
+      <section class="page" id="page-nodes">
+        <div class="row" style="margin-bottom:12px">
+          <span class="muted" style="flex:1">Подробная таблица узлов, регионов и источников</span>
+          <button class="btn text" id="open-browser"><svg class="icon"><use href="#i-open"/></svg>Открыть в браузере</button>
+        </div>
+        <iframe class="panel" id="panel-frame" title="Узлы" loading="lazy"></iframe>
+      </section>
+
+      <!-- Настройки -->
+      <section class="page" id="page-settings">
+        <div class="stack">
+          <div class="card">
+            <div class="setting">
+              <div class="body"><div class="title">Запускать вместе с Windows</div><div class="muted">SQUAD VPN работает в фоне без окон</div></div>
+              <label class="switch"><input type="checkbox" id="set-autostart" aria-label="Автозапуск"><span class="track"></span><span class="thumb"></span></label>
+            </div>
+            <div class="setting">
+              <div class="body"><div class="title">Обновлять программу автоматически</div><div class="muted">Новая версия скачивается с GitHub сама</div></div>
+              <label class="switch"><input type="checkbox" id="set-autoupdate" aria-label="Автообновление"><span class="track"></span><span class="thumb"></span></label>
+            </div>
+            <div class="setting">
+              <div class="body"><div class="title">Проверять узлы каждые</div><div class="muted">Как часто собирать и проверять узлы из твоей сети</div></div>
+              <select class="select" id="set-interval" aria-label="Интервал"></select>
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn filled" id="save-settings"><svg class="icon"><use href="#i-check"/></svg>Сохранить и перезапустить</button>
+            <button class="btn outlined" id="open-folder"><svg class="icon"><use href="#i-folder"/></svg>Открыть папку</button>
+          </div>
+          <div class="card outlined">
+            <h3 style="margin-bottom:8px">О программе</h3>
+            <div class="muted" id="about"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Журнал -->
+      <section class="page" id="page-log">
+        <div class="stack">
+          <div class="row" style="justify-content:space-between">
+            <div class="segmented" role="group" aria-label="Журнал">
+              <button aria-pressed="true" data-log="agent"><svg class="icon"><use href="#i-check"/></svg>Агент</button>
+              <button aria-pressed="false" data-log="server"><svg class="icon"><use href="#i-check"/></svg>Сервер</button>
+            </div>
+            <button class="icon-btn" id="log-refresh" title="Обновить"><svg class="icon"><use href="#i-refresh"/></svg></button>
+          </div>
+          <div class="log" id="log"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="scrim" id="qr-dialog" role="dialog" aria-modal="true" aria-labelledby="qr-title">
+  <div class="dialog">
+    <h3 id="qr-title">Отсканируй телефоном</h3>
+    <div class="muted" id="qr-caption"></div>
+    <div class="qr"><img id="qr-img" alt="QR-код подписки"></div>
+    <div class="actions">
+      <button class="btn text" id="qr-copy">Копировать</button>
+      <button class="btn text" id="qr-close">Готово</button>
+    </div>
+  </div>
+</div>
+<div class="snackbar" id="snackbar" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const TITLES = { home: "SQUAD VPN", subs: "Подписки", nodes: "Узлы", settings: "Настройки", log: "Журнал" };
+  const state = { page: "home", source: "github", format: "base64", log: "agent", links: null, restarting: false };
+
+  const storage = {
+    get(key) { try { return sessionStorage.getItem(key); } catch { return null; } },
+    set(key, value) { try { sessionStorage.setItem(key, value); } catch { /* ignore */ } },
+  };
+  const urlToken = new URLSearchParams(location.search).get("token");
+  const token = urlToken || storage.get("squad-token") || "";
+  if (urlToken) storage.set("squad-token", urlToken);
+
+  async function api(path, options = {}) {
+    const headers = { ...(options.body ? { "Content-Type": "application/json" } : {}) };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const response = await fetch(path, { ...options, headers });
+    if (!response.ok) {
+      let detail = `HTTP ${response.status}`;
+      try { detail = (await response.json()).detail || detail; } catch { /* ignore */ }
+      throw new Error(detail);
+    }
+    return response.headers.get("content-type")?.includes("json") ? response.json() : response.text();
+  }
+
+  let snackTimer = null;
+  function snack(message) {
+    const el = $("snackbar");
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(snackTimer);
+    snackTimer = setTimeout(() => el.classList.remove("show"), 3200);
+  }
+
+  function ago(value) {
+    if (!value) return "—";
+    const iso = value.includes("T") ? value : value.replace(" ", "T") + "Z";
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return value;
+    const minutes = Math.round((Date.now() - date.getTime()) / 60000);
+    if (minutes < 1) return "только что";
+    if (minutes < 60) return `${minutes} мин назад`;
+    const hours = Math.round(minutes / 60);
+    return hours < 48 ? `${hours} ч назад` : `${Math.round(hours / 24)} дн назад`;
+  }
+  function inMinutes(value) {
+    if (!value) return "";
+    const minutes = Math.max(0, Math.round((new Date(value) - Date.now()) / 60000));
+    return `следующее через ${minutes} мин`;
+  }
+
+  // navigation
+  function go(page) {
+    state.page = page;
+    document.querySelectorAll(".nav-item").forEach((b) => b.setAttribute("aria-current", b.dataset.page === page ? "page" : "false"));
+    document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === `page-${page}`));
+    $("page-title").textContent = TITLES[page];
+    if (page === "nodes" && !$("panel-frame").src) $("panel-frame").src = "/" + location.search;
+    if (page === "subs") loadLinks().catch((e) => snack(e.message));
+    if (page === "settings") loadSettings().catch((e) => snack(e.message));
+    if (page === "log") loadLog().catch((e) => snack(e.message));
+  }
+  document.querySelectorAll(".nav-item").forEach((b) => b.addEventListener("click", () => go(b.dataset.page)));
+
+  function segmented(attr, key, onChange) {
+    document.querySelectorAll(`[data-${attr}]`).forEach((b) => b.addEventListener("click", () => {
+      document.querySelectorAll(`[data-${attr}]`).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      state[key] = b.dataset[attr];
+      onChange();
+    }));
+  }
+
+  // home
+  async function loadHome() {
+    let agent = { running: false };
+    try { agent = await api("/api/agent"); } catch { /* server reachable but no agent info */ }
+    const [cycle, stats, probes] = await Promise.all([
+      api("/api/cycle").catch(() => ({ enabled: false })),
+      api("/api/stats"),
+      api("/api/probes").catch(() => []),
+    ]);
+    $("version-chip").textContent = `v${stats.version}`;
+    const working = cycle.enabled;
+    $("hero").classList.toggle("stopped", !working);
+    $("hero-icon").firstElementChild.setAttribute("href", working ? "#i-shield" : "#i-shield-off");
+    if (cycle.running) {
+      $("hero-title").textContent = "Обновляю узлы…";
+      $("hero-text").textContent = "Собираю и проверяю узлы, это займёт пару минут";
+    } else if (working) {
+      $("hero-title").textContent = "SQUAD VPN работает";
+      $("hero-text").textContent = agent.running
+        ? `Автообновление ${agent.auto_update ? "включено" : "выключено"} · версия ${agent.commit || "?"}`
+        : "Фоновый цикл включён";
+    } else {
+      $("hero-title").textContent = "Фоновый цикл выключен";
+      $("hero-text").textContent = "Узлы не обновляются сами. Запусти SQUAD VPN.exe или install.cmd";
+    }
+    $("run-cycle").disabled = !working || cycle.running;
+    $("check-update").disabled = !agent.running;
+    $("st-alive").textContent = stats.alive;
+    $("st-total").textContent = `из ${stats.total} · мёртвых ${stats.dead}`;
+    $("st-ping").textContent = stats.average_latency_ms == null ? "—" : `${Math.round(stats.average_latency_ms)} ms`;
+    $("st-jitter").textContent = `jitter ${stats.average_jitter_ms == null ? "—" : Math.round(stats.average_jitter_ms) + " ms"}`;
+    const last = cycle.last;
+    $("st-cycle").textContent = last ? ago(last.finished_at) : "—";
+    $("st-next").textContent = last ? (last.ok ? "" : "с ошибками · ") + inMinutes(cycle.next_run_at) : "ещё не запускалось";
+    const box = $("st-probes");
+    box.replaceChildren();
+    if (!probes.length) {
+      const span = document.createElement("span");
+      span.className = "muted";
+      span.textContent = "ещё нет";
+      box.appendChild(span);
+    }
+    for (const probe of probes) {
+      const chip = document.createElement("span");
+      chip.className = "chip " + (probe.alive ? "ok" : "");
+      chip.textContent = `${probe.region} · ${probe.alive}`;
+      chip.title = `${probe.probe_id}: живых ${probe.alive} из ${probe.checked} за 24 ч`;
+      box.appendChild(chip);
+    }
+    $("about").textContent = `Версия ${stats.version}` + (agent.commit ? ` · сборка ${agent.commit}` : "")
+      + (agent.started_at ? ` · агент запущен ${ago(agent.started_at)}` : "")
+      + (agent.app ? ` · приложение: ${agent.app}` : "");
+  }
+
+  // subscriptions
+  function subUrl(profile) {
+    const links = state.links;
+    if (!links) return "";
+    if (state.source === "github" && links.github_raw) {
+      return links.github_raw + profile + (state.format === "mihomo" ? ".yaml" : ".b64");
+    }
+    const params = new URLSearchParams({ profile, format: state.format });
+    if (token) params.set("token", token);
+    return `${links.local}?${params}`;
+  }
+
+  async function loadLinks() {
+    state.links = await api("/api/links");
+    renderLinks();
+  }
+
+  function renderLinks() {
+    const list = $("subs-list");
+    list.replaceChildren();
+    const links = state.links;
+    if (!links) return;
+    $("subs-hint").textContent = state.source === "github"
+      ? (links.github_raw ? "Ссылки на GitHub: работают с любого устройства и из любой сети." : "Репозиторий не на GitHub — доступны только локальные ссылки.")
+      : "Ссылки на этот компьютер: работают, пока он включён и устройство в той же сети.";
+    for (const profile of links.profiles) {
+      const item = document.createElement("div");
+      item.className = "list-item";
+      const lead = document.createElement("div");
+      lead.className = "lead";
+      lead.textContent = profile.name.slice(0, 2).toUpperCase();
+      const body = document.createElement("div");
+      body.className = "body";
+      const head = document.createElement("div");
+      head.className = "headline";
+      head.textContent = profile.name + " ";
+      const badge = document.createElement("span");
+      badge.className = "badge";
+      badge.textContent = profile.count;
+      badge.title = "узлов сейчас";
+      head.appendChild(badge);
+      const support = document.createElement("div");
+      support.className = "supporting";
+      support.textContent = profile.description || subUrl(profile.name);
+      support.title = subUrl(profile.name);
+      body.append(head, support);
+      const copy = iconButton("#i-copy", "Копировать ссылку", () => copyText(subUrl(profile.name)));
+      const qr = iconButton("#i-qr", "QR-код", () => openQr(subUrl(profile.name), profile.name));
+      item.append(lead, body, copy, qr);
+      list.appendChild(item);
+    }
+  }
+
+  function iconButton(icon, title, onClick) {
+    const button = document.createElement("button");
+    button.className = "icon-btn";
+    button.title = title;
+    button.setAttribute("aria-label", title);
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "icon");
+    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    use.setAttribute("href", icon);
+    svg.appendChild(use);
+    button.appendChild(svg);
+    button.addEventListener("click", onClick);
+    return button;
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      snack("Ссылка скопирована");
+    } catch {
+      const area = document.createElement("textarea");
+      area.value = text;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand("copy");
+      area.remove();
+      snack("Ссылка скопирована");
+    }
+  }
+
+  let qrText = "";
+  function openQr(text, name) {
+    qrText = text;
+    $("qr-caption").textContent = `Профиль ${name}. В приложении на телефоне: добавить подписку → сканировать QR.`;
+    const params = new URLSearchParams({ text });
+    if (token) params.set("token", token);
+    $("qr-img").src = `/api/qr?${params}`;
+    $("qr-dialog").classList.add("open");
+  }
+  $("qr-close").addEventListener("click", () => $("qr-dialog").classList.remove("open"));
+  $("qr-dialog").addEventListener("click", (e) => { if (e.target.id === "qr-dialog") $("qr-dialog").classList.remove("open"); });
+  $("qr-copy").addEventListener("click", () => copyText(qrText));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("qr-dialog").classList.remove("open"); });
+
+  async function homeLink() {
+    if (!state.links) state.links = await api("/api/links");
+    const names = state.links.profiles.map((p) => p.name);
+    const name = names.includes("all") ? "all" : names[0];
+    const saved = { source: state.source, format: state.format };
+    state.source = "github"; state.format = "base64";
+    const url = subUrl(name);
+    Object.assign(state, saved);
+    return { url, name };
+  }
+  $("home-copy").addEventListener("click", async () => { try { copyText((await homeLink()).url); } catch (e) { snack(e.message); } });
+  $("home-qr").addEventListener("click", async () => { try { const l = await homeLink(); openQr(l.url, l.name); } catch (e) { snack(e.message); } });
+
+  segmented("source", "source", renderLinks);
+  segmented("format", "format", renderLinks);
+
+  // actions
+  $("run-cycle").addEventListener("click", async () => {
+    try {
+      await api("/api/cycle/run", { method: "POST" });
+      snack("Обновление узлов запущено");
+      $("run-cycle").disabled = true;
+      setTimeout(refresh, 3000);
+    } catch (e) { snack(e.message); }
+  });
+  $("check-update").addEventListener("click", async () => {
+    try {
+      await api("/api/control/update", { method: "POST" });
+      snack("Проверяю обновления — если есть новая версия, программа перезапустится");
+      waitForRestart();
+    } catch (e) { snack(e.message); }
+  });
+  $("open-browser").addEventListener("click", () => window.open("/" + location.search, "_blank"));
+  $("open-folder").addEventListener("click", async () => {
+    try { await api("/api/control/open-folder", { method: "POST" }); } catch (e) { snack(e.message); }
+  });
+
+  // settings
+  async function loadSettings() {
+    const [settings, autostart] = await Promise.all([
+      api("/api/settings"),
+      api("/api/autostart").catch(() => ({ supported: false, enabled: false })),
+    ]);
+    const select = $("set-interval");
+    select.replaceChildren();
+    for (const minutes of settings.allowed_intervals) {
+      const option = document.createElement("option");
+      option.value = minutes;
+      option.textContent = minutes < 60 ? `${minutes} минут` : `${minutes / 60} ч`;
+      select.appendChild(option);
+    }
+    select.value = settings.interval_minutes;
+    $("set-autoupdate").checked = settings.auto_update;
+    $("set-autostart").checked = autostart.enabled;
+    $("set-autostart").disabled = !autostart.supported;
+  }
+  $("set-autostart").addEventListener("change", async (e) => {
+    try {
+      await api("/api/autostart", { method: "POST", body: JSON.stringify({ enabled: e.target.checked }) });
+      snack(e.target.checked ? "Автозапуск включён" : "Автозапуск выключен");
+    } catch (err) {
+      e.target.checked = !e.target.checked;
+      snack(err.message);
+    }
+  });
+  $("save-settings").addEventListener("click", async () => {
+    try {
+      await api("/api/settings", {
+        method: "POST",
+        body: JSON.stringify({
+          interval_minutes: Number($("set-interval").value),
+          auto_update: $("set-autoupdate").checked,
+        }),
+      });
+      await api("/api/control/restart", { method: "POST" });
+      snack("Сохранено, перезапускаю…");
+      waitForRestart();
+    } catch (e) { snack(e.message); }
+  });
+
+  async function waitForRestart() {
+    if (state.restarting) return;
+    state.restarting = true;
+    for (let i = 0; i < 40; i += 1) {
+      await new Promise((r) => setTimeout(r, 1500));
+      try {
+        await api("/health");
+        if (i > 1) break;
+      } catch { /* still restarting */ }
+    }
+    state.restarting = false;
+    refresh();
+  }
+
+  // log
+  async function loadLog() {
+    const data = await api(`/api/logs?name=${state.log}&lines=300`);
+    const box = $("log");
+    const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
+    box.replaceChildren();
+    if (!data.lines.length) {
+      box.textContent = "Журнал пуст";
+      return;
+    }
+    for (const line of data.lines) {
+      const div = document.createElement("div");
+      div.textContent = line;
+      if (/WARNING|ERROR|Traceback|пропущен|не удал/.test(line)) div.className = "warn";
+      box.appendChild(div);
+    }
+    if (atBottom) box.scrollTop = box.scrollHeight;
+  }
+  segmented("log", "log", () => loadLog().catch((e) => snack(e.message)));
+  $("log-refresh").addEventListener("click", () => loadLog().catch((e) => snack(e.message)));
+
+  async function refresh() {
+    try {
+      await loadHome();
+    } catch (e) {
+      $("hero").classList.add("stopped");
+      $("hero-title").textContent = "Нет связи с SQUAD VPN";
+      $("hero-text").textContent = e.message;
+    }
+    if (state.page === "log") loadLog().catch(() => {});
+  }
+
+  refresh();
+  setInterval(refresh, 15000);
+})();
+</script>
+</body>
+</html>

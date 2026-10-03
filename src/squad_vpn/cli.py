@@ -262,15 +262,19 @@ def _agent(args: argparse.Namespace) -> int:
             return 0
         print("Агент не запущен")
         return 1
+    from .settings import load_settings
+
     root = project_root()
     os.chdir(root)
     setup_logging(root)
+    # The desktop app edits data/settings.json; explicit flags still win.
+    settings = load_settings()
     return Agent(
         root,
         port=args.port,
-        interval_minutes=args.interval_minutes,
-        update_hours=args.update_hours,
-        auto_update=not args.no_update,
+        interval_minutes=args.interval_minutes or settings.interval_minutes,
+        update_hours=args.update_hours or settings.update_hours,
+        auto_update=settings.auto_update and not args.no_update,
     ).run()
 
 
@@ -493,12 +497,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="Фоновый агент: панель, ежечасный цикл, перезапуск и автообновление",
     )
     agent.add_argument("--port", type=int, default=8080)
-    agent.add_argument("--interval-minutes", type=int, default=60)
+    agent.add_argument("--interval-minutes", type=int, help="по умолчанию из настроек (60)")
     agent.add_argument(
-        "--update-hours", type=float, default=3.0, help="Как часто проверять обновления"
+        "--update-hours", type=float, help="Как часто проверять обновления (по умолчанию 3)"
     )
     agent.add_argument("--no-update", action="store_true", help="Не обновлять код сам")
     agent.add_argument("--stop", action="store_true", help="Остановить запущенного агента")
+
+    app = sub.add_parser("app-update", help="Скачать/обновить SQUAD VPN.exe в папку проекта")
+    app.add_argument("--force", action="store_true", help="Скачать даже не в Windows")
 
     auto = sub.add_parser("autostart", help="Автозапуск агента при входе в Windows")
     auto.add_argument("--disable", action="store_true", help="Убрать автозапуск и ярлык")
@@ -529,6 +536,12 @@ def main() -> int:
         return asyncio.run(_watch(args))
     if args.command == "serve":
         return _serve(args)
+    if args.command == "app-update":
+        from .agent import project_root
+        from .appdist import ensure_app
+
+        print(ensure_app(project_root(), force=args.force))
+        return 0
     if args.command == "autostart":
         return _autostart(args)
     if args.command == "agent":

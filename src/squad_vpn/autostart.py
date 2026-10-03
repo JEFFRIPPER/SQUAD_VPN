@@ -13,6 +13,8 @@ from pathlib import Path
 
 STARTUP_NAME = "SQUAD VPN.vbs"
 SHORTCUT_NAME = "SQUAD VPN.url"
+APP_SHORTCUT_NAME = "SQUAD VPN.lnk"
+APP_FILE = "SQUAD VPN.exe"
 CSIDL_STARTUP = 0x0007
 CSIDL_DESKTOPDIRECTORY = 0x0010
 
@@ -59,17 +61,62 @@ def enable(root: Path, *, port: int = 8080) -> list[Path]:
     # UTF-16 with BOM: WSH reads it correctly for any path characters.
     startup.write_text(startup_script(root, pythonw_path()), encoding="utf-16")
     created.append(startup)
-    shortcut = _known_folder(CSIDL_DESKTOPDIRECTORY) / SHORTCUT_NAME
-    shortcut.write_text(shortcut_body(port), encoding="utf-8")
-    created.append(shortcut)
+    created.append(ensure_shortcut(root, port=port))
     return created
+
+
+def _create_lnk(link: Path, target: Path, workdir: Path) -> None:
+    import subprocess
+
+    def ps(value: Path) -> str:
+        return str(value).replace("'", "''")
+
+    script = (
+        "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('{link}');"
+        "$s.TargetPath = '{target}'; $s.WorkingDirectory = '{workdir}';"
+        "$s.IconLocation = '{target},0'; $s.Save()"
+    ).format(link=ps(link), target=ps(target), workdir=ps(workdir))
+    subprocess.run(
+        ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
+        check=True,
+        capture_output=True,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+
+
+def ensure_shortcut(root: Path, *, port: int = 8080) -> Path:
+    """Desktop shortcut: to SQUAD VPN.exe when present, else to the web panel."""
+    desktop = _known_folder(CSIDL_DESKTOPDIRECTORY)
+    app = root / APP_FILE
+    url_shortcut = desktop / SHORTCUT_NAME
+    if app.exists():
+        link = desktop / APP_SHORTCUT_NAME
+        try:
+            _create_lnk(link, app, root)
+        except (OSError, ValueError) as exc:
+            raise OSError(f"Не удалось создать ярлык: {exc}") from exc
+        if url_shortcut.exists():
+            url_shortcut.unlink()
+        return link
+    url_shortcut.write_text(shortcut_body(port), encoding="utf-8")
+    return url_shortcut
+
+
+def is_enabled() -> bool:
+    if os.name != "nt":
+        return False
+    return (_known_folder(CSIDL_STARTUP) / STARTUP_NAME).exists()
 
 
 def disable() -> list[Path]:
     if os.name != "nt":
         return []
     removed = []
-    for csidl, name in ((CSIDL_STARTUP, STARTUP_NAME), (CSIDL_DESKTOPDIRECTORY, SHORTCUT_NAME)):
+    for csidl, name in (
+        (CSIDL_STARTUP, STARTUP_NAME),
+        (CSIDL_DESKTOPDIRECTORY, SHORTCUT_NAME),
+        (CSIDL_DESKTOPDIRECTORY, APP_SHORTCUT_NAME),
+    ):
         path = _known_folder(csidl) / name
         if path.exists():
             path.unlink()

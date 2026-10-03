@@ -26,6 +26,7 @@ from . import __version__
 
 CONTROL_PORT = 8079
 STOP_COMMAND = b"stop"
+COMMANDS = {b"stop", b"update", b"restart"}
 NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 
 log = logging.getLogger("squad_vpn.agent")
@@ -112,13 +113,20 @@ def reinstall(root: Path) -> bool:
     return True
 
 
-def request_stop(port: int = CONTROL_PORT) -> bool:
+def send_command(command: str, port: int = CONTROL_PORT) -> bool:
+    """Send stop / update / restart to the running agent."""
+    if command.encode() not in COMMANDS:
+        raise ValueError(f"Неизвестная команда: {command}")
     try:
         with socket.create_connection(("127.0.0.1", port), timeout=3) as conn:
-            conn.sendall(STOP_COMMAND)
+            conn.sendall(command.encode())
         return True
     except OSError:
         return False
+
+
+def request_stop(port: int = CONTROL_PORT) -> bool:
+    return send_command("stop", port)
 
 
 def _acquire_control_socket(port: int, wait_seconds: float) -> socket.socket | None:
@@ -246,17 +254,39 @@ class Agent:
         self._restart_self(control)
         return True
 
-    def _stop_requested(self, control: socket.socket) -> bool:
+    def _read_command(self, control: socket.socket) -> bytes | None:
         try:
             conn, _ = control.accept()
         except (BlockingIOError, OSError):
-            return False
+            return None
         with conn:
             conn.settimeout(2)
             try:
-                return conn.recv(16).strip() == STOP_COMMAND
+                command = conn.recv(16).strip()
             except OSError:
-                return False
+                return None
+        return command if command in COMMANDS else None
+
+    def _ensure_app(self) -> None:
+        from .appdist import ensure_app
+
+        try:
+            result = ensure_app(self.root)
+        except Exception as exc:  # the app is optional; never break the agent
+            result = f"error: {exc}"
+        self.status["app"] = result
+        self.status["app_checked"] = _now()
+        self._save_status()
+        if result.startswith("error"):
+            log.warning("Приложение не обновлено: %s", result)
+        if result.startswith("updated"):
+            from . import autostart
+
+            try:
+                if autostart.is_enabled():
+                    autostart.ensure_shortcut(self.root, port=self.port)
+            except OSError as exc:
+                log.warning("Ярлык не обновлён: %s", exc)
 
     def run(self) -> int:
         control = _acquire_control_socket(self.control_port, wait_seconds=30)
@@ -266,12 +296,26 @@ class Agent:
         log.info("Агент SQUAD VPN %s запущен в %s", __version__, self.root)
         self._save_status()
         next_update = time.monotonic() + (60 if self.auto_update else float("inf"))
+        next_app_check = time.monotonic() + 30
         try:
             self.start_server()
             while True:
-                if self._stop_requested(control):
+                command = self._read_command(control)
+                if command == b"stop":
                     log.info("Получена команда остановки")
                     break
+                if command == b"restart":
+                    log.info("Получена команда перезапуска")
+                    self._restart_self(control)
+                    return 0
+                if command == b"update":
+                    log.info("Проверка обновлений по запросу")
+                    next_app_check = time.monotonic()
+                    if self._maybe_update(control):
+                        return 0
+                if time.monotonic() >= next_app_check:
+                    next_app_check = time.monotonic() + self.update_seconds
+                    self._ensure_app()
                 if self.child is not None and self.child.poll() is not None:
                     code = self.child.returncode
                     lived = time.monotonic() - self.child_started

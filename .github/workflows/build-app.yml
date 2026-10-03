@@ -1,0 +1,64 @@
+name: Build desktop app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/build-app.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-app
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: python -m pip install pyinstaller pywebview pillow
+
+      - name: Draw icon
+        run: python app/make_icon.py
+
+      - name: Build SQUAD-VPN.exe
+        run: >-
+          pyinstaller --noconfirm --clean --onefile --windowed
+          --name SQUAD-VPN --icon app/icon.ico
+          --collect-all webview
+          app/launcher.py
+
+      - name: Check the exe
+        shell: pwsh
+        run: |
+          $exe = Get-Item dist/SQUAD-VPN.exe
+          if ($exe.Length -lt 1MB) { throw "exe is too small: $($exe.Length)" }
+          "{0:N1} MB" -f ($exe.Length / 1MB)
+          $version = (Select-String -Path src/squad_vpn/__init__.py -Pattern '__version__ = "(.+)"').Matches[0].Groups[1].Value
+          "$version-$("${{ github.sha }}".Substring(0, 7))" | Out-File -Encoding ascii -NoNewline dist/app-version.txt
+          Get-Content dist/app-version.txt
+
+      - name: Publish release app-latest
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view app-latest -R $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create app-latest -R $env:GITHUB_REPOSITORY --target $env:GITHUB_SHA `
+              --title "SQUAD VPN — приложение для Windows" `
+              --notes "SQUAD-VPN.exe — панель управления SQUAD VPN. Положи в папку проекта или просто запусти install.cmd: программа скачает и обновит exe сама."
+          }
+          gh release upload app-latest dist/SQUAD-VPN.exe dist/app-version.txt -R $env:GITHUB_REPOSITORY --clobber
+          $global:LASTEXITCODE = 0

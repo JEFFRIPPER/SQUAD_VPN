@@ -22,3 +22,11 @@ data/publish/
 data/probe.json
 data/probe-publish/
 data/probes-cache/
+app/icon.ico
+build/
+dist/
+*.spec
+SQUAD VPN.exe
+SQUAD VPN.exe.*
+data/app-version.txt
+data/settings.json

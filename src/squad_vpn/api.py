@@ -26,12 +26,35 @@ MAX_SUB_LIMIT = 2000
 MAX_PAGE_LIMIT = 500
 
 
-def _dashboard_html() -> str:
+def _dashboard_html(name: str = "index.html") -> str:
     return (
         resources.files("squad_vpn")
-        .joinpath("dashboard/index.html")
+        .joinpath(f"dashboard/{name}")
         .read_text(encoding="utf-8")
     )
+
+
+LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
+LOG_FILES = {"agent": "agent.log", "server": "server.log"}
+
+
+def _require_local(request: Request) -> None:
+    """Control actions (restart, settings, autostart) only from this computer."""
+    host = request.client.host if request.client else ""
+    if host not in LOOPBACK:
+        raise HTTPException(status_code=403, detail="Только с этого компьютера")
+
+
+def _tail(path: Path, lines: int) -> list[str]:
+    try:
+        with open(path, "rb") as handle:
+            handle.seek(0, 2)
+            size = handle.tell()
+            handle.seek(max(0, size - 200_000))
+            data = handle.read().decode("utf-8", errors="replace")
+    except OSError:
+        return []
+    return data.splitlines()[-lines:]
 
 
 class CycleRunner:
@@ -156,6 +179,118 @@ def create_app(
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     def dashboard() -> str:
         return _dashboard_html()
+
+    @app.get("/app", response_class=HTMLResponse, include_in_schema=False)
+    def desktop_app() -> str:
+        return _dashboard_html("app.html")
+
+    local_only = [Depends(require_token), Depends(_require_local)]
+
+    @app.get("/api/links", dependencies=protected)
+    def links(request: Request, store: NodeStore = Depends(get_store)) -> dict[str, object]:
+        from .agent import project_root
+        from .publish import PublishTarget, detect_origin
+
+        origin = detect_origin(project_root())
+        target = PublishTarget(origin, branch="subs") if origin else None
+        items = []
+        for profile in profiles().values():
+            items.append(
+                {
+                    "name": profile.name,
+                    "description": profile.description,
+                    "count": len(select_profile(store, profile)),
+                }
+            )
+        return {
+            "github_raw": target.raw_base() if target else None,
+            "github_cdn": target.cdn_base() if target else None,
+            "local": str(request.base_url).rstrip("/") + "/sub",
+            "profiles": items,
+        }
+
+    @app.get("/api/qr", dependencies=protected)
+    def qr(text: str = Query(..., min_length=1, max_length=1000)) -> Response:
+        import io
+
+        import qrcode
+        import qrcode.image.svg
+
+        image = qrcode.make(text, image_factory=qrcode.image.svg.SvgPathImage, border=2)
+        buffer = io.BytesIO()
+        image.save(buffer)
+        return Response(buffer.getvalue(), media_type="image/svg+xml")
+
+    @app.get("/api/logs", dependencies=local_only)
+    def logs(
+        name: Literal["agent", "server"] = "agent",
+        lines: int = Query(200, ge=1, le=2000),
+    ) -> dict[str, object]:
+        from .agent import project_root
+
+        path = project_root() / "data" / "logs" / LOG_FILES[name]
+        return {"name": name, "lines": _tail(path, lines)}
+
+    @app.get("/api/settings", dependencies=local_only)
+    def get_settings() -> dict[str, object]:
+        from .agent import project_root
+        from .settings import ALLOWED_INTERVALS, load_settings
+
+        settings = load_settings(project_root() / "data" / "settings.json")
+        return {**asdict(settings), "allowed_intervals": list(ALLOWED_INTERVALS)}
+
+    @app.post("/api/settings", dependencies=local_only)
+    def set_settings(payload: dict[str, object]) -> dict[str, object]:
+        from .agent import project_root
+        from .settings import Settings, load_settings, save_settings
+
+        path = project_root() / "data" / "settings.json"
+        current = asdict(load_settings(path))
+        current.update({k: v for k, v in payload.items() if k in current})
+        try:
+            saved = save_settings(Settings(**current), path)  # type: ignore[arg-type]
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return {**asdict(saved), "restart_required": True}
+
+    @app.get("/api/autostart", dependencies=local_only)
+    def autostart_status() -> dict[str, object]:
+        import os as _os
+
+        from . import autostart
+
+        if _os.name != "nt":
+            return {"supported": False, "enabled": False}
+        return {"supported": True, "enabled": autostart.is_enabled()}
+
+    @app.post("/api/autostart", dependencies=local_only)
+    def autostart_set(payload: dict[str, object]) -> dict[str, object]:
+        from . import autostart
+        from .agent import project_root
+
+        try:
+            if payload.get("enabled"):
+                autostart.enable(project_root())
+            else:
+                autostart.disable()
+        except OSError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        return {"supported": True, "enabled": bool(payload.get("enabled"))}
+
+    @app.post("/api/control/{command}", dependencies=local_only)
+    def control(command: Literal["update", "restart", "open-folder"]) -> dict[str, object]:
+        from .agent import project_root, send_command
+
+        if command == "open-folder":
+            import os as _os
+
+            if _os.name != "nt":
+                raise HTTPException(status_code=409, detail="Только в Windows")
+            _os.startfile(project_root())  # type: ignore[attr-defined]
+            return {"ok": True}
+        if not send_command(command):
+            raise HTTPException(status_code=409, detail="Агент не запущен")
+        return {"ok": True}
 
     @app.get("/health")
     def health() -> dict[str, object]:

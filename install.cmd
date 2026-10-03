@@ -57,7 +57,8 @@ echo [4/6] Stopping old versions...
 ".venv\Scripts\python.exe" -m squad_vpn agent --stop >nul 2>nul
 schtasks /Delete /TN "SQUAD_VPN_HOURLY" /F >nul 2>nul
 
-echo [5/6] Enabling autostart and desktop shortcut...
+echo [5/6] Downloading SQUAD VPN.exe and enabling autostart...
+".venv\Scripts\python.exe" -m squad_vpn app-update
 ".venv\Scripts\python.exe" -m squad_vpn autostart
 if errorlevel 1 (
   pause
@@ -67,11 +68,15 @@ if errorlevel 1 (
 echo [6/6] Starting SQUAD VPN in the background...
 start "" ".venv\Scripts\pythonw.exe" -m squad_vpn agent
 timeout /t 8 /nobreak >nul
-start "" http://127.0.0.1:8080/
+if exist "SQUAD VPN.exe" (
+  start "" "SQUAD VPN.exe"
+) else (
+  start "" http://127.0.0.1:8080/app
+)
 
 echo.
 echo Done. SQUAD VPN now runs in the background, starts with Windows,
 echo refreshes nodes every hour and updates itself from GitHub.
-echo Dashboard: "SQUAD VPN" shortcut on the desktop (http://127.0.0.1:8080/).
+echo Control panel: "SQUAD VPN" on the desktop or SQUAD VPN.exe in this folder.
 echo You can close this window.
 pause
