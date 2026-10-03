@@ -8,6 +8,11 @@ on:
       - ".github/workflows/build-app.yml"
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Создать релиз с этим тегом (например v1.0.0); пусто — только app-latest"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -68,16 +73,17 @@ jobs:
 
       # A version tag (v1.0.0 …) also gets its own release with the exe.
       - name: Publish versioned release
-        if: github.ref_type == 'tag'
+        if: github.ref_type == 'tag' || inputs.release_tag != ''
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.release_tag }}
         run: |
           gh release view $env:TAG -R $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -ne 0) {
+            # --target creates the tag on this commit when it does not exist yet.
             gh release create $env:TAG dist/SQUAD-VPN.exe -R $env:GITHUB_REPOSITORY `
-              --title "SQUAD VPN $env:TAG" --notes-file CHANGELOG.md --latest
+              --target $env:GITHUB_SHA --title "SQUAD VPN $env:TAG" --notes-file CHANGELOG.md --latest
           } else {
             gh release upload $env:TAG dist/SQUAD-VPN.exe -R $env:GITHUB_REPOSITORY --clobber
           }
