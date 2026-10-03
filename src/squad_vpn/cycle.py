@@ -142,6 +142,8 @@ async def validate_step(
         )
     store = NodeStore(database)
     try:
+        if probe is not None:
+            store.register_probe(probe.probe_id, probe.region, kind=probe.kind, version=__version__)
         nodes = store.list_validation_candidates(
             recheck_after_minutes=recheck_minutes, limit=limit
         )
@@ -153,8 +155,6 @@ async def validate_step(
         results = await validator.validate(
             nodes, concurrency=concurrency, geo_limit=geo_limit, geo_known=geo_known
         )
-        if probe is not None:
-            store.register_probe(probe.probe_id, probe.region, kind=probe.kind, version=__version__)
         alive = 0
         for result in results:
             if probe is not None:
@@ -243,6 +243,9 @@ def probe_publish_step(
 ) -> dict[str, object]:
     store = NodeStore(database)
     try:
+        store.register_probe(
+            identity.probe_id, identity.region, kind=identity.kind, version=__version__
+        )
         result = publish_report(store, identity, repo)
     finally:
         store.close()

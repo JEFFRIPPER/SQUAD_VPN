@@ -194,6 +194,8 @@ def test_cycle_survives_failing_steps_and_still_exports(tmp_path):
         "probe", "collect", "validate", "probes", "cleanup", "export", "publish", "probe_publish",
     }
     assert report.steps["probe"] == {"probe_id": "test-probe", "region": "US"}
+    # Even with no validation (Mihomo missing) the report carries known checks.
+    assert report.steps["probe_publish"]["results"] == 1
     assert "probe-test-probe" in subprocess.run(
         ["git", "--git-dir", str(remote), "branch", "--list"],
         check=True, capture_output=True, text=True,
