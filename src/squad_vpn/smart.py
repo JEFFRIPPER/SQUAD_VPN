@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-from .exporter import export_mihomo, export_plain
+from .exporter import export_mihomo, export_plain, remove_stale_files
 from .models import RankedNode
 from .store import NodeStore
 
@@ -25,6 +26,14 @@ DEFAULT_PROFILES = (
     SmartProfile("fast", min_score=60, min_stability=40, max_latency=150, limit=150),
     SmartProfile("stable", min_score=65, min_stability=75, max_latency=800),
 )
+
+
+_SAFE_NAME = re.compile(r"[^A-Za-z0-9_-]+")
+
+
+def _safe_name(value: str) -> str:
+    """Make a value from external data safe to use as a file name."""
+    return _SAFE_NAME.sub("_", value.strip()).strip("_")[:64]
 
 
 def _export_pair(records: list[RankedNode], base: Path) -> dict[str, object]:
@@ -66,16 +75,25 @@ def export_smart_catalog(
         checked_within_hours=12,
         seen_within_hours=48,
     )
-    countries = sorted({item.country for item in fresh if item.country})
-    protocols = sorted({item.node.protocol for item in fresh})
-    country_root = root / "country"
-    protocol_root = root / "protocol"
-    for country in countries:
-        records = [item for item in fresh if item.country == country]
-        index["countries"][country] = _export_pair(records, country_root / country)
-    for protocol in protocols:
-        records = [item for item in fresh if item.node.protocol == protocol]
-        index["protocols"][protocol] = _export_pair(records, protocol_root / protocol)
+    by_country: dict[str, list[RankedNode]] = {}
+    by_protocol: dict[str, list[RankedNode]] = {}
+    for item in fresh:
+        country = _safe_name((item.country or "").upper())
+        if country:
+            by_country.setdefault(country, []).append(item)
+        protocol = _safe_name(item.node.protocol.lower())
+        if protocol:
+            by_protocol.setdefault(protocol, []).append(item)
+
+    for key, groups, folder in (
+        ("countries", by_country, root / "country"),
+        ("protocols", by_protocol, root / "protocol"),
+    ):
+        keep: set[str] = set()
+        for name in sorted(groups):
+            index[key][name] = _export_pair(groups[name], folder / name)
+            keep.update({name, name + ".yaml"})
+        remove_stale_files(folder, keep)
 
     (root / "index.json").write_text(
         json.dumps(index, ensure_ascii=False, indent=2) + "\n",

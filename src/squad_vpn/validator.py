@@ -18,6 +18,17 @@ DEFAULT_TEST_URL = "https://www.gstatic.com/generate_204"
 DEFAULT_BINARY = Path("tools/mihomo/mihomo.exe")
 
 
+class MihomoStartError(RuntimeError):
+    """Mihomo exited during startup (usually a rejected config)."""
+
+
+def _tail(path: Path, size: int = 2000) -> str:
+    try:
+        return path.read_bytes()[-size:].decode("utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
 def _free_port() -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))
@@ -42,7 +53,7 @@ class MihomoValidator:
         directory: Path,
         controller_port: int,
         mixed_port: int,
-    ) -> tuple[subprocess.Popen[str], list[MihomoProxy]]:
+    ) -> tuple[subprocess.Popen[bytes], list[MihomoProxy]]:
         if not self.binary.exists():
             raise FileNotFoundError(
                 f"Mihomo не найден: {self.binary}. Выполни squad-vpn setup-mihomo"
@@ -53,19 +64,21 @@ class MihomoValidator:
         config_path = directory / "config.yaml"
         config_path.write_text(dump_yaml(config), encoding="utf-8")
         flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-        process = subprocess.Popen(
-            [str(self.binary.resolve()), "-f", str(config_path), "-d", str(directory)],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            creationflags=flags,
-        )
+        # Logs go to a file: an unread PIPE fills up and blocks Mihomo.
+        log_file = open(directory / "mihomo.log", "wb")
+        try:
+            process = subprocess.Popen(
+                [str(self.binary.resolve()), "-f", str(config_path), "-d", str(directory)],
+                stdout=log_file,
+                stderr=subprocess.STDOUT,
+                creationflags=flags,
+            )
+        finally:
+            log_file.close()
         return process, converted
 
     @staticmethod
-    def _stop(process: subprocess.Popen[str]) -> None:
+    def _stop(process: subprocess.Popen[bytes]) -> None:
         if process.poll() is not None:
             return
         process.terminate()
@@ -77,16 +90,18 @@ class MihomoValidator:
 
     async def _wait_ready(
         self,
-        process: subprocess.Popen[str],
+        process: subprocess.Popen[bytes],
         base_url: str,
+        log_path: Path,
         timeout: float = 12.0,
     ) -> None:
         deadline = time.monotonic() + timeout
         async with httpx.AsyncClient(timeout=1.0) as client:
             while time.monotonic() < deadline:
                 if process.poll() is not None:
-                    output = process.stdout.read() if process.stdout else ""
-                    raise RuntimeError(f"Mihomo завершился при запуске:\n{output[-2000:]}")
+                    raise MihomoStartError(
+                        "Mihomo завершился при запуске:\n" + _tail(log_path)
+                    )
                 try:
                     response = await client.get(f"{base_url}/version")
                     if response.is_success:
@@ -145,7 +160,9 @@ class MihomoValidator:
                 data = geo_response.json()
             result.exit_ip = exit_ip
             if data.get("success", True):
-                result.country = str(data.get("country_code") or data.get("country") or "")
+                result.country = (
+                    str(data.get("country_code") or data.get("country") or "") or None
+                )
                 connection = data.get("connection") or {}
                 asn = connection.get("asn")
                 org = connection.get("org") or connection.get("isp")
@@ -161,8 +178,45 @@ class MihomoValidator:
         concurrency: int = 16,
         geo_limit: int = 0,
     ) -> list[ValidationResult]:
+        """Validate nodes; every input node gets exactly one result.
+
+        Nodes that cannot be converted to Mihomo, or that make Mihomo reject
+        the whole config, are reported as dead instead of being silently
+        skipped (otherwise they stay "never checked" and are re-picked forever).
+        """
         if not nodes:
             return []
+        results = await self._validate_batch(nodes, concurrency)
+        if geo_limit > 0:
+            await self._enrich_batch(nodes, results, geo_limit)
+        return results
+
+    async def _validate_batch(
+        self,
+        nodes: list[ProxyNode],
+        concurrency: int,
+    ) -> list[ValidationResult]:
+        try:
+            return await self._run_probe(nodes, concurrency)
+        except MihomoStartError as exc:
+            if len(nodes) == 1:
+                return [
+                    ValidationResult(
+                        nodes[0].fingerprint,
+                        False,
+                        error=f"Mihomo отклонил конфиг: {str(exc)[-400:]}",
+                    )
+                ]
+            middle = len(nodes) // 2
+            left = await self._validate_batch(nodes[:middle], concurrency)
+            right = await self._validate_batch(nodes[middle:], concurrency)
+            return left + right
+
+    async def _run_probe(
+        self,
+        nodes: list[ProxyNode],
+        concurrency: int,
+    ) -> list[ValidationResult]:
         controller_port = _free_port()
         mixed_port = _free_port()
         with tempfile.TemporaryDirectory(prefix="squad-vpn-") as tmp:
@@ -172,22 +226,54 @@ class MihomoValidator:
             )
             base_url = f"http://127.0.0.1:{controller_port}"
             try:
-                await self._wait_ready(process, base_url)
+                await self._wait_ready(process, base_url, directory / "mihomo.log")
                 semaphore = asyncio.Semaphore(max(1, concurrency))
                 async with httpx.AsyncClient(base_url=base_url) as client:
-                    results = await asyncio.gather(
+                    probed = await asyncio.gather(
                         *(self._probe_one(client, item, semaphore) for item in converted)
                     )
-                    if geo_limit > 0:
-                        result_by_fp = {result.fingerprint: result for result in results}
-                        item_by_fp = {item.fingerprint: item for item in converted}
-                        alive = sorted(
-                            (r for r in results if r.alive),
-                            key=lambda r: r.latency_ms or 999999,
-                        )[:geo_limit]
-                        for result in alive:
-                            item = item_by_fp[result.fingerprint]
+            finally:
+                self._stop(process)
+        by_fp = {result.fingerprint: result for result in probed}
+        return [
+            by_fp.get(node.fingerprint)
+            or ValidationResult(
+                node.fingerprint, False, error="Не поддерживается конвертером Mihomo"
+            )
+            for node in nodes
+        ]
+
+    async def _enrich_batch(
+        self,
+        nodes: list[ProxyNode],
+        results: list[ValidationResult],
+        geo_limit: int,
+    ) -> None:
+        alive = sorted(
+            (r for r in results if r.alive),
+            key=lambda r: r.latency_ms or 999999,
+        )[:geo_limit]
+        if not alive:
+            return
+        wanted = {r.fingerprint for r in alive}
+        subset = [node for node in nodes if node.fingerprint in wanted]
+        controller_port = _free_port()
+        mixed_port = _free_port()
+        with tempfile.TemporaryDirectory(prefix="squad-vpn-geo-") as tmp:
+            directory = Path(tmp)
+            process, converted = self._start(
+                subset, directory, controller_port, mixed_port
+            )
+            base_url = f"http://127.0.0.1:{controller_port}"
+            try:
+                await self._wait_ready(process, base_url, directory / "mihomo.log")
+                item_by_fp = {item.fingerprint: item for item in converted}
+                async with httpx.AsyncClient(base_url=base_url) as client:
+                    for result in alive:
+                        item = item_by_fp.get(result.fingerprint)
+                        if item is not None:
                             await self._enrich_geo(client, mixed_port, item, result)
-                return results
+            except (MihomoStartError, TimeoutError):
+                return
             finally:
                 self._stop(process)

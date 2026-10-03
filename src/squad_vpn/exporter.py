@@ -17,6 +17,23 @@ def export_plain(nodes: list[ProxyNode], path: str | Path) -> Path:
     return target
 
 
+def remove_stale_files(directory: str | Path, keep: set[str]) -> list[Path]:
+    """Delete files in ``directory`` whose names are not in ``keep``.
+
+    Without this, a subscription for a protocol/country that vanished would
+    keep serving its last (now dead) nodes under a stable URL.
+    """
+    root = Path(directory)
+    removed: list[Path] = []
+    if not root.is_dir():
+        return removed
+    for path in root.iterdir():
+        if path.is_file() and path.name not in keep:
+            path.unlink()
+            removed.append(path)
+    return removed
+
+
 def export_by_protocol(nodes: list[ProxyNode], directory: str | Path) -> list[Path]:
     root = Path(directory)
     root.mkdir(parents=True, exist_ok=True)
@@ -24,6 +41,7 @@ def export_by_protocol(nodes: list[ProxyNode], directory: str | Path) -> list[Pa
     for protocol in sorted({node.protocol for node in nodes}):
         selected = [node for node in nodes if node.protocol == protocol]
         created.append(export_plain(selected, root / protocol))
+    remove_stale_files(root, {path.name for path in created})
     return created
 
 

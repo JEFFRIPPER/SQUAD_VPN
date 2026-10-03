@@ -62,3 +62,16 @@ def test_broken_ipv6_line_does_not_break_subscription():
     nodes = parse_subscription(broken + "\n" + valid)
     assert len(nodes) == 1
     assert nodes[0].protocol == "trojan"
+
+
+def test_rejects_out_of_range_ports_and_bad_vmess():
+    import base64
+
+    from squad_vpn.parser import parse_uri
+
+    assert parse_uri("trojan://pw@host.example:0") is None
+    assert parse_uri("ss://aes-128-gcm:pw@host.example:70000") is None
+    vmess_list = base64.b64encode(b"[1, 2]").decode()
+    assert parse_uri("vmess://" + vmess_list) is None
+    vmess_port = base64.b64encode(b'{"add": "h", "port": 99999, "id": "x"}').decode()
+    assert parse_uri("vmess://" + vmess_port) is None

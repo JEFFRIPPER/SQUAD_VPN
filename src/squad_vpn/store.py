@@ -73,6 +73,10 @@ CREATE TABLE IF NOT EXISTS sources (
 """
 
 
+RECENT_WINDOW = 10
+HISTORY_KEEP = 50
+
+
 MIGRATION_COLUMNS = {
     "alive": "INTEGER",
     "latency_ms": "REAL",
@@ -112,9 +116,13 @@ class NodeStore:
             row["name"]
             for row in self.connection.execute("PRAGMA table_info(nodes)").fetchall()
         }
+        added = set()
         for name, ddl in MIGRATION_COLUMNS.items():
             if name not in columns:
                 self.connection.execute(f"ALTER TABLE nodes ADD COLUMN {name} {ddl}")
+                added.add(name)
+        if "stability_score" in added:
+            self._backfill_scores()
 
     def close(self) -> None:
         self.connection.close()
@@ -226,53 +234,31 @@ class NodeStore:
                 int(result.alive),
                 result.latency_ms,
                 result.exit_ip,
-                result.country,
-                result.asn,
+                result.country or None,
+                result.asn or None,
                 result.error,
             ),
         )
-        counts = self.connection.execute(
+        # Cumulative counters live in nodes, so old health_checks can be pruned.
+        self.connection.execute(
             """
-            SELECT COUNT(*) AS attempts,
-                   SUM(CASE WHEN alive = 1 THEN 1 ELSE 0 END) AS successes,
-                   SUM(CASE WHEN alive = 0 THEN 1 ELSE 0 END) AS failures
-            FROM health_checks WHERE fingerprint = ?
+            UPDATE nodes SET
+                success_count = success_count + ?,
+                failure_count = failure_count + ?
+            WHERE fingerprint = ?
             """,
-            (result.fingerprint,),
-        ).fetchone()
-        recent = self.connection.execute(
-            """
-            SELECT alive, latency_ms FROM health_checks
-            WHERE fingerprint = ? ORDER BY id DESC LIMIT 10
-            """,
-            (result.fingerprint,),
-        ).fetchall()
-        recent_successes = sum(int(row["alive"]) for row in recent)
-        recent_rate = recent_successes / len(recent) if recent else 0.0
-        recent_latencies = [
-            float(row["latency_ms"])
-            for row in recent
-            if row["alive"] and row["latency_ms"] is not None
-        ]
-        jitter = pstdev(recent_latencies) if len(recent_latencies) >= 2 else None
-        stats = HealthStats(
-            attempts=int(counts["attempts"] or 0),
-            successes=int(counts["successes"] or 0),
-            failures=int(counts["failures"] or 0),
-            latency_ms=result.latency_ms,
-            jitter_ms=jitter,
-            recent_success_rate=recent_rate,
+            (int(result.alive), int(not result.alive), result.fingerprint),
         )
-        score = quality_score(stats, alive=result.alive)
-        stable = stability_score(stats)
+        score, stable, jitter, recent_rate = self._compute_scores(
+            result.fingerprint, result.latency_ms, result.alive
+        )
         self.connection.execute(
             """
             UPDATE nodes SET
                 alive=?, latency_ms=?, jitter_ms=?, recent_success_rate=?,
                 stability_score=?, quality_score=?, last_checked=CURRENT_TIMESTAMP,
                 exit_ip=COALESCE(?, exit_ip), country=COALESCE(?, country),
-                asn=COALESCE(?, asn), validation_error=?,
-                success_count=?, failure_count=?
+                asn=COALESCE(?, asn), validation_error=?
             WHERE fingerprint=?
             """,
             (
@@ -283,16 +269,109 @@ class NodeStore:
                 stable,
                 score,
                 result.exit_ip,
-                result.country,
-                result.asn,
+                result.country or None,
+                result.asn or None,
                 result.error,
-                stats.successes,
-                stats.failures,
                 result.fingerprint,
             ),
         )
+        self._prune_history(result.fingerprint)
         self.connection.commit()
         return score
+
+    def _compute_scores(
+        self,
+        fingerprint: str,
+        latency_ms: float | None,
+        alive: bool | None,
+    ) -> tuple[float, float, float | None, float]:
+        counts = self.connection.execute(
+            "SELECT success_count, failure_count FROM nodes WHERE fingerprint = ?",
+            (fingerprint,),
+        ).fetchone()
+        successes = int(counts["success_count"] or 0) if counts else 0
+        failures = int(counts["failure_count"] or 0) if counts else 0
+        recent = self.connection.execute(
+            """
+            SELECT alive, latency_ms FROM health_checks
+            WHERE fingerprint = ? ORDER BY id DESC LIMIT ?
+            """,
+            (fingerprint, RECENT_WINDOW),
+        ).fetchall()
+        recent_successes = sum(int(row["alive"]) for row in recent)
+        recent_rate = recent_successes / len(recent) if recent else 0.0
+        recent_latencies = [
+            float(row["latency_ms"])
+            for row in recent
+            if row["alive"] and row["latency_ms"] is not None
+        ]
+        jitter = pstdev(recent_latencies) if len(recent_latencies) >= 2 else None
+        stats = HealthStats(
+            attempts=successes + failures,
+            successes=successes,
+            failures=failures,
+            latency_ms=latency_ms,
+            jitter_ms=jitter,
+            recent_success_rate=recent_rate,
+        )
+        return (
+            quality_score(stats, alive=alive),
+            stability_score(stats),
+            jitter,
+            recent_rate,
+        )
+
+    def _prune_history(self, fingerprint: str) -> None:
+        self.connection.execute(
+            """
+            DELETE FROM health_checks
+            WHERE fingerprint = ? AND id NOT IN (
+                SELECT id FROM health_checks WHERE fingerprint = ?
+                ORDER BY id DESC LIMIT ?
+            )
+            """,
+            (fingerprint, fingerprint, HISTORY_KEEP),
+        )
+
+    def prune_history(self) -> int:
+        """Trim health_checks for every node to the last HISTORY_KEEP rows."""
+        cursor = self.connection.execute(
+            """
+            DELETE FROM health_checks WHERE id IN (
+                SELECT id FROM (
+                    SELECT id, ROW_NUMBER() OVER (
+                        PARTITION BY fingerprint ORDER BY id DESC
+                    ) AS rn
+                    FROM health_checks
+                ) WHERE rn > ?
+            )
+            """,
+            (HISTORY_KEEP,),
+        )
+        self.connection.commit()
+        return cursor.rowcount
+
+    def _backfill_scores(self) -> None:
+        """Recompute derived scores for nodes validated before a schema upgrade."""
+        rows = self.connection.execute(
+            """
+            SELECT fingerprint, latency_ms, alive FROM nodes
+            WHERE last_checked IS NOT NULL
+            """
+        ).fetchall()
+        for row in rows:
+            alive = None if row["alive"] is None else bool(row["alive"])
+            score, stable, jitter, recent_rate = self._compute_scores(
+                row["fingerprint"], row["latency_ms"], alive
+            )
+            self.connection.execute(
+                """
+                UPDATE nodes SET jitter_ms=?, recent_success_rate=?,
+                    stability_score=?, quality_score=?
+                WHERE fingerprint=?
+                """,
+                (jitter, recent_rate, stable, score, row["fingerprint"]),
+            )
 
     def list_ranked(
         self,
@@ -374,20 +453,76 @@ class NodeStore:
         *,
         recheck_after_minutes: int = 60,
         limit: int | None = None,
+        seen_within_hours: int | None = 72,
+        new_share: float = 0.5,
     ) -> list[ProxyNode]:
-        sql = """
-        SELECT * FROM nodes
-        WHERE last_checked IS NULL
-           OR last_checked <= datetime('now', ?)
-        ORDER BY
-            CASE WHEN last_checked IS NULL THEN 0 ELSE 1 END,
-            CASE WHEN last_checked IS NULL
-                THEN ABS(RANDOM()) ELSE unixepoch(last_checked) END ASC,
-            quality_score DESC
+        """Pick nodes for validation without starving re-checks.
+
+        Nodes that were never checked and nodes due for a re-check share the
+        budget (``new_share`` of it goes to new nodes); any unused part of one
+        half is given to the other. Nodes not seen in sources for
+        ``seen_within_hours`` are skipped.
         """
-        params: list[object] = [f"-{max(0, int(recheck_after_minutes))} minutes"]
-        if limit is not None:
-            sql += " LIMIT ?"
-            params.append(int(limit))
-        rows = self.connection.execute(sql, params).fetchall()
+        seen_clause = ""
+        seen_params: list[object] = []
+        if seen_within_hours is not None:
+            seen_clause = " AND last_seen >= datetime('now', ?)"
+            seen_params.append(f"-{max(0, int(seen_within_hours))} hours")
+
+        def fetch_new(count: int | None) -> list[sqlite3.Row]:
+            sql = (
+                "SELECT * FROM nodes WHERE last_checked IS NULL"
+                + seen_clause
+                + " ORDER BY last_seen DESC, RANDOM()"
+            )
+            params = list(seen_params)
+            if count is not None:
+                sql += " LIMIT ?"
+                params.append(count)
+            return self.connection.execute(sql, params).fetchall()
+
+        def fetch_due(count: int | None) -> list[sqlite3.Row]:
+            # Previously alive nodes first, then the longest-unchecked ones.
+            sql = (
+                "SELECT * FROM nodes WHERE last_checked IS NOT NULL"
+                " AND last_checked <= datetime('now', ?)"
+                + seen_clause
+                + " ORDER BY CASE WHEN alive = 1 THEN 0 ELSE 1 END,"
+                " last_checked ASC, quality_score DESC"
+            )
+            params: list[object] = [
+                f"-{max(0, int(recheck_after_minutes))} minutes",
+                *seen_params,
+            ]
+            if count is not None:
+                sql += " LIMIT ?"
+                params.append(count)
+            return self.connection.execute(sql, params).fetchall()
+
+        if limit is None:
+            rows = fetch_new(None) + fetch_due(None)
+        else:
+            limit = max(0, int(limit))
+            share = min(1.0, max(0.0, new_share))
+            new_quota = int(round(limit * share))
+            due_quota = limit - new_quota
+            new_rows = fetch_new(new_quota)
+            due_rows = fetch_due(due_quota + (new_quota - len(new_rows)))
+            spare = limit - len(new_rows) - len(due_rows)
+            if spare > 0:
+                new_rows = fetch_new(len(new_rows) + spare)
+            rows = new_rows + due_rows
         return [self._row_to_node(row) for row in rows]
+
+    def prune_sources(self, active_names: list[str]) -> int:
+        """Drop stats of sources that were removed or disabled in the registry."""
+        if not active_names:
+            cursor = self.connection.execute("DELETE FROM sources")
+        else:
+            marks = ",".join("?" for _ in active_names)
+            cursor = self.connection.execute(
+                f"DELETE FROM sources WHERE name NOT IN ({marks})",
+                list(active_names),
+            )
+        self.connection.commit()
+        return cursor.rowcount

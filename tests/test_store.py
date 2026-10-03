@@ -127,3 +127,117 @@ def test_validation_candidates_skip_recently_checked_nodes(tmp_path):
         assert checked.fingerprint not in fingerprints
     finally:
         store.close()
+
+
+def _age(store, fingerprint, column, hours):
+    store.connection.execute(
+        f"UPDATE nodes SET {column} = datetime('now', ?) WHERE fingerprint = ?",
+        (f"-{hours} hours", fingerprint),
+    )
+    store.connection.commit()
+
+
+def test_validation_candidates_do_not_starve_rechecks(tmp_path):
+    from squad_vpn.models import ValidationResult
+
+    store = NodeStore(tmp_path / "budget.sqlite3")
+    try:
+        old = ProxyNode("vless", "old.example", 443, raw_uri="old")
+        new_nodes = [ProxyNode("vless", f"new{i}.example", 443, raw_uri=f"n{i}") for i in range(10)]
+        store.upsert_many([old, *new_nodes])
+        store.record_validation(ValidationResult(old.fingerprint, True, latency_ms=90))
+        _age(store, old.fingerprint, "last_checked", 2)
+
+        picked = store.list_validation_candidates(recheck_after_minutes=60, limit=4)
+        fingerprints = [node.fingerprint for node in picked]
+        assert len(picked) == 4
+        assert old.fingerprint in fingerprints
+    finally:
+        store.close()
+
+
+def test_validation_candidates_fill_unused_quota(tmp_path):
+    store = NodeStore(tmp_path / "fill.sqlite3")
+    try:
+        nodes = [ProxyNode("vless", f"n{i}.example", 443, raw_uri=f"n{i}") for i in range(6)]
+        store.upsert_many(nodes)
+        assert len(store.list_validation_candidates(limit=5)) == 5
+    finally:
+        store.close()
+
+
+def test_validation_candidates_skip_nodes_gone_from_sources(tmp_path):
+    store = NodeStore(tmp_path / "gone.sqlite3")
+    try:
+        gone = ProxyNode("vless", "gone.example", 443, raw_uri="gone")
+        live = ProxyNode("vless", "live.example", 443, raw_uri="live")
+        store.upsert_many([gone, live])
+        _age(store, gone.fingerprint, "last_seen", 100)
+        picked = {n.fingerprint for n in store.list_validation_candidates(seen_within_hours=72)}
+        assert picked == {live.fingerprint}
+    finally:
+        store.close()
+
+
+def test_history_is_pruned_but_counters_keep_growing(tmp_path):
+    from squad_vpn import store as store_module
+    from squad_vpn.models import ValidationResult
+
+    store = NodeStore(tmp_path / "prune.sqlite3")
+    try:
+        node = ProxyNode("trojan", "p.example", 443, userinfo="x", raw_uri="t")
+        store.upsert_many([node])
+        total = store_module.HISTORY_KEEP + 15
+        for i in range(total):
+            store.record_validation(ValidationResult(node.fingerprint, i % 3 != 0, latency_ms=100))
+        rows = store.connection.execute(
+            "SELECT COUNT(*) FROM health_checks WHERE fingerprint = ?", (node.fingerprint,)
+        ).fetchone()[0]
+        assert rows == store_module.HISTORY_KEEP
+        ranked = store.list_ranked()[0]
+        assert ranked.attempts == total
+    finally:
+        store.close()
+
+
+def test_v02_database_backfills_stability(tmp_path):
+    import sqlite3
+
+    database = tmp_path / "v02.sqlite3"
+    connection = sqlite3.connect(database)
+    connection.executescript(
+        """
+        CREATE TABLE nodes (
+            fingerprint TEXT PRIMARY KEY, protocol TEXT NOT NULL,
+            host TEXT NOT NULL, port INTEGER NOT NULL,
+            userinfo TEXT NOT NULL DEFAULT '', params_json TEXT NOT NULL DEFAULT '{}',
+            name TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '',
+            raw_uri TEXT NOT NULL DEFAULT '', first_seen TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_seen TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            alive INTEGER, latency_ms REAL, quality_score REAL NOT NULL DEFAULT 0,
+            last_checked TEXT, exit_ip TEXT, country TEXT, asn TEXT, validation_error TEXT,
+            success_count INTEGER NOT NULL DEFAULT 0, failure_count INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE TABLE health_checks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT NOT NULL,
+            checked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, alive INTEGER NOT NULL,
+            latency_ms REAL, exit_ip TEXT, country TEXT, asn TEXT, error TEXT
+        );
+        INSERT INTO nodes (fingerprint, protocol, host, port, alive, latency_ms,
+            quality_score, last_checked, success_count, failure_count)
+        VALUES ('fp', 'vless', 'h', 443, 1, 100, 80, CURRENT_TIMESTAMP, 3, 0);
+        INSERT INTO health_checks (fingerprint, alive, latency_ms) VALUES
+            ('fp', 1, 90), ('fp', 1, 100), ('fp', 1, 110);
+        """
+    )
+    connection.commit()
+    connection.close()
+
+    store = NodeStore(database)
+    try:
+        ranked = store.list_ranked(alive_only=True, min_stability=50)
+        assert len(ranked) == 1
+        assert ranked[0].stability_score > 50
+        assert ranked[0].recent_success_rate == 1.0
+    finally:
+        store.close()
