@@ -9,11 +9,50 @@ from .mihomo import dump_yaml, node_to_mihomo
 from .models import ProxyNode, RankedNode
 
 
+def render_plain(nodes: list[ProxyNode]) -> str:
+    lines = [node.raw_uri for node in nodes if node.raw_uri]
+    return "\n".join(lines) + ("\n" if lines else "")
+
+
+def render_mihomo(nodes: list[ProxyNode]) -> str:
+    proxies = []
+    for index, node in enumerate(nodes, start=1):
+        name = f"SQUAD-{index:05d}-{node.fingerprint[:8]}"
+        converted = node_to_mihomo(node, name)
+        if converted is not None:
+            proxies.append(converted)
+    return dump_yaml({"proxies": proxies})
+
+
+def ranked_to_dict(item: RankedNode) -> dict[str, object]:
+    """Public view of a ranked node (no credentials or raw URI)."""
+    return {
+        "fingerprint": item.node.fingerprint,
+        "name": item.node.display_name(),
+        "protocol": item.node.protocol,
+        "host": item.node.host,
+        "port": item.node.port,
+        "alive": item.alive,
+        "latency_ms": item.latency_ms,
+        "jitter_ms": item.jitter_ms,
+        "recent_success_rate": item.recent_success_rate,
+        "stability_score": item.stability_score,
+        "quality_score": item.quality_score,
+        "last_checked": item.last_checked,
+        "last_seen": item.last_seen,
+        "exit_ip": item.exit_ip,
+        "country": item.country,
+        "asn": item.asn,
+        "success_count": item.success_count,
+        "failure_count": item.failure_count,
+        "validation_error": item.validation_error,
+    }
+
+
 def export_plain(nodes: list[ProxyNode], path: str | Path) -> Path:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    lines = [node.raw_uri for node in nodes if node.raw_uri]
-    target.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+    target.write_text(render_plain(nodes), encoding="utf-8")
     return target
 
 
@@ -48,13 +87,7 @@ def export_by_protocol(nodes: list[ProxyNode], directory: str | Path) -> list[Pa
 def export_mihomo(nodes: list[ProxyNode], path: str | Path) -> Path:
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    proxies = []
-    for index, node in enumerate(nodes, start=1):
-        name = f"SQUAD-{index:05d}-{node.fingerprint[:8]}"
-        converted = node_to_mihomo(node, name)
-        if converted is not None:
-            proxies.append(converted)
-    target.write_text(dump_yaml({"proxies": proxies}), encoding="utf-8")
+    target.write_text(render_mihomo(nodes), encoding="utf-8")
     return target
 
 
@@ -101,7 +134,7 @@ def export_manifest(records: list[RankedNode], path: str | Path) -> Path:
     latencies = [item.latency_ms for item in alive if item.latency_ms is not None]
     jitters = [item.jitter_ms for item in alive if item.jitter_ms is not None]
     payload = {
-        "version": "0.3",
+        "version": "0.4",
         "updated_at": datetime.now(UTC).isoformat(),
         "total": len(records),
         "alive": len(alive),

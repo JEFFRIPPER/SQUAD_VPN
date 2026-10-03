@@ -47,6 +47,7 @@ class ValidationResult:
     country: str | None = None
     asn: str | None = None
     error: str | None = None
+    probe_id: str = "local"
 
 
 @dataclass(slots=True)

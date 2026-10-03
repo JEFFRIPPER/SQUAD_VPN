@@ -7,7 +7,7 @@ SQUAD VPN — самостоятельный агрегатор публичны
 
 ## Текущая версия
 
-**0.3.1 — Multi-source + Smart Subscriptions**
+**0.4.0 — API + Dashboard**
 
 Уже работает:
 
@@ -26,7 +26,9 @@ SQUAD VPN — самостоятельный агрегатор публичны
 - jitter по последним успешным проверкам;
 - stability score и quality score;
 - smart-подписки;
-- периодический режим `watch`.
+- периодический режим `watch`;
+- HTTP API с динамическими подписками `/sub?...`;
+- веб-панель: сводка, источники, узлы, история ping/jitter.
 
 ## Источники
 
@@ -161,6 +163,70 @@ squad-vpn smart --country DE --protocol vless --max-latency 200 `
   --min-score 70 --min-stability 60 --limit 100
 ```
 
+## API и веб-панель
+
+```powershell
+squad-vpn serve
+```
+
+Панель откроется на <http://127.0.0.1:8080/>, документация API — на
+<http://127.0.0.1:8080/api/docs>. API только читает базу, поэтому его можно
+держать запущенным параллельно с `watch` (SQLite работает в режиме WAL).
+
+По умолчанию сервер слушает только `127.0.0.1`. Чтобы открыть доступ из сети,
+нужен токен:
+
+```powershell
+squad-vpn serve --host 0.0.0.0 --token "длинный-случайный-токен"
+# или через переменную окружения SQUAD_VPN_TOKEN
+```
+
+Без токена запуск на внешнем адресе отклоняется (обойти можно только явным
+`--insecure-no-token`). Токен передаётся как `?token=...` (так умеют все
+VPN-клиенты) или заголовком `Authorization: Bearer ...`. Панель открывается
+ссылкой `http://host:8080/?token=...`; `/` и `/health` данных узлов не отдают
+и доступны без токена.
+
+### Динамическая подписка `/sub`
+
+| Параметр | Значение |
+| --- | --- |
+| `profile` | `balanced`, `fast`, `stable` — задают значения по умолчанию |
+| `country` | код страны, например `DE` |
+| `protocol` | `vless`, `vmess`, `trojan`, `ss`, `hysteria2` |
+| `min_score`, `min_stability` | 0–100 |
+| `max_latency` | максимальный ping, мс |
+| `checked_within_hours`, `seen_within_hours` | свежесть проверки и появления в источниках (по умолчанию 12 и 48) |
+| `limit` | до 2000 (по умолчанию из профиля, иначе 300) |
+| `format` | `plain`, `base64` (v2rayN, Hiddify, v2rayNG), `mihomo` (Clash Meta YAML) |
+
+Явные параметры перекрывают значения профиля. В подписку попадают только
+живые узлы. Примеры:
+
+```text
+/sub?profile=fast&format=base64
+/sub?profile=stable&country=DE&format=mihomo
+/sub?protocol=vless&max_latency=300&limit=50
+```
+
+Ответ содержит заголовки `profile-update-interval: 1` (клиенты обновляют
+подписку раз в час) и `x-squad-nodes` с количеством узлов.
+
+### JSON API
+
+| Метод | Описание |
+| --- | --- |
+| `GET /health` | статус и версия |
+| `GET /api/stats` | количество узлов, средние ping/jitter/score, разбивка по странам и протоколам |
+| `GET /api/nodes` | узлы с фильтрами (`alive_only`, `country`, `protocol`, `min_score`, `min_stability`, `max_latency`), сортировкой `sort=score|stability|latency|jitter|checked|seen` и пагинацией `limit`/`offset` |
+| `GET /api/nodes/{fingerprint}` | узел и история проверок (`?history=50`) |
+| `GET /api/sources` | здоровье источников |
+| `GET /api/profiles` | параметры smart-профилей |
+
+`/api/nodes` не отдаёт учётные данные и исходные URI узлов — они есть только
+в `/sub`. В истории каждой проверки есть поле `probe_id` (сейчас всегда
+`local`) — задел под сеть пробников из v0.7.
+
 ## Выходные файлы
 
 ```text
@@ -236,13 +302,17 @@ pytest -q
 
 ## Дальше
 
-План после v0.3:
+Дорога до 1.0:
 
-1. собственный HTTP API для динамических подписок;
-2. удалённые probe-агенты для разных сетей/операторов;
-3. реальный BWL-check вместо ASN-эвристики;
-4. web dashboard с историей latency/stability;
-5. Windows-клиент с auto-select и failover.
+1. ~~v0.4 — API + Dashboard~~;
+2. v0.5 — автообновление и публикация: фоновый цикл внутри `serve`,
+   автоочистка мёртвых и старых узлов;
+3. v0.6 — умный автоподбор: улучшенный ranking и failover;
+4. v0.7 — сеть пробников: проверки с нескольких точек, региональный статус;
+5. v0.8 — Windows-клиент поверх Mihomo с автопереключением;
+6. v0.9 — продакшен-обвязка: конфиг, логирование, rate limit, API keys,
+   кэш, backup базы, installer;
+7. v1.0 — релиз.
 
 SQUAD VPN не поднимает собственные VPN-серверы. Проект агрегирует и
 проверяет публично доступные конфигурации; сами сетевые соединения выполняет

@@ -15,7 +15,7 @@ LATEST_RELEASE = "https://api.github.com/repos/MetaCubeX/mihomo/releases/latest"
 
 async def install_mihomo(target: str | Path = DEFAULT_BINARY) -> tuple[Path, str]:
     target = Path(target)
-    headers = {"User-Agent": "SQUAD-VPN/0.3"}
+    headers = {"User-Agent": "SQUAD-VPN/0.4"}
     async with httpx.AsyncClient(follow_redirects=True, headers=headers, timeout=60.0) as client:
         response = await client.get(LATEST_RELEASE)
         response.raise_for_status()

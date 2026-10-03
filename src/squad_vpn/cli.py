@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import ipaddress
+import os
 from pathlib import Path
 
 from .collector import collect_source_specs
@@ -235,6 +237,31 @@ async def _watch(args: argparse.Namespace) -> int:
     return 0
 
 
+def _is_loopback(host: str) -> bool:
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def _serve(args: argparse.Namespace) -> int:
+    from .api import serve
+
+    token = args.token or os.environ.get("SQUAD_VPN_TOKEN") or None
+    if not _is_loopback(args.host) and not token and not args.insecure_no_token:
+        print(
+            f"Отказ: {args.host} доступен из сети, а token не задан. "
+            "Укажи --token (или SQUAD_VPN_TOKEN), либо --insecure-no-token."
+        )
+        return 2
+    url = f"http://{args.host}:{args.port}/"
+    print(f"SQUAD VPN API: {url}" + (f"?token={token}" if token else ""))
+    serve(args.database, host=args.host, port=args.port, token=token)
+    return 0
+
+
 def _add_validation_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--test-url", default=DEFAULT_TEST_URL)
@@ -316,6 +343,17 @@ def build_parser() -> argparse.ArgumentParser:
     watch.add_argument("--cycles", type=int, default=0, help="0 = бесконечно")
     watch.add_argument("--stop-on-error", action="store_true")
     _add_validation_args(watch)
+
+    srv = sub.add_parser("serve", help="HTTP API, динамические подписки и веб-панель")
+    srv.add_argument("--database", type=Path, default=DEFAULT_DB)
+    srv.add_argument("--host", default="127.0.0.1")
+    srv.add_argument("--port", type=int, default=8080)
+    srv.add_argument("--token", help="Токен доступа (или переменная SQUAD_VPN_TOKEN)")
+    srv.add_argument(
+        "--insecure-no-token",
+        action="store_true",
+        help="Разрешить сетевой доступ без токена",
+    )
     return parser
 
 
@@ -340,5 +378,7 @@ def main() -> int:
         return asyncio.run(_run(args))
     if args.command == "watch":
         return asyncio.run(_watch(args))
+    if args.command == "serve":
+        return _serve(args)
     parser.error("Неизвестная команда")
     return 2

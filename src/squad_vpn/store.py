@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS health_checks (
     country TEXT,
     asn TEXT,
     error TEXT,
+    probe_id TEXT NOT NULL DEFAULT 'local',
     FOREIGN KEY(fingerprint) REFERENCES nodes(fingerprint) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_health_fingerprint ON health_checks(fingerprint);
@@ -94,22 +95,61 @@ MIGRATION_COLUMNS = {
 }
 
 
+SORT_COLUMNS = {
+    "score": "alive DESC, quality_score DESC, stability_score DESC, latency_ms ASC",
+    "stability": "alive DESC, stability_score DESC, quality_score DESC",
+    "latency": "latency_ms IS NULL, latency_ms ASC, quality_score DESC",
+    "jitter": "jitter_ms IS NULL, jitter_ms ASC, quality_score DESC",
+    "checked": "last_checked IS NULL, last_checked DESC",
+    "seen": "last_seen DESC",
+}
+
+
 class NodeStore:
-    def __init__(self, path: str | Path):
+    def __init__(self, path: str | Path, *, init_schema: bool = True):
+        """Open the database.
+
+        ``init_schema=False`` skips schema creation and migrations; the API
+        uses it for cheap per-request connections after a single startup init.
+        """
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.connection = sqlite3.connect(self.path)
+        # Each connection serves one caller at a time; the API may hop threads.
+        self.connection = sqlite3.connect(
+            self.path, timeout=10.0, check_same_thread=False
+        )
         self.connection.row_factory = sqlite3.Row
         self.connection.execute("PRAGMA foreign_keys = ON")
+        self.connection.execute("PRAGMA busy_timeout = 10000")
+        if not init_schema:
+            return
+        # WAL lets the API read while collect/validate write.
+        self.connection.execute("PRAGMA journal_mode = WAL")
         self.connection.executescript(SCHEMA)
         self._migrate_nodes()
+        self._migrate_health_checks()
         self.connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_nodes_quality ON nodes(quality_score DESC)"
         )
         self.connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_nodes_stability ON nodes(stability_score DESC)"
         )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_health_probe ON health_checks(probe_id)"
+        )
         self.connection.commit()
+
+    def _migrate_health_checks(self) -> None:
+        columns = {
+            row["name"]
+            for row in self.connection.execute(
+                "PRAGMA table_info(health_checks)"
+            ).fetchall()
+        }
+        if "probe_id" not in columns:
+            self.connection.execute(
+                "ALTER TABLE health_checks ADD COLUMN probe_id TEXT NOT NULL DEFAULT 'local'"
+            )
 
     def _migrate_nodes(self) -> None:
         columns = {
@@ -226,8 +266,9 @@ class NodeStore:
         self.connection.execute(
             """
             INSERT INTO health_checks (
-                fingerprint, alive, latency_ms, exit_ip, country, asn, error
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                fingerprint, alive, latency_ms, exit_ip, country, asn, error,
+                probe_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 result.fingerprint,
@@ -237,6 +278,7 @@ class NodeStore:
                 result.country or None,
                 result.asn or None,
                 result.error,
+                result.probe_id or "local",
             ),
         )
         # Cumulative counters live in nodes, so old health_checks can be pruned.
@@ -373,8 +415,8 @@ class NodeStore:
                 (jitter, recent_rate, stable, score, row["fingerprint"]),
             )
 
-    def list_ranked(
-        self,
+    @staticmethod
+    def _ranked_filters(
         *,
         alive_only: bool = False,
         min_score: float = 0.0,
@@ -384,8 +426,7 @@ class NodeStore:
         protocol: str | None = None,
         checked_within_hours: int | None = None,
         seen_within_hours: int | None = None,
-        limit: int | None = None,
-    ) -> list[RankedNode]:
+    ) -> tuple[str, list[object]]:
         where = ["quality_score >= ?", "stability_score >= ?"]
         params: list[object] = [float(min_score), float(min_stability)]
         if alive_only:
@@ -405,38 +446,136 @@ class NodeStore:
         if seen_within_hours is not None:
             where.append("last_seen >= datetime('now', ?)")
             params.append(f"-{int(seen_within_hours)} hours")
+        return " AND ".join(where), params
 
-        sql = "SELECT * FROM nodes WHERE " + " AND ".join(where)
-        sql += (
-            " ORDER BY alive DESC, quality_score DESC, stability_score DESC, "
-            "latency_ms ASC"
+    def list_ranked(
+        self,
+        *,
+        alive_only: bool = False,
+        min_score: float = 0.0,
+        min_stability: float = 0.0,
+        max_latency: float | None = None,
+        country: str | None = None,
+        protocol: str | None = None,
+        checked_within_hours: int | None = None,
+        seen_within_hours: int | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+        sort: str = "score",
+    ) -> list[RankedNode]:
+        if sort not in SORT_COLUMNS:
+            raise ValueError(f"Неизвестная сортировка: {sort}")
+        where, params = self._ranked_filters(
+            alive_only=alive_only,
+            min_score=min_score,
+            min_stability=min_stability,
+            max_latency=max_latency,
+            country=country,
+            protocol=protocol,
+            checked_within_hours=checked_within_hours,
+            seen_within_hours=seen_within_hours,
         )
-        if limit is not None:
-            sql += " LIMIT ?"
-            params.append(int(limit))
+        sql = f"SELECT * FROM nodes WHERE {where} ORDER BY {SORT_COLUMNS[sort]}"
+        if limit is not None or offset:
+            sql += " LIMIT ? OFFSET ?"
+            params.extend([-1 if limit is None else int(limit), max(0, int(offset))])
         rows = self.connection.execute(sql, params).fetchall()
-        result: list[RankedNode] = []
-        for row in rows:
-            result.append(
-                RankedNode(
-                    node=self._row_to_node(row),
-                    alive=None if row["alive"] is None else bool(row["alive"]),
-                    latency_ms=row["latency_ms"],
-                    jitter_ms=row["jitter_ms"],
-                    recent_success_rate=float(row["recent_success_rate"] or 0.0),
-                    stability_score=float(row["stability_score"] or 0.0),
-                    quality_score=float(row["quality_score"] or 0.0),
-                    last_checked=row["last_checked"],
-                    last_seen=row["last_seen"],
-                    exit_ip=row["exit_ip"],
-                    country=row["country"],
-                    asn=row["asn"],
-                    success_count=int(row["success_count"] or 0),
-                    failure_count=int(row["failure_count"] or 0),
-                    validation_error=row["validation_error"],
-                )
-            )
-        return result
+        return [self._row_to_ranked(row) for row in rows]
+
+    def count_ranked(self, **filters: object) -> int:
+        where, params = self._ranked_filters(**filters)  # type: ignore[arg-type]
+        row = self.connection.execute(
+            f"SELECT COUNT(*) AS n FROM nodes WHERE {where}", params
+        ).fetchone()
+        return int(row["n"])
+
+    def get_ranked(self, fingerprint: str) -> RankedNode | None:
+        row = self.connection.execute(
+            "SELECT * FROM nodes WHERE fingerprint = ?", (fingerprint,)
+        ).fetchone()
+        return None if row is None else self._row_to_ranked(row)
+
+    def node_history(self, fingerprint: str, limit: int = 50) -> list[dict[str, object]]:
+        rows = self.connection.execute(
+            """
+            SELECT checked_at, alive, latency_ms, exit_ip, country, asn, error, probe_id
+            FROM health_checks WHERE fingerprint = ?
+            ORDER BY id DESC LIMIT ?
+            """,
+            (fingerprint, max(1, int(limit))),
+        ).fetchall()
+        history = []
+        for row in reversed(rows):
+            item = dict(row)
+            item["alive"] = bool(item["alive"])
+            history.append(item)
+        return history
+
+    def stats(self) -> dict[str, object]:
+        totals = self.connection.execute(
+            """
+            SELECT COUNT(*) AS total,
+                   SUM(CASE WHEN alive = 1 THEN 1 ELSE 0 END) AS alive,
+                   SUM(CASE WHEN alive = 0 THEN 1 ELSE 0 END) AS dead,
+                   SUM(CASE WHEN alive IS NULL THEN 1 ELSE 0 END) AS unchecked,
+                   AVG(CASE WHEN alive = 1 THEN latency_ms END) AS avg_latency,
+                   AVG(CASE WHEN alive = 1 THEN jitter_ms END) AS avg_jitter,
+                   AVG(CASE WHEN alive = 1 THEN quality_score END) AS avg_score,
+                   MAX(last_checked) AS last_checked,
+                   MAX(last_seen) AS last_seen
+            FROM nodes
+            """
+        ).fetchone()
+
+        def grouped(column: str) -> dict[str, dict[str, int]]:
+            rows = self.connection.execute(
+                f"""
+                SELECT {column} AS key, COUNT(*) AS total,
+                       SUM(CASE WHEN alive = 1 THEN 1 ELSE 0 END) AS alive
+                FROM nodes WHERE {column} IS NOT NULL AND {column} != ''
+                GROUP BY {column} ORDER BY alive DESC, total DESC
+                """
+            ).fetchall()
+            return {
+                str(row["key"]): {"total": int(row["total"]), "alive": int(row["alive"] or 0)}
+                for row in rows
+            }
+
+        def rounded(value: object) -> float | None:
+            return None if value is None else round(float(value), 2)
+
+        return {
+            "total": int(totals["total"] or 0),
+            "alive": int(totals["alive"] or 0),
+            "dead": int(totals["dead"] or 0),
+            "unchecked": int(totals["unchecked"] or 0),
+            "average_latency_ms": rounded(totals["avg_latency"]),
+            "average_jitter_ms": rounded(totals["avg_jitter"]),
+            "average_score": rounded(totals["avg_score"]),
+            "last_checked": totals["last_checked"],
+            "last_seen": totals["last_seen"],
+            "protocols": grouped("protocol"),
+            "countries": grouped("UPPER(country)"),
+        }
+
+    def _row_to_ranked(self, row: sqlite3.Row) -> RankedNode:
+        return RankedNode(
+            node=self._row_to_node(row),
+            alive=None if row["alive"] is None else bool(row["alive"]),
+            latency_ms=row["latency_ms"],
+            jitter_ms=row["jitter_ms"],
+            recent_success_rate=float(row["recent_success_rate"] or 0.0),
+            stability_score=float(row["stability_score"] or 0.0),
+            quality_score=float(row["quality_score"] or 0.0),
+            last_checked=row["last_checked"],
+            last_seen=row["last_seen"],
+            exit_ip=row["exit_ip"],
+            country=row["country"],
+            asn=row["asn"],
+            success_count=int(row["success_count"] or 0),
+            failure_count=int(row["failure_count"] or 0),
+            validation_error=row["validation_error"],
+        )
 
     def list_source_status(self) -> list[dict[str, object]]:
         rows = self.connection.execute(

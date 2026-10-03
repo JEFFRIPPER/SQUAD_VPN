@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQUAD VPN</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%224%22 fill=%22%232f6fde%22/%3E%3Cpath d=%22M4 8.5l2.5 2.5L12 5%22 stroke=%22white%22 stroke-width=%222%22 fill=%22none%22/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f5f6f8; --panel: #ffffff; --text: #1b1f24; --muted: #667085;
+    --line: #e4e7ec; --accent: #2f6fde; --ok: #1f9d55; --bad: #d64545;
+    --warn: #c98a12; --chip: #eef2f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216; --panel: #171b21; --text: #e6e9ee; --muted: #8a94a6;
+      --line: #262c35; --accent: #6b9cf5; --ok: #3fbf7a; --bad: #f06a6a;
+      --warn: #e0a83a; --chip: #1f252e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  header h1 { font-size: 18px; margin: 0; letter-spacing: .5px; }
+  header .meta { color: var(--muted); font-size: 12px; margin-left: auto; }
+  main { max-width: 1280px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+  section {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 16px; min-width: 0;
+  }
+  section h2 { font-size: 14px; margin: 0 0 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .6px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .card .label { color: var(--muted); font-size: 12px; }
+  .card .value { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); } .warn { color: var(--warn); } .muted { color: var(--muted); }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  label.ctl { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
+  select, input, button {
+    font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px;
+  }
+  button { cursor: pointer; background: var(--accent); color: #fff; border-color: transparent; }
+  button.ghost { background: transparent; color: var(--text); border-color: var(--line); }
+  button:disabled { opacity: .5; cursor: default; }
+  .sub-url {
+    margin-top: 10px; display: flex; gap: 8px; align-items: center;
+  }
+  .sub-url code {
+    flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; padding: 8px 10px;
+    background: var(--chip); border-radius: 6px; font-size: 12px;
+  }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  td.name { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+  tbody tr.clickable { cursor: pointer; }
+  tbody tr.clickable:hover { background: var(--chip); }
+  tbody tr.selected { background: var(--chip); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--muted); }
+  .dot.ok { background: var(--ok); } .dot.bad { background: var(--bad); }
+  .chip { display: inline-block; padding: 1px 7px; border-radius: 10px; background: var(--chip); font-size: 12px; margin-right: 4px; }
+  .pager { display: flex; gap: 8px; align-items: center; margin-top: 10px; color: var(--muted); }
+  .grid2 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; }
+  @media (max-width: 900px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+  #detail .kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+  #detail .kv div:nth-child(odd) { color: var(--muted); }
+  #detail .kv div:nth-child(even) { overflow-wrap: anywhere; }
+  svg.spark { width: 100%; height: 120px; display: block; margin: 10px 0; }
+  .error-banner { display: none; padding: 10px 14px; border-radius: 8px; background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
+  .auth { display: none; gap: 8px; align-items: center; }
+  @media (max-width: 600px) { header { padding: 12px 16px; } main { padding: 12px 16px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>SQUAD VPN</h1>
+  <span class="chip" id="version">—</span>
+  <form class="auth" id="auth">
+    <input id="token-input" type="password" placeholder="Токен доступа" autocomplete="off">
+    <button type="submit">Войти</button>
+  </form>
+  <span class="meta" id="updated">—</span>
+</header>
+
+<main>
+  <div class="error-banner" id="error"></div>
+
+  <section>
+    <h2>Сводка</h2>
+    <div class="cards">
+      <div class="card"><div class="label">Всего узлов</div><div class="value" id="s-total">—</div></div>
+      <div class="card"><div class="label">Живых</div><div class="value ok" id="s-alive">—</div></div>
+      <div class="card"><div class="label">Мёртвых</div><div class="value bad" id="s-dead">—</div></div>
+      <div class="card"><div class="label">Не проверено</div><div class="value muted" id="s-unchecked">—</div></div>
+      <div class="card"><div class="label">Средний ping</div><div class="value" id="s-latency">—</div></div>
+      <div class="card"><div class="label">Средний jitter</div><div class="value" id="s-jitter">—</div></div>
+      <div class="card"><div class="label">Средний score</div><div class="value" id="s-score">—</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ссылка на подписку</h2>
+    <div class="row">
+      <label class="ctl">Профиль
+        <select id="sub-profile">
+          <option value="">— свой —</option>
+          <option value="balanced" selected>balanced</option>
+          <option value="fast">fast</option>
+          <option value="stable">stable</option>
+        </select>
+      </label>
+      <label class="ctl">Страна <select id="sub-country"><option value="">любая</option></select></label>
+      <label class="ctl">Протокол <select id="sub-protocol"><option value="">любой</option></select></label>
+      <label class="ctl">Формат
+        <select id="sub-format">
+          <option value="base64">base64 (v2rayN, Hiddify…)</option>
+          <option value="plain">plain</option>
+          <option value="mihomo">mihomo / Clash YAML</option>
+        </select>
+      </label>
+      <label class="ctl">Лимит <input id="sub-limit" type="number" min="1" max="2000" placeholder="по профилю" style="width:110px"></label>
+    </div>
+    <div class="sub-url">
+      <code id="sub-url"></code>
+      <button type="button" id="sub-copy">Копировать</button>
+    </div>
+    <div class="muted" style="margin-top:6px;font-size:12px" id="sub-count"></div>
+  </section>
+
+  <div class="grid2">
+    <section>
+      <h2>Узлы</h2>
+      <div class="row" style="margin-bottom:10px">
+        <label class="ctl">Страна <select id="f-country"><option value="">все</option></select></label>
+        <label class="ctl">Протокол <select id="f-protocol"><option value="">все</option></select></label>
+        <label class="ctl">Сортировка
+          <select id="f-sort">
+            <option value="score">score</option>
+            <option value="stability">stability</option>
+            <option value="latency">ping</option>
+            <option value="jitter">jitter</option>
+            <option value="checked">последняя проверка</option>
+            <option value="seen">последнее появление</option>
+          </select>
+        </label>
+        <label class="ctl" style="flex-direction:row;align-items:center;gap:6px;margin-top:16px">
+          <input type="checkbox" id="f-alive" checked> только живые
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Узел</th><th>Протокол</th><th>Страна</th><th>Ping</th><th>Jitter</th>
+            <th>Score</th><th>Stability</th><th>Успех</th><th>Проверен</th>
+          </tr></thead>
+          <tbody id="nodes"></tbody>
+        </table>
+      </div>
+      <div class="pager">
+        <button type="button" class="ghost" id="prev">←</button>
+        <span id="page-info">—</span>
+        <button type="button" class="ghost" id="next">→</button>
+      </div>
+    </section>
+
+    <section id="detail">
+      <h2>Узел</h2>
+      <div class="muted" id="detail-empty">Выбери узел в таблице, чтобы увидеть историю проверок.</div>
+      <div id="detail-body" hidden>
+        <div style="font-weight:600;margin-bottom:6px;overflow-wrap:anywhere" id="d-name"></div>
+        <svg class="spark" id="d-spark" viewBox="0 0 300 120" preserveAspectRatio="none" role="img" aria-label="История ping"></svg>
+        <div class="muted" style="font-size:12px;margin-bottom:10px" id="d-spark-caption"></div>
+        <div class="kv" id="d-kv"></div>
+      </div>
+    </section>
+  </div>
+
+  <section>
+    <h2>Источники</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Источник</th><th>Успешных</th><th>Узлов</th><th>Время</th><th>Последний OK</th><th>Ошибка</th>
+        </tr></thead>
+        <tbody id="sources"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const PAGE = 50;
+  const $ = (id) => document.getElementById(id);
+  const state = { offset: 0, total: 0, selected: null };
+
+  const storage = {
+    get(key) { try { return sessionStorage.getItem(key); } catch { return null; } },
+    set(key, value) { try { sessionStorage.setItem(key, value); } catch { /* ignore */ } },
+  };
+  const urlToken = new URLSearchParams(location.search).get("token");
+  let token = urlToken || storage.get("squad-token") || "";
+  if (urlToken) {
+    storage.set("squad-token", urlToken);
+    history.replaceState(null, "", location.pathname);
+  }
+
+  const fmt = {
+    ms: (v) => v == null ? "—" : `${Math.round(v)} ms`,
+    num: (v) => v == null ? "—" : (Math.round(v * 10) / 10).toString(),
+    pct: (v) => v == null ? "—" : `${Math.round(v * 100)}%`,
+    time(v) {
+      if (!v) return "—";
+      const date = new Date(v.replace(" ", "T") + "Z");
+      if (Number.isNaN(date.getTime())) return v;
+      const minutes = Math.round((Date.now() - date.getTime()) / 60000);
+      if (minutes < 1) return "только что";
+      if (minutes < 60) return `${minutes} мин назад`;
+      const hours = Math.round(minutes / 60);
+      if (hours < 48) return `${hours} ч назад`;
+      return `${Math.round(hours / 24)} дн назад`;
+    },
+  };
+
+  function cell(text, className) {
+    const td = document.createElement("td");
+    td.textContent = text;
+    if (className) td.className = className;
+    return td;
+  }
+
+  function showError(message) {
+    const banner = $("error");
+    banner.textContent = message || "";
+    banner.style.display = message ? "block" : "none";
+  }
+
+  async function api(path) {
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const response = await fetch(path, { headers });
+    if (response.status === 401) {
+      $("auth").style.display = "flex";
+      throw new Error("Нужен токен доступа");
+    }
+    if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
+    return response;
+  }
+
+  function fillSelect(select, values, keepFirst) {
+    const current = select.value;
+    while (select.options.length > keepFirst) select.remove(keepFirst);
+    for (const [value, info] of values) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = `${value} (${info.alive}/${info.total})`;
+      select.appendChild(option);
+    }
+    select.value = [...select.options].some((o) => o.value === current) ? current : "";
+  }
+
+  async function loadStats() {
+    const stats = await (await api("/api/stats")).json();
+    $("version").textContent = `v${stats.version}`;
+    $("s-total").textContent = stats.total;
+    $("s-alive").textContent = stats.alive;
+    $("s-dead").textContent = stats.dead;
+    $("s-unchecked").textContent = stats.unchecked;
+    $("s-latency").textContent = fmt.ms(stats.average_latency_ms);
+    $("s-jitter").textContent = fmt.ms(stats.average_jitter_ms);
+    $("s-score").textContent = fmt.num(stats.average_score);
+    $("updated").textContent = `Проверка: ${fmt.time(stats.last_checked)} · сбор: ${fmt.time(stats.last_seen)}`;
+    const countries = Object.entries(stats.countries);
+    const protocols = Object.entries(stats.protocols);
+    fillSelect($("f-country"), countries, 1);
+    fillSelect($("sub-country"), countries, 1);
+    fillSelect($("f-protocol"), protocols, 1);
+    fillSelect($("sub-protocol"), protocols, 1);
+  }
+
+  async function loadSources() {
+    const rows = await (await api("/api/sources")).json();
+    const body = $("sources");
+    body.replaceChildren();
+    if (!rows.length) {
+      const tr = document.createElement("tr");
+      const td = cell("Статистика появится после первого collect", "muted");
+      td.colSpan = 6;
+      tr.appendChild(td);
+      body.appendChild(tr);
+      return;
+    }
+    for (const row of rows) {
+      const tr = document.createElement("tr");
+      const ok = row.success_count || 0;
+      const total = row.fetch_count || 0;
+      tr.append(
+        cell(row.name),
+        cell(`${ok}/${total}`, ok === total ? "ok" : (ok ? "warn" : "bad")),
+        cell(`${row.nodes_selected}/${row.nodes_found}`),
+        cell(fmt.ms(row.duration_ms)),
+        cell(fmt.time(row.last_ok)),
+        cell(row.last_error ? row.last_error.slice(0, 120) : "—", row.last_error ? "bad" : "muted"),
+      );
+      if (row.last_error) tr.lastChild.title = row.last_error;
+      body.appendChild(tr);
+    }
+  }
+
+  function nodeQuery() {
+    const params = new URLSearchParams({
+      limit: PAGE, offset: state.offset, sort: $("f-sort").value,
+      alive_only: $("f-alive").checked,
+    });
+    if ($("f-country").value) params.set("country", $("f-country").value);
+    if ($("f-protocol").value) params.set("protocol", $("f-protocol").value);
+    return params;
+  }
+
+  async function loadNodes() {
+    const data = await (await api(`/api/nodes?${nodeQuery()}`)).json();
+    state.total = data.total;
+    const body = $("nodes");
+    body.replaceChildren();
+    if (!data.items.length) {
+      const tr = document.createElement("tr");
+      const td = cell("Нет узлов под эти фильтры", "muted");
+      td.colSpan = 9;
+      tr.appendChild(td);
+      body.appendChild(tr);
+    }
+    for (const item of data.items) {
+      const tr = document.createElement("tr");
+      tr.className = "clickable" + (item.fingerprint === state.selected ? " selected" : "");
+      const name = cell(item.name, "name");
+      name.title = `${item.name}\n${item.host}:${item.port}`;
+      const dot = document.createElement("span");
+      dot.className = "dot " + (item.alive === true ? "ok" : item.alive === false ? "bad" : "");
+      name.prepend(dot);
+      const attempts = item.success_count + item.failure_count;
+      tr.append(
+        name,
+        cell(item.protocol),
+        cell(item.country || "—"),
+        cell(fmt.ms(item.latency_ms)),
+        cell(fmt.ms(item.jitter_ms)),
+        cell(fmt.num(item.quality_score)),
+        cell(fmt.num(item.stability_score)),
+        cell(attempts ? `${item.success_count}/${attempts}` : "—"),
+        cell(fmt.time(item.last_checked)),
+      );
+      tr.addEventListener("click", () => {
+        state.selected = item.fingerprint;
+        for (const row of body.children) row.classList.remove("selected");
+        tr.classList.add("selected");
+        loadDetail(item.fingerprint).catch((e) => showError(e.message));
+      });
+      body.appendChild(tr);
+    }
+    const from = data.total ? state.offset + 1 : 0;
+    const to = Math.min(state.offset + PAGE, data.total);
+    $("page-info").textContent = `${from}–${to} из ${data.total}`;
+    $("prev").disabled = state.offset === 0;
+    $("next").disabled = state.offset + PAGE >= data.total;
+  }
+
+  function drawSpark(history) {
+    const svg = $("d-spark");
+    const ns = "http://www.w3.org/2000/svg";
+    svg.replaceChildren();
+    const points = history.map((h, i) => ({ i, alive: h.alive, v: h.latency_ms }));
+    const values = points.filter((p) => p.alive && p.v != null).map((p) => p.v);
+    const max = Math.max(100, ...values) * 1.1;
+    const n = Math.max(points.length - 1, 1);
+    const x = (i) => 6 + (i / n) * 288;
+    const y = (v) => 110 - (v / max) * 100;
+    const grid = document.createElementNS(ns, "line");
+    grid.setAttribute("x1", 0); grid.setAttribute("x2", 300);
+    grid.setAttribute("y1", 110); grid.setAttribute("y2", 110);
+    grid.setAttribute("stroke", "var(--line)");
+    svg.appendChild(grid);
+    const alive = points.filter((p) => p.alive && p.v != null);
+    if (alive.length > 1) {
+      const path = document.createElementNS(ns, "polyline");
+      path.setAttribute("points", alive.map((p) => `${x(p.i)},${y(p.v)}`).join(" "));
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", "var(--accent)");
+      path.setAttribute("stroke-width", "2");
+      path.setAttribute("vector-effect", "non-scaling-stroke");
+      svg.appendChild(path);
+    }
+    for (const p of points) {
+      const dot = document.createElementNS(ns, "circle");
+      dot.setAttribute("cx", x(p.i));
+      dot.setAttribute("cy", p.alive && p.v != null ? y(p.v) : 110);
+      dot.setAttribute("r", 2.5);
+      dot.setAttribute("fill", p.alive ? "var(--accent)" : "var(--bad)");
+      svg.appendChild(dot);
+    }
+    const fails = points.filter((p) => !p.alive).length;
+    $("d-spark-caption").textContent = points.length
+      ? `Последние ${points.length} проверок · ошибок: ${fails} · максимум шкалы ${Math.round(max)} ms`
+      : "Проверок ещё не было";
+  }
+
+  async function loadDetail(fingerprint) {
+    const item = await (await api(`/api/nodes/${encodeURIComponent(fingerprint)}?history=50`)).json();
+    $("detail-empty").hidden = true;
+    $("detail-body").hidden = false;
+    $("d-name").textContent = item.name;
+    drawSpark(item.history);
+    const kv = $("d-kv");
+    kv.replaceChildren();
+    const rows = [
+      ["Адрес", `${item.host}:${item.port}`],
+      ["Протокол", item.protocol],
+      ["Статус", item.alive === true ? "жив" : item.alive === false ? "мёртв" : "не проверен"],
+      ["Ping", fmt.ms(item.latency_ms)],
+      ["Jitter", fmt.ms(item.jitter_ms)],
+      ["Score", fmt.num(item.quality_score)],
+      ["Stability", fmt.num(item.stability_score)],
+      ["Успешность (10 последних)", fmt.pct(item.recent_success_rate)],
+      ["Проверок всего", `${item.success_count + item.failure_count}`],
+      ["Страна", item.country || "—"],
+      ["Exit IP", item.exit_ip || "—"],
+      ["ASN", item.asn || "—"],
+      ["Проверен", fmt.time(item.last_checked)],
+      ["Появлялся", fmt.time(item.last_seen)],
+      ["Ошибка", item.validation_error || "—"],
+      ["Fingerprint", item.fingerprint],
+    ];
+    for (const [key, value] of rows) {
+      const k = document.createElement("div");
+      const v = document.createElement("div");
+      k.textContent = key;
+      v.textContent = value;
+      kv.append(k, v);
+    }
+  }
+
+  function subUrl() {
+    const params = new URLSearchParams();
+    if ($("sub-profile").value) params.set("profile", $("sub-profile").value);
+    if ($("sub-country").value) params.set("country", $("sub-country").value);
+    if ($("sub-protocol").value) params.set("protocol", $("sub-protocol").value);
+    params.set("format", $("sub-format").value);
+    if ($("sub-limit").value) params.set("limit", $("sub-limit").value);
+    if (token) params.set("token", token);
+    return `${location.origin}/sub?${params}`;
+  }
+
+  let subTimer = null;
+  function updateSub() {
+    const url = subUrl();
+    $("sub-url").textContent = url;
+    clearTimeout(subTimer);
+    subTimer = setTimeout(async () => {
+      try {
+        const response = await api(url.replace(location.origin, ""));
+        const count = response.headers.get("x-squad-nodes");
+        $("sub-count").textContent = count == null ? "" : `Сейчас в подписке узлов: ${count}`;
+      } catch (e) {
+        $("sub-count").textContent = e.message;
+      }
+    }, 250);
+  }
+
+  async function refresh() {
+    try {
+      await loadStats();
+      await Promise.all([loadNodes(), loadSources()]);
+      updateSub();
+      if (state.selected) await loadDetail(state.selected);
+      showError("");
+      $("auth").style.display = "none";
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  for (const id of ["f-country", "f-protocol", "f-sort", "f-alive"]) {
+    $(id).addEventListener("change", () => { state.offset = 0; loadNodes().catch((e) => showError(e.message)); });
+  }
+  for (const id of ["sub-profile", "sub-country", "sub-protocol", "sub-format", "sub-limit"]) {
+    $(id).addEventListener("input", updateSub);
+  }
+  $("prev").addEventListener("click", () => { state.offset = Math.max(0, state.offset - PAGE); loadNodes().catch((e) => showError(e.message)); });
+  $("next").addEventListener("click", () => { state.offset += PAGE; loadNodes().catch((e) => showError(e.message)); });
+  $("sub-copy").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(subUrl());
+      $("sub-copy").textContent = "Скопировано";
+    } catch {
+      $("sub-copy").textContent = "Выдели вручную";
+    }
+    setTimeout(() => { $("sub-copy").textContent = "Копировать"; }, 1500);
+  });
+  $("auth").addEventListener("submit", (event) => {
+    event.preventDefault();
+    token = $("token-input").value.trim();
+    storage.set("squad-token", token);
+    refresh();
+  });
+
+  refresh();
+  setInterval(refresh, 60000);
+})();
+</script>
+</body>
+</html>
