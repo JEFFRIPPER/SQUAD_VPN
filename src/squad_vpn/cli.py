@@ -229,6 +229,44 @@ async def _watch(args: argparse.Namespace) -> int:
     return 0
 
 
+def _agent(args: argparse.Namespace) -> int:
+    from .agent import Agent, project_root, request_stop, setup_logging
+
+    if args.stop:
+        if request_stop():
+            print("Агент остановлен")
+            return 0
+        print("Агент не запущен")
+        return 1
+    root = project_root()
+    os.chdir(root)
+    setup_logging(root)
+    return Agent(
+        root,
+        port=args.port,
+        interval_minutes=args.interval_minutes,
+        update_hours=args.update_hours,
+        auto_update=not args.no_update,
+    ).run()
+
+
+def _autostart(args: argparse.Namespace) -> int:
+    from . import autostart
+    from .agent import project_root
+
+    try:
+        if args.disable:
+            for path in autostart.disable():
+                print(f"Удалено: {path}")
+            return 0
+        for path in autostart.enable(project_root(), port=args.port):
+            print(f"Создано: {path}")
+    except OSError as exc:
+        print(f"Не удалось настроить автозапуск: {exc}")
+        return 1
+    return 0
+
+
 def _is_loopback(host: str) -> bool:
     if host == "localhost":
         return True
@@ -412,6 +450,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
     srv.add_argument("--interval-minutes", type=int, default=60)
     _add_cycle_args(srv, with_database=False)
+
+    agent = sub.add_parser(
+        "agent",
+        help="Фоновый агент: панель, ежечасный цикл, перезапуск и автообновление",
+    )
+    agent.add_argument("--port", type=int, default=8080)
+    agent.add_argument("--interval-minutes", type=int, default=60)
+    agent.add_argument(
+        "--update-hours", type=float, default=3.0, help="Как часто проверять обновления"
+    )
+    agent.add_argument("--no-update", action="store_true", help="Не обновлять код сам")
+    agent.add_argument("--stop", action="store_true", help="Остановить запущенного агента")
+
+    auto = sub.add_parser("autostart", help="Автозапуск агента при входе в Windows")
+    auto.add_argument("--disable", action="store_true", help="Убрать автозапуск и ярлык")
+    auto.add_argument("--port", type=int, default=8080)
     return parser
 
 
@@ -438,6 +492,10 @@ def main() -> int:
         return asyncio.run(_watch(args))
     if args.command == "serve":
         return _serve(args)
+    if args.command == "autostart":
+        return _autostart(args)
+    if args.command == "agent":
+        return _agent(args)
     if args.command == "cleanup":
         return _cleanup(args)
     if args.command == "publish":

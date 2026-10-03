@@ -1,19 +1,12 @@
 @echo off
 setlocal
 cd /d "%~dp0.."
-if not exist ".venv\Scripts\python.exe" (
-  echo [SQUAD VPN] .venv not found. Run installation first.
+if not exist ".venv\Scripts\pythonw.exe" (
+  echo [SQUAD VPN] Not installed yet: run install.cmd in the project folder.
   pause
   exit /b 1
 )
-echo [SQUAD VPN] Updating dependencies...
-".venv\Scripts\python.exe" -m pip install -q -e .
-if errorlevel 1 (
-  pause
-  exit /b 1
-)
-echo [SQUAD VPN] Dashboard: http://127.0.0.1:8080/
-echo [SQUAD VPN] Keep this window open: it serves the dashboard and refreshes nodes every hour.
-start "" cmd /c "timeout /t 3 >nul & start http://127.0.0.1:8080/"
-".venv\Scripts\python.exe" -m squad_vpn serve --watch
-pause
+rem The agent is single-instance: this is a no-op when it already runs.
+start "" ".venv\Scripts\pythonw.exe" -m squad_vpn agent
+timeout /t 5 /nobreak >nul
+start "" http://127.0.0.1:8080/

@@ -283,6 +283,13 @@ def create_app(
             )
         return {"started": runner.trigger()}
 
+    @app.get("/api/agent", dependencies=protected)
+    def agent_status() -> dict[str, object]:
+        from .agent import read_status
+
+        status = read_status()
+        return {"running": False} if status is None else {"running": True, **status}
+
     @app.get("/api/sources", dependencies=protected)
     def sources(store: NodeStore = Depends(get_store)) -> list[dict[str, object]]:
         rows = store.list_source_status()

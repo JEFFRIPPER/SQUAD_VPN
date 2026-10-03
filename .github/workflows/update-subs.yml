@@ -2,15 +2,22 @@ name: Update subscriptions
 
 on:
   schedule:
+    # Two slots per hour: GitHub sometimes delays or drops scheduled runs.
     - cron: "17 * * * *"
+    - cron: "47 * * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write
+  issues: write
 
 concurrency:
   group: update-subs
   cancel-in-progress: false
+
+env:
+  ALERT_LABEL: squad-alert
 
 jobs:
   update:
@@ -52,3 +59,41 @@ jobs:
         with:
           path: data/squad_vpn.sqlite3
           key: squad-db-${{ github.run_id }}
+
+      # GitHub disables scheduled workflows after 60 days without repository
+      # activity; re-enabling through the API resets that timer.
+      - name: Keep schedule alive
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/update-subs.yml/enable"
+
+      # An open issue makes GitHub email the owner; it is closed on recovery.
+      - name: Report failure
+        if: failure()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create "$ALERT_LABEL" --color d73a4a --description "SQUAD VPN automation alert" --force -R "$GITHUB_REPOSITORY"
+          number=$(gh issue list -R "$GITHUB_REPOSITORY" --label "$ALERT_LABEL" --state open --json number --jq '.[0].number')
+          if [ -z "$number" ]; then
+            gh issue create -R "$GITHUB_REPOSITORY" --label "$ALERT_LABEL" \
+              --title "Обновление подписок не удалось" \
+              --body "Автоматическое обновление подписок упало: $RUN_URL. Подписки остаются в последнем рабочем состоянии. Issue закроется сам после следующего успешного запуска."
+          else
+            gh issue comment "$number" -R "$GITHUB_REPOSITORY" --body "Снова упало: $RUN_URL"
+          fi
+
+      - name: Close alert after recovery
+        if: success()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          for number in $(gh issue list -R "$GITHUB_REPOSITORY" --label "$ALERT_LABEL" --state open --json number --jq '.[].number'); do
+            gh issue close "$number" -R "$GITHUB_REPOSITORY" --comment "Починилось само: $RUN_URL"
+          done

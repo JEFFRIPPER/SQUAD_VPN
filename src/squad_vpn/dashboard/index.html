@@ -92,6 +92,7 @@
     <button type="submit">Войти</button>
   </form>
   <span class="meta" id="updated">—</span>
+  <span class="cycle" id="agent" hidden></span>
   <span class="cycle" id="cycle" hidden>
     <span id="cycle-text"></span>
     <button type="button" class="ghost" id="cycle-run">Обновить сейчас</button>
@@ -550,8 +551,20 @@
     updatePublic();
   }
 
+  async function loadAgent() {
+    const status = await (await api("/api/agent")).json();
+    $("agent").hidden = !status.running;
+    if (!status.running) return;
+    const checked = status.last_update_check
+      ? fmt.time(status.last_update_check.replace("T", " ").replace("+00:00", ""))
+      : "ещё нет";
+    $("agent").textContent = `Автообновление ${status.auto_update ? "вкл" : "выкл"}`
+      + ` · ${status.commit || "?"} · проверка: ${checked}`;
+  }
+
   async function refresh() {
     try {
+      await loadAgent();
       await loadCycle();
       await loadProfiles();
       await loadStats();

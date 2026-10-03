@@ -16,3 +16,6 @@ tools/mihomo/*
 !tools/mihomo/.gitkeep
 data/smoke*
 data/mihomo-*
+data/logs/
+data/agent.json
+data/publish/
