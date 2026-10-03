@@ -438,6 +438,26 @@ class NodeStore:
             """,
             (probe_id, region.upper(), kind, version),
         )
+        has_rows = self.connection.execute(
+            "SELECT 1 FROM node_probe_status WHERE probe_id = ? LIMIT 1", (probe_id,)
+        ).fetchone()
+        if not has_rows:
+            # First run as this probe (e.g. right after upgrading): seed the
+            # per-probe view from checks this database already holds.
+            self.connection.execute(
+                """
+                INSERT OR IGNORE INTO node_probe_status (
+                    fingerprint, probe_id, alive, latency_ms, checked_at,
+                    success_rate, checks, error
+                )
+                SELECT fingerprint, ?, alive, latency_ms, last_checked,
+                       recent_success_rate, success_count + failure_count,
+                       validation_error
+                FROM nodes
+                WHERE last_checked >= datetime('now', '-24 hours') AND alive IS NOT NULL
+                """,
+                (probe_id,),
+            )
         self.connection.commit()
 
     def probe_report_rows(self, probe_id: str, *, hours: int = 24) -> list[dict[str, object]]:

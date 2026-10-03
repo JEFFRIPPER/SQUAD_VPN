@@ -193,3 +193,19 @@ def test_identity_is_stable_and_retries_unknown_region(tmp_path, monkeypatch):
     assert load_identity(path, region="de").region == "DE"
     with pytest.raises(ValueError):
         load_identity(tmp_path / "x.json", probe_id="Bad Id", region="US")
+
+
+def test_new_probe_is_seeded_from_existing_checks(tmp_path):
+    store = NodeStore(tmp_path / "seed.sqlite3")
+    try:
+        nodes = _nodes()
+        store.upsert_many(nodes)
+        store.record_validation(ValidationResult(nodes[0].fingerprint, True, latency_ms=80))
+        store.record_validation(ValidationResult(nodes[1].fingerprint, False, error="x"))
+        store.register_probe("gh-actions", "US")
+        rows = {r["fp"]: r for r in store.probe_report_rows("gh-actions")}
+        assert rows[nodes[0].fingerprint]["alive"] is True
+        assert rows[nodes[1].fingerprint]["alive"] is False
+        assert nodes[2].fingerprint not in rows
+    finally:
+        store.close()
