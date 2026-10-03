@@ -238,6 +238,10 @@
   .dialog h3 { font-size: 24px; line-height: 32px; font-weight: 400; margin: 0 0 8px; }
   .dialog .qr { background: #fff; border-radius: var(--radius-l); padding: 12px; margin: 16px auto; width: 260px; height: 260px; }
   .dialog .qr img { width: 100%; height: 100%; display: block; }
+  .field { width: 100%; height: 48px; padding: 0 12px; border-radius: 4px; border: 1px solid var(--md-outline); background: transparent; }
+  .token { font: 13px/18px ui-monospace, Consolas, monospace; background: var(--md-surface-lowest); border: 1px solid var(--md-outline-variant); border-radius: 8px; padding: 10px; overflow-wrap: anywhere; user-select: all; }
+  .status-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .status-dot.ok { background: var(--md-success); } .status-dot.warn { background: #C98A12; } .status-dot.error { background: var(--md-error); }
   .dialog .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
   .snackbar {
     position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 24px); opacity: 0;
@@ -288,6 +292,10 @@
   <symbol id="i-swap" viewBox="0 0 24 24"><path d="M6.99 11 3 15l3.99 4v-3H14v-2H6.99zM21 9l-3.99-4v3H10v2h7.01v3z"/></symbol>
   <symbol id="i-up" viewBox="0 0 24 24"><path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8z"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M20 12l-1.41-1.41L13 16.17V4h-2v12.17l-5.58-5.59L4 12l8 8z"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><path d="M12.65 10A6 6 0 1 0 12.65 14H17v4h4v-4h2v-4zM7 14a2 2 0 1 1 0-4 2 2 0 0 1 0 4"/></symbol>
+  <symbol id="i-backup" viewBox="0 0 24 24"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A6 6 0 0 0 6 20h13a5 5 0 0 0 .35-9.96M14 13v4h-4v-4H7l5-5 5 5z"/></symbol>
+  <symbol id="i-health" viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2m-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4z"/></symbol>
+  <symbol id="i-delete" viewBox="0 0 24 24"><path d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z"/></symbol>
   <symbol id="i-computer" viewBox="0 0 24 24"><path d="M20 18a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2H0v2h24v-2zM4 6h16v10H4z"/></symbol>
 </svg>
 
@@ -464,6 +472,24 @@
             <button class="btn filled" id="save-settings"><svg class="icon"><use href="#i-check"/></svg>Сохранить и перезапустить</button>
             <button class="btn outlined" id="open-folder"><svg class="icon"><use href="#i-folder"/></svg>Открыть папку</button>
           </div>
+          <div class="card">
+            <div class="setting" style="padding-top:0">
+              <div class="body"><div class="title">Доступ с телефона по Wi-Fi</div><div class="muted" id="lan-note">Подписка с этого компьютера для устройств в той же сети. Нужен ключ</div></div>
+              <label class="switch"><input type="checkbox" id="set-lan" aria-label="Доступ по Wi-Fi"><span class="track"></span><span class="thumb"></span></label>
+            </div>
+            <div class="row" style="justify-content:space-between;margin-top:12px">
+              <h3>Ключи доступа</h3>
+              <button class="btn tonal" id="key-new"><svg class="icon"><use href="#i-key"/></svg>Новый ключ</button>
+            </div>
+            <div class="list" id="keys-list" style="margin-top:12px"></div>
+          </div>
+          <div class="card">
+            <div class="row" style="justify-content:space-between">
+              <div><h3>Резервные копии базы</h3><div class="muted" id="backup-note">Создаются автоматически</div></div>
+              <button class="btn tonal" id="backup-now"><svg class="icon"><use href="#i-backup"/></svg>Создать сейчас</button>
+            </div>
+            <div class="list" id="backups-list" style="margin-top:12px"></div>
+          </div>
           <div class="card outlined">
             <h3 style="margin-bottom:8px">О программе</h3>
             <div class="muted" id="about"></div>
@@ -474,10 +500,18 @@
       <!-- Журнал -->
       <section class="page" id="page-log">
         <div class="stack">
+          <div class="card">
+            <div class="row" style="justify-content:space-between">
+              <div><h3>Проверка системы</h3><div class="muted" id="doctor-note">Python, ядро, база, связь, прокси, копии</div></div>
+              <button class="btn filled" id="doctor-run"><svg class="icon"><use href="#i-health"/></svg>Проверить систему</button>
+            </div>
+            <div class="list" id="doctor-list" style="margin-top:12px"></div>
+          </div>
           <div class="row" style="justify-content:space-between">
             <div class="segmented" role="group" aria-label="Журнал">
               <button aria-pressed="true" data-log="agent"><svg class="icon"><use href="#i-check"/></svg>Агент</button>
               <button aria-pressed="false" data-log="server"><svg class="icon"><use href="#i-check"/></svg>Сервер</button>
+              <button aria-pressed="false" data-log="crash"><svg class="icon"><use href="#i-check"/></svg>Сбои</button>
             </div>
             <button class="icon-btn" id="log-refresh" title="Обновить"><svg class="icon"><use href="#i-refresh"/></svg></button>
           </div>
@@ -497,6 +531,14 @@
       <button class="btn text" id="qr-copy">Копировать</button>
       <button class="btn text" id="qr-close">Готово</button>
     </div>
+  </div>
+</div>
+<div class="scrim" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-title">
+  <div class="dialog" style="text-align:left">
+    <h3 id="dlg-title"></h3>
+    <div class="muted" id="dlg-text"></div>
+    <div id="dlg-body" style="margin-top:12px"></div>
+    <div class="actions" id="dlg-actions"></div>
   </div>
 </div>
 <div class="snackbar" id="snackbar" role="status" aria-live="polite"></div>
@@ -788,6 +830,12 @@
       region.appendChild(option);
     }
     region.value = settings.probe_region;
+    $("set-lan").checked = settings.lan_access;
+    const keys = await loadKeys().catch(() => null);
+    $("lan-note").textContent = keys && keys.lan_address
+      ? `Адрес в сети: ${keys.lan_address}. Нужен ключ; после включения нажми «Сохранить и перезапустить»`
+      : "Подписка с этого компьютера для устройств в той же сети. Нужен ключ";
+    loadBackups().catch(() => {});
     const self = (await api("/api/probes").catch(() => [])).find((p) => p.is_self);
     $("set-region-note").textContent = self
       ? `Сейчас пробник: ${self.region}. Если включён другой VPN, «Авто» видит его страну — тогда выбери свою вручную`
@@ -812,6 +860,7 @@
           interval_minutes: Number($("set-interval").value),
           auto_update: $("set-autoupdate").checked,
           probe_region: $("set-region").value,
+          lan_access: $("set-lan").checked,
         }),
       });
       await api("/api/control/restart", { method: "POST" });
@@ -1048,6 +1097,229 @@
       snack(e.target.checked ? "Буду подключаться автоматически" : "Автоподключение выключено");
     } catch (err) { e.target.checked = !e.target.checked; snack(err.message); }
   });
+
+  // generic dialog
+  function dialog({ title, text = "", body = null, actions }) {
+    $("dlg-title").textContent = title;
+    $("dlg-text").textContent = text;
+    const holder = $("dlg-body");
+    holder.replaceChildren();
+    if (body) holder.appendChild(body);
+    const bar = $("dlg-actions");
+    bar.replaceChildren();
+    for (const action of actions) {
+      const button = document.createElement("button");
+      button.className = "btn text";
+      button.textContent = action.label;
+      button.addEventListener("click", async () => {
+        if (action.run) {
+          const keep = await action.run();
+          if (keep === true) return;
+        }
+        $("dlg").classList.remove("open");
+      });
+      bar.appendChild(button);
+    }
+    $("dlg").classList.add("open");
+  }
+  $("dlg").addEventListener("click", (e) => { if (e.target.id === "dlg") $("dlg").classList.remove("open"); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") $("dlg").classList.remove("open"); });
+
+  function listItem(lead, headline, supporting, buttons = []) {
+    const item = document.createElement("div");
+    item.className = "list-item";
+    if (lead) item.appendChild(lead);
+    const body = document.createElement("div");
+    body.className = "body";
+    const head = document.createElement("div");
+    head.className = "headline";
+    head.textContent = headline;
+    const support = document.createElement("div");
+    support.className = "supporting";
+    support.textContent = supporting;
+    support.title = supporting;
+    body.append(head, support);
+    item.appendChild(body);
+    for (const button of buttons) item.appendChild(button);
+    return item;
+  }
+
+  // access keys
+  const SCOPE_TEXT = { sub: "только подписки", read: "подписки и статистика", admin: "полный доступ" };
+  async function loadKeys() {
+    const data = await api("/api/keys");
+    const list = $("keys-list");
+    list.replaceChildren();
+    if (!data.keys.length) {
+      const empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = "Ключей нет. Создай ключ «только подписки» для телефона.";
+      list.appendChild(empty);
+    }
+    for (const key of data.keys) {
+      const lead = document.createElement("div");
+      lead.className = "lead";
+      lead.textContent = key.scope[0].toUpperCase();
+      const revoke = iconButton("#i-delete", "Отозвать", () => dialog({
+        title: `Отозвать ключ «${key.name}»?`,
+        text: "Устройства с этим ключом сразу потеряют доступ.",
+        actions: [
+          { label: "Отмена" },
+          { label: "Отозвать", run: async () => { await api(`/api/keys/${encodeURIComponent(key.name)}`, { method: "DELETE" }); snack("Ключ отозван"); loadKeys(); } },
+        ],
+      }));
+      list.appendChild(listItem(lead, key.name,
+        `${SCOPE_TEXT[key.scope]} · ${key.prefix}… · использован ${key.last_used ? ago(key.last_used) : "никогда"}`, [revoke]));
+    }
+    return data;
+  }
+
+  $("key-new").addEventListener("click", () => {
+    const body = document.createElement("div");
+    body.className = "stack";
+    body.style.gap = "12px";
+    const name = document.createElement("input");
+    name.className = "field";
+    name.placeholder = "Название, например «телефон»";
+    name.maxLength = 40;
+    const scope = document.createElement("select");
+    scope.className = "select";
+    for (const [value, label] of Object.entries(SCOPE_TEXT)) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      scope.appendChild(option);
+    }
+    body.append(name, scope);
+    dialog({
+      title: "Новый ключ доступа",
+      text: "Ключ показывается один раз — сохрани его или сразу отсканируй QR.",
+      body,
+      actions: [
+        { label: "Отмена" },
+        { label: "Создать", run: async () => {
+          try {
+            const created = await api("/api/keys", { method: "POST", body: JSON.stringify({ name: name.value, scope: scope.value }) });
+            showToken(created);
+            loadKeys();
+            return true;
+          } catch (e) { snack(e.message); return true; }
+        } },
+      ],
+    });
+    setTimeout(() => name.focus(), 50);
+  });
+
+  async function showToken(created) {
+    const links = await api("/api/links").catch(() => ({}));
+    const body = document.createElement("div");
+    body.className = "stack";
+    body.style.gap = "12px";
+    const tokenBox = document.createElement("div");
+    tokenBox.className = "token";
+    tokenBox.textContent = created.token;
+    body.appendChild(tokenBox);
+    let link = "";
+    if (links.lan) {
+      link = `${links.lan}?profile=all&format=base64&token=${encodeURIComponent(created.token)}`;
+      const qr = document.createElement("div");
+      qr.className = "qr";
+      const img = document.createElement("img");
+      img.alt = "QR-код подписки по Wi-Fi";
+      img.src = `/api/qr?${new URLSearchParams({ text: link })}`;
+      qr.appendChild(img);
+      const caption = document.createElement("div");
+      caption.className = "muted";
+      caption.textContent = "Подписка по Wi-Fi с этим ключом: отсканируй телефоном в той же сети.";
+      body.append(qr, caption);
+    } else {
+      const caption = document.createElement("div");
+      caption.className = "muted";
+      caption.textContent = "Чтобы получить ссылку для телефона, включи «Доступ с телефона по Wi-Fi» и нажми «Сохранить и перезапустить».";
+      body.appendChild(caption);
+    }
+    dialog({
+      title: `Ключ «${created.key.name}» создан`,
+      body,
+      actions: [
+        { label: "Копировать ключ", run: () => { copyText(created.token); return true; } },
+        ...(link ? [{ label: "Копировать ссылку", run: () => { copyText(link); return true; } }] : []),
+        { label: "Готово" },
+      ],
+    });
+  }
+
+  // backups
+  async function loadBackups() {
+    const data = await api("/api/backups");
+    $("backup-note").textContent = `Создаются автоматически раз в ${data.every_hours} ч, хранятся последние ${data.keep}`;
+    const list = $("backups-list");
+    list.replaceChildren();
+    if (!data.backups.length) {
+      const empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = "Копий пока нет";
+      list.appendChild(empty);
+    }
+    for (const item of data.backups) {
+      const restore = iconButton("#i-restart", "Восстановить", () => dialog({
+        title: "Восстановить базу из копии?",
+        text: `${item.created_at}. Текущая база сохранится рядом, программа перезапустится.`,
+        actions: [
+          { label: "Отмена" },
+          { label: "Восстановить", run: async () => {
+            try {
+              await api(`/api/backups/${encodeURIComponent(item.name)}/restore`, { method: "POST" });
+              snack("Восстанавливаю, программа перезапускается…");
+              waitForRestart();
+            } catch (e) { snack(e.message); }
+          } },
+        ],
+      }));
+      list.appendChild(listItem(null, item.created_at.replace("T", " "), `${Math.round(item.size / 1024)} КБ · ${item.name}`, [restore]));
+    }
+  }
+  $("backup-now").addEventListener("click", async () => {
+    try {
+      await api("/api/backups", { method: "POST" });
+      snack("Копия создана");
+      loadBackups();
+    } catch (e) { snack(e.message); }
+  });
+
+  // doctor
+  const FIX_TEXT = { restore_proxy: "Вернуть прокси", backup_now: "Создать копию", restore_backup: "К копиям" };
+  async function runDoctor() {
+    $("doctor-run").disabled = true;
+    $("doctor-note").textContent = "Проверяю…";
+    try {
+      const data = await api("/api/doctor");
+      const list = $("doctor-list");
+      list.replaceChildren();
+      for (const check of data.checks) {
+        const dot = document.createElement("span");
+        dot.className = `status-dot ${check.status}`;
+        const buttons = [];
+        if (check.fix) {
+          const fix = document.createElement("button");
+          fix.className = "btn text";
+          fix.textContent = FIX_TEXT[check.fix] || "Исправить";
+          fix.addEventListener("click", async () => {
+            if (check.fix === "restore_backup") { go("settings"); return; }
+            try { await api(`/api/doctor/fix/${check.fix}`, { method: "POST" }); snack("Готово"); runDoctor(); }
+            catch (e) { snack(e.message); }
+          });
+          buttons.push(fix);
+        }
+        list.appendChild(listItem(dot, check.title, check.detail, buttons));
+      }
+      $("doctor-note").textContent = { ok: "Всё в порядке", warn: "Есть предупреждения", error: "Есть проблемы" }[data.status];
+    } catch (e) {
+      $("doctor-note").textContent = e.message;
+    }
+    $("doctor-run").disabled = false;
+  }
+  $("doctor-run").addEventListener("click", runDoctor);
 
   async function refresh() {
     if (state.page === "connect") loadConnect().catch((e) => { $("cx-sub").textContent = e.message; });

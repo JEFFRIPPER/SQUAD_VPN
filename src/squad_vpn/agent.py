@@ -66,6 +66,37 @@ def _git(root: Path, *args: str, timeout: float = 120) -> subprocess.CompletedPr
     )
 
 
+DEFAULT_REPO = "https://github.com/JEFFRIPPER/SQUAD_VPN.git"
+
+
+def ensure_git_checkout(root: Path, repo: str = DEFAULT_REPO) -> bool:
+    """Turn a copy installed from a zip into a git checkout of ``repo``.
+
+    Files stay as they are; git just starts tracking them, so the regular
+    fast-forward update works from then on.
+    """
+    import shutil
+
+    if (root / ".git").exists():
+        return True
+    if shutil.which("git") is None or not (root / "pyproject.toml").exists():
+        return False
+    steps = [
+        ("init", "-q"),
+        ("remote", "add", "origin", repo),
+        ("fetch", "-q", "--depth", "50", "origin", "main"),
+        ("reset", "-q", "origin/main"),
+        ("branch", "-q", "-M", "main"),
+    ]
+    for step in steps:
+        result = _git(root, *step)
+        if result.returncode != 0:
+            log.warning("Не удалось подключить git (%s): %s", step[0], result.stderr.strip()[-300:])
+            return False
+    log.info("Папка подключена к GitHub — автообновление включено")
+    return True
+
+
 def check_for_update(root: Path, branch: str = "main") -> list[str] | None:
     """Fast-forward the checkout to ``origin/<branch>``.
 
@@ -73,7 +104,7 @@ def check_for_update(root: Path, branch: str = "main") -> list[str] | None:
     when there is nothing to do or the update is not safe (local commits,
     conflicting local edits, no network).
     """
-    if not (root / ".git").exists():
+    if not (root / ".git").exists() and not ensure_git_checkout(root):
         log.info("Не git-репозиторий, автообновление пропущено")
         return None
     fetch = _git(root, "fetch", "--quiet", "origin", branch)
@@ -198,11 +229,36 @@ class Agent:
             pass
 
     def _server_command(self) -> list[str]:
-        return [
+        from .keys import KeyStore
+        from .settings import load_settings
+
+        command = [
             sys.executable, "-m", "squad_vpn", "serve", "--watch", "--probe-publish",
             "--port", str(self.port),
             "--interval-minutes", str(self.interval_minutes),
         ]
+        # Open to the local network only when there is a key to protect it.
+        if load_settings(self.root / "data" / "settings.json").lan_access and KeyStore(
+            self.root / "data" / "api_keys.json"
+        ).load():
+            command += ["--host", "0.0.0.0"]
+        return command
+
+    def _apply_restore_request(self) -> None:
+        """Restore a backup chosen in the app, before the server opens the DB."""
+        from .backup import restore_backup
+
+        request = self.root / "data" / "restore-request.json"
+        if not request.exists():
+            return
+        try:
+            name = json.loads(request.read_text(encoding="utf-8"))["name"]
+            restore_backup(name, self.root / "data" / "squad_vpn.sqlite3", self.root / "data" / "backups")
+            log.info("База восстановлена из копии %s", name)
+        except Exception as exc:
+            log.error("Не удалось восстановить копию: %s", exc)
+        finally:
+            request.unlink(missing_ok=True)
 
     def start_server(self) -> None:
         logs = self.root / "data" / "logs"
@@ -311,6 +367,7 @@ class Agent:
         next_update = time.monotonic() + (60 if self.auto_update else float("inf"))
         next_app_check = time.monotonic() + 30
         try:
+            self._apply_restore_request()
             self.start_server()
             while True:
                 command = self._read_command(control)

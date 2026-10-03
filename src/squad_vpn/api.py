@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import logging
 import secrets
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
@@ -13,7 +14,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from .config import AppConfig, load_config
+from .keys import SCOPES, KeyStore, allows
+from .ratelimit import RateLimiter, TtlCache
 
 from . import __version__
 from .cycle import CycleOptions, run_cycle
@@ -39,7 +45,26 @@ def _dashboard_html(name: str = "index.html") -> str:
 
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
-LOG_FILES = {"agent": "agent.log", "server": "server.log"}
+# Requests from this very computer: no key needed, no rate limit.
+REAL_LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+
+
+def _client_host(request: Request) -> str:
+    return request.client.host if request.client else ""
+
+
+def lan_address() -> str | None:
+    """This computer's address in the local network (no packet is sent)."""
+    import socket
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("192.0.2.1", 9))
+            address = sock.getsockname()[0]
+    except OSError:
+        return None
+    return None if address.startswith("127.") else address
+LOG_FILES = {"agent": "agent.log", "server": "squad.log", "crash": "server.log", "app": "app.log"}
 
 
 def _require_local(request: Request) -> None:
@@ -73,9 +98,12 @@ class CycleRunner:
         self._wake = asyncio.Event()
         self._lock = asyncio.Lock()
 
-    @staticmethod
-    def _log(message: str) -> None:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] {message}", flush=True)
+    _logger = logging.getLogger("squad_vpn.cycle")
+    on_finish = None  # set by create_app: invalidate caches, make backups
+
+    @classmethod
+    def _log(cls, message: str) -> None:
+        cls._logger.info(message)
 
     async def run_once(self) -> None:
         async with self._lock:
@@ -83,6 +111,8 @@ class CycleRunner:
             try:
                 report = await run_cycle(self.options, log=self._log)
                 self.last = report.as_dict()
+                if self.on_finish is not None:
+                    await self.on_finish()
             finally:
                 self.running = False
 
@@ -123,6 +153,7 @@ def create_app(
     profiles_path: str | Path | None = DEFAULT_PROFILES_PATH,
     client: "VpnClient | None" = None,
     client_root: Path | None = None,
+    config: AppConfig | None = None,
 ) -> FastAPI:
     """Build the HTTP API.
 
@@ -141,6 +172,28 @@ def create_app(
 
     runner = CycleRunner(cycle, interval_minutes) if cycle is not None else None
     root = Path(client_root) if client_root is not None else Path.cwd()
+    config = config or load_config(root / "config" / "squad.yaml")
+    log = logging.getLogger("squad_vpn.server")
+    keystore = KeyStore(root / "data" / "api_keys.json")
+    limiter = RateLimiter()
+    cache = TtlCache()
+    backups_dir = root / "data" / "backups"
+
+    async def after_cycle() -> None:
+        from .backup import backup_due, create_backup
+
+        cache.invalidate()
+        if backup_due(backups_dir, every_hours=config.backup.every_hours):
+            try:
+                path = await asyncio.to_thread(
+                    create_backup, database, backups_dir, keep=config.backup.keep
+                )
+                log.info("Резервная копия базы: %s", path.name)
+            except Exception as exc:
+                log.warning("Резервная копия не создана: %s", exc)
+
+    if runner is not None:
+        runner.on_finish = after_cycle
     if client is None:
         from .client import VpnClient
 
@@ -149,6 +202,7 @@ def create_app(
             root=root,
             profiles_path=Path(profiles_path) if profiles_path else None,
             binary=cycle.binary if cycle is not None else DEFAULT_BINARY,
+            log=logging.getLogger("squad_vpn.client").info,
         )
     vpn = client
 
@@ -189,15 +243,50 @@ def create_app(
         openapi_url="/api/openapi.json",
     )
 
-    def require_token(request: Request) -> None:
-        if not token:
-            return
+    def supplied_token(request: Request) -> str:
         supplied = request.query_params.get("token") or ""
         header = request.headers.get("authorization") or ""
-        if header.lower().startswith("bearer "):
-            supplied = supplied or header[7:].strip()
-        if not secrets.compare_digest(supplied.encode(), token.encode()):
-            raise HTTPException(status_code=401, detail="Нужен корректный token")
+        if not supplied and header.lower().startswith("bearer "):
+            supplied = header[7:].strip()
+        return supplied
+
+    def authorize(needed: str):
+        """Dependency: legacy --token (full access) or an API key with the scope.
+
+        This computer itself needs no key; the network does, as soon as a
+        token or any key is configured.
+        """
+
+        def dependency(request: Request) -> None:
+            host = _client_host(request)
+            if limiter.blocked_for(host):
+                raise HTTPException(status_code=429, detail="Слишком много неверных ключей, попробуй позже")
+            supplied = supplied_token(request)
+            if supplied:
+                if token and secrets.compare_digest(supplied.encode(), token.encode()):
+                    return
+                key = keystore.match(supplied)
+                if key is not None:
+                    if allows(key.scope, needed):
+                        return
+                    raise HTTPException(
+                        status_code=403, detail=f"У ключа «{key.name}» нет прав на это ({key.scope})"
+                    )
+                if host not in REAL_LOOPBACK:
+                    limiter.auth_failure(
+                        host, config.rate_limit.auth_failures_per_minute,
+                        config.rate_limit.block_minutes * 60,
+                    )
+                raise HTTPException(status_code=401, detail="Неверный ключ доступа")
+            if host in REAL_LOOPBACK:
+                return
+            if not token and not keystore.load():
+                return
+            raise HTTPException(status_code=401, detail="Нужен ключ доступа (?token=...)")
+
+        return dependency
+
+    require_token = authorize("read")
 
     def get_store() -> Iterator[NodeStore]:
         store = NodeStore(database, init_schema=False)
@@ -206,7 +295,7 @@ def create_app(
         finally:
             store.close()
 
-    protected = [Depends(require_token)]
+    protected = [Depends(authorize("read"))]
 
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     def dashboard() -> str:
@@ -238,8 +327,101 @@ def create_app(
             "github_raw": target.raw_base() if target else None,
             "github_cdn": target.cdn_base() if target else None,
             "local": str(request.base_url).rstrip("/") + "/sub",
+            "lan": _lan_sub(request),
             "profiles": items,
         }
+
+    def _lan_sub(request: Request) -> str | None:
+        settings = client_settings()
+        address = lan_address()
+        if not settings.lan_access or address is None or not keystore.load():
+            return None
+        return f"http://{address}:{request.url.port or 8080}/sub"
+
+    # --- access keys, backups, diagnostics (this computer only) ----------
+
+    @app.get("/api/keys", dependencies=local_only)
+    def keys_list() -> dict[str, object]:
+        return {
+            "keys": [key.public() for key in keystore.load()],
+            "scopes": list(SCOPES),
+            "lan_address": lan_address(),
+        }
+
+    @app.post("/api/keys", dependencies=local_only)
+    def keys_create(payload: dict[str, object]) -> dict[str, object]:
+        try:
+            key, secret = keystore.create(str(payload.get("name") or ""), str(payload.get("scope") or "sub"))
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return {"key": key.public(), "token": secret}
+
+    @app.delete("/api/keys/{name}", dependencies=local_only)
+    def keys_revoke(name: str) -> dict[str, object]:
+        if not keystore.revoke(name):
+            raise HTTPException(status_code=404, detail="Нет такого ключа")
+        return {"ok": True}
+
+    @app.get("/api/backups", dependencies=local_only)
+    def backups_list() -> dict[str, object]:
+        from .backup import list_backups
+
+        return {
+            "backups": list_backups(backups_dir),
+            "every_hours": config.backup.every_hours,
+            "keep": config.backup.keep,
+        }
+
+    @app.post("/api/backups", dependencies=local_only)
+    async def backups_create() -> dict[str, object]:
+        from .backup import create_backup
+
+        path = await asyncio.to_thread(create_backup, database, backups_dir, keep=config.backup.keep)
+        return {"name": path.name}
+
+    @app.post("/api/backups/{name}/restore", dependencies=local_only)
+    def backups_restore(name: str) -> dict[str, object]:
+        """Restoring a live database is unsafe: ask the agent to do it on restart."""
+        from .agent import send_command
+        from .backup import list_backups
+
+        if name not in {item["name"] for item in list_backups(backups_dir)}:
+            raise HTTPException(status_code=404, detail="Нет такой копии")
+        request_file = root / "data" / "restore-request.json"
+        request_file.write_text(json.dumps({"name": name}), encoding="utf-8")
+        if not send_command("restart"):
+            request_file.unlink(missing_ok=True)
+            raise HTTPException(status_code=409, detail="Фоновая программа не запущена")
+        return {"ok": True, "restarting": True}
+
+    @app.get("/api/doctor", dependencies=local_only)
+    async def doctor() -> dict[str, object]:
+        from .diagnostics import run_checks
+
+        binary = cycle.binary if cycle is not None else DEFAULT_BINARY
+        last = runner.last if runner is not None else None
+        checks = await asyncio.to_thread(
+            run_checks, root, database, binary,
+            client_connected=vpn.status.get("state") == "connected",
+            last_cycle=(last or {}) if runner is not None else None,
+        )
+        worst = "error" if any(c["status"] == "error" for c in checks) else (
+            "warn" if any(c["status"] == "warn" for c in checks) else "ok"
+        )
+        return {"status": worst, "checks": checks}
+
+    @app.post("/api/doctor/fix/{fix}", dependencies=local_only)
+    async def doctor_fix(fix: Literal["restore_proxy", "backup_now"]) -> dict[str, object]:
+        if fix == "restore_proxy":
+            from .client import cleanup_orphan
+
+            if vpn.status.get("state") == "connected":
+                await vpn.disconnect("doctor")
+            return await asyncio.to_thread(cleanup_orphan, root, clear_resume=True)
+        from .backup import create_backup
+
+        path = await asyncio.to_thread(create_backup, database, backups_dir, keep=config.backup.keep)
+        return {"name": path.name}
 
     @app.get("/api/qr", dependencies=protected)
     def qr(text: str = Query(..., min_length=1, max_length=1000)) -> Response:
@@ -255,7 +437,7 @@ def create_app(
 
     @app.get("/api/logs", dependencies=local_only)
     def logs(
-        name: Literal["agent", "server"] = "agent",
+        name: Literal["agent", "server", "crash", "app"] = "agent",
         lines: int = Query(200, ge=1, le=2000),
     ) -> dict[str, object]:
         from .agent import project_root
@@ -328,8 +510,42 @@ def create_app(
     def health() -> dict[str, object]:
         return {"status": "ok", "version": __version__, "auth": bool(token)}
 
-    @app.get("/sub", dependencies=protected)
+    @app.middleware("http")
+    async def rate_limit(request: Request, call_next):
+        host = _client_host(request)
+        path = request.url.path
+        if host not in REAL_LOOPBACK and (path == "/sub" or path.startswith("/api/")):
+            limits = config.rate_limit
+            bucket, limit = ("sub", limits.sub_per_minute) if path == "/sub" else ("api", limits.api_per_minute)
+            wait = limiter.blocked_for(host) or limiter.hit(host, bucket, limit)
+            if wait:
+                return JSONResponse(
+                    {"detail": "Слишком много запросов, подожди немного"},
+                    status_code=429,
+                    headers={"Retry-After": str(int(wait) + 1)},
+                )
+        return await call_next(request)
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_error(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+        detail = exc.detail
+        if exc.status_code == 404 and detail == "Not Found":
+            detail = "Не найдено"
+        elif exc.status_code == 405:
+            detail = "Этот метод здесь не поддерживается"
+        return JSONResponse({"detail": detail}, status_code=exc.status_code, headers=exc.headers)
+
+    @app.exception_handler(Exception)
+    async def crash(request: Request, exc: Exception) -> JSONResponse:
+        log.exception("Ошибка при обработке %s %s", request.method, request.url.path)
+        return JSONResponse(
+            {"detail": f"Внутренняя ошибка ({type(exc).__name__}). Подробности в журнале data/logs/squad.log"},
+            status_code=500,
+        )
+
+    @app.get("/sub", dependencies=[Depends(authorize("sub"))])
     def subscription(
+        request: Request,
         store: NodeStore = Depends(get_store),
         profile: str | None = None,
         country: str | None = None,
@@ -342,6 +558,13 @@ def create_app(
         limit: int | None = Query(None, ge=1, le=MAX_SUB_LIMIT),
         format: Literal["plain", "base64", "mihomo"] = "plain",
     ) -> Response:
+        cache_key = ("sub", tuple(sorted(
+            (k, v) for k, v in request.query_params.items() if k != "token"
+        )))
+        cached = cache.get(cache_key)
+        if cached is not None:
+            body, media_type, headers = cached  # type: ignore[misc]
+            return Response(body, media_type=media_type, headers=headers)
         available = profiles()
         if profile is not None and profile not in available:
             raise HTTPException(
@@ -369,15 +592,15 @@ def create_app(
             "cache-control": "no-store",
         }
         if format == "mihomo":
-            return Response(
-                render_mihomo(nodes, f"SQUAD {chosen.name}"),
-                media_type="text/yaml; charset=utf-8",
-                headers=headers,
-            )
-        body = render_plain(nodes)
-        if format == "base64":
-            body = base64.b64encode(body.encode("utf-8")).decode("ascii")
-        return PlainTextResponse(body, headers=headers)
+            body = render_mihomo(nodes, f"SQUAD {chosen.name}")
+            media_type = "text/yaml; charset=utf-8"
+        else:
+            body = render_plain(nodes)
+            if format == "base64":
+                body = base64.b64encode(body.encode("utf-8")).decode("ascii")
+            media_type = "text/plain; charset=utf-8"
+        cache.set(cache_key, (body, media_type, headers), config.cache.sub_seconds)
+        return Response(body, media_type=media_type, headers=headers)
 
     @app.get("/api/profiles", dependencies=protected)
     def profiles_list() -> dict[str, object]:
@@ -432,8 +655,12 @@ def create_app(
 
     @app.get("/api/stats", dependencies=protected)
     def stats(store: NodeStore = Depends(get_store)) -> dict[str, object]:
+        cached = cache.get("stats")
+        if cached is not None:
+            return cached  # type: ignore[return-value]
         payload = store.stats()
         payload["version"] = __version__
+        cache.set("stats", payload, config.cache.stats_seconds)
         return payload
 
     @app.get("/api/cycle", dependencies=protected)
@@ -544,11 +771,18 @@ def serve(
 ) -> None:
     import uvicorn
 
+    from .logsetup import setup_logging
+
+    config = load_config()
+    setup_logging(Path.cwd(), config.logging)
     app = create_app(
         database,
         token=token,
         cycle=cycle,
         interval_minutes=interval_minutes,
         profiles_path=profiles_path,
+        config=config,
     )
-    uvicorn.run(app, host=host, port=port, log_level="warning")
+    logging.getLogger("squad_vpn.server").info("SQUAD VPN %s слушает %s:%s", __version__, host, port)
+    # Access lines ("GET /api/stats 200") are noise for a desktop app.
+    uvicorn.run(app, host=host, port=port, log_level="warning", access_log=False)

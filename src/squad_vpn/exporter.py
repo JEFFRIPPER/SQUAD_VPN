@@ -201,7 +201,7 @@ def export_manifest(records: list[RankedNode], path: str | Path) -> Path:
     latencies = [item.latency_ms for item in alive if item.latency_ms is not None]
     jitters = [item.jitter_ms for item in alive if item.jitter_ms is not None]
     payload = {
-        "version": "0.8",
+        "version": "0.9",
         "updated_at": datetime.now(UTC).isoformat(),
         "total": len(records),
         "alive": len(alive),

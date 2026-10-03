@@ -222,6 +222,65 @@ def _probes(args: argparse.Namespace) -> int:
     return 0
 
 
+def _keys(args: argparse.Namespace) -> int:
+    from .keys import KeyStore
+
+    store = KeyStore()
+    if args.action == "add":
+        try:
+            key, token = store.create(args.name, args.scope)
+        except ValueError as exc:
+            print(exc)
+            return 1
+        print(f"Ключ «{key.name}» ({key.scope}) создан. Сохрани его — второй раз не покажу:")
+        print(token)
+        return 0
+    if args.action == "revoke":
+        if store.revoke(args.name):
+            print(f"Ключ «{args.name}» отозван")
+            return 0
+        print("Нет такого ключа")
+        return 1
+    keys = store.load()
+    if not keys:
+        print("Ключей нет")
+    for key in keys:
+        print(f"{key.name}: {key.scope}, {key.prefix}…, создан {key.created_at}, "
+              f"использован {key.last_used or 'никогда'}")
+    return 0
+
+
+def _backup(args: argparse.Namespace) -> int:
+    from .agent import request_stop
+    from .backup import create_backup, list_backups, restore_backup
+    from .config import load_config
+
+    if args.restore:
+        if request_stop():
+            print("Фоновая программа остановлена на время восстановления")
+        restore_backup(args.restore, args.database)
+        print(f"База восстановлена из {args.restore}. Запусти SQUAD VPN.exe снова.")
+        return 0
+    if args.list:
+        for item in list_backups():
+            print(f"{item['name']}  {int(item['size']) // 1024} КБ  {item['created_at']}")
+        return 0
+    path = create_backup(args.database, keep=load_config().backup.keep)
+    print(f"Копия создана: {path}")
+    return 0
+
+
+def _doctor(args: argparse.Namespace) -> int:
+    from .diagnostics import run_checks
+
+    marks = {"ok": "✓", "warn": "!", "error": "✗"}
+    worst = 0
+    for check in run_checks(Path.cwd(), args.database, DEFAULT_BINARY, network=not args.offline):
+        print(f" {marks[check['status']]} {check['title']}: {check['detail']}")
+        worst = max(worst, {"ok": 0, "warn": 1, "error": 2}[str(check["status"])])
+    return 1 if worst == 2 else 0
+
+
 def _cleanup(args: argparse.Namespace) -> int:
     cleanup_step(args.database, unseen_days=args.unseen_days)
     return 0
@@ -314,11 +373,14 @@ def _is_loopback(host: str) -> bool:
 def _serve(args: argparse.Namespace) -> int:
     from .api import serve
 
+    from .keys import KeyStore
+
     token = args.token or os.environ.get("SQUAD_VPN_TOKEN") or None
-    if not _is_loopback(args.host) and not token and not args.insecure_no_token:
+    has_keys = bool(KeyStore().load())
+    if not _is_loopback(args.host) and not token and not has_keys and not args.insecure_no_token:
         print(
-            f"Отказ: {args.host} доступен из сети, а token не задан. "
-            "Укажи --token (или SQUAD_VPN_TOKEN), либо --insecure-no-token."
+            f"Отказ: {args.host} доступен из сети, а ключей доступа нет. "
+            "Создай ключ (squad-vpn keys add телефон) или укажи --token / --insecure-no-token."
         )
         return 2
     url = f"http://{args.host}:{args.port}/"
@@ -470,6 +532,24 @@ def build_parser() -> argparse.ArgumentParser:
     watch.add_argument("--stop-on-error", action="store_true")
     watch.add_argument("--strict", action="store_true", help=argparse.SUPPRESS)
 
+    keys = sub.add_parser("keys", help="Ключи доступа к API и подпискам")
+    keys_sub = keys.add_subparsers(dest="action", required=True)
+    keys_add = keys_sub.add_parser("add", help="Создать ключ")
+    keys_add.add_argument("name")
+    keys_add.add_argument("--scope", choices=["sub", "read", "admin"], default="sub")
+    keys_sub.add_parser("list", help="Показать ключи")
+    keys_revoke = keys_sub.add_parser("revoke", help="Отозвать ключ")
+    keys_revoke.add_argument("name")
+
+    bak = sub.add_parser("backup", help="Резервная копия базы")
+    bak.add_argument("--database", type=Path, default=DEFAULT_DB)
+    bak.add_argument("--list", action="store_true", help="Показать копии")
+    bak.add_argument("--restore", metavar="ИМЯ", help="Восстановить из копии")
+
+    doc = sub.add_parser("doctor", help="Проверить, всё ли в порядке")
+    doc.add_argument("--database", type=Path, default=DEFAULT_DB)
+    doc.add_argument("--offline", action="store_true", help="Без проверки связи с GitHub")
+
     probes = sub.add_parser("probes", help="Показать пробники и их отчёты")
     probes.add_argument("--database", type=Path, default=DEFAULT_DB)
 
@@ -521,8 +601,31 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    """Run a command; turn crashes into a short message plus a log entry."""
     parser = build_parser()
     args = parser.parse_args()
+    try:
+        return _dispatch(parser, args)
+    except KeyboardInterrupt:
+        return 130
+    except Exception as exc:
+        import logging
+        import traceback
+
+        logs = Path("data/logs")
+        try:
+            logs.mkdir(parents=True, exist_ok=True)
+            with open(logs / "cli.log", "a", encoding="utf-8") as handle:
+                handle.write(f"--- squad-vpn {args.command}\n{traceback.format_exc()}\n")
+            where = f" Подробности: {logs / 'cli.log'}"
+        except OSError:
+            where = ""
+        logging.getLogger("squad_vpn").debug("command failed", exc_info=True)
+        print(f"Ошибка: {exc}.{where}")
+        return 1
+
+
+def _dispatch(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
     if args.command == "collect":
         return asyncio.run(_collect(args))
     if args.command == "import-file":
@@ -553,6 +656,12 @@ def main() -> int:
         return _autostart(args)
     if args.command == "agent":
         return _agent(args)
+    if args.command == "keys":
+        return _keys(args)
+    if args.command == "backup":
+        return _backup(args)
+    if args.command == "doctor":
+        return _doctor(args)
     if args.command == "probes":
         return _probes(args)
     if args.command == "cleanup":

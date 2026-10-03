@@ -53,6 +53,17 @@ if errorlevel 1 (
   exit /b 1
 )
 
+rem --- a copy downloaded as zip becomes a git checkout (for auto-update) ---
+if not exist ".git" (
+  where git >nul 2>nul && (
+    git init -q
+    git remote add origin https://github.com/JEFFRIPPER/SQUAD_VPN.git
+    git fetch -q --depth 50 origin main
+    git reset -q origin/main
+    git branch -q -M main
+  )
+)
+
 echo [4/6] Stopping old versions...
 ".venv\Scripts\python.exe" -m squad_vpn agent --stop >nul 2>nul
 schtasks /Delete /TN "SQUAD_VPN_HOURLY" /F >nul 2>nul
@@ -68,10 +79,13 @@ if errorlevel 1 (
 echo [6/6] Starting SQUAD VPN in the background...
 start "" ".venv\Scripts\pythonw.exe" -m squad_vpn agent
 timeout /t 8 /nobreak >nul
-if exist "SQUAD VPN.exe" (
-  start "" "SQUAD VPN.exe"
-) else (
-  start "" http://127.0.0.1:8080/app
+rem When started from SQUAD VPN.exe, that window shows the panel itself.
+if not defined SQUAD_FROM_APP (
+  if exist "SQUAD VPN.exe" (
+    start "" "SQUAD VPN.exe"
+  ) else (
+    start "" http://127.0.0.1:8080/app
+  )
 )
 
 echo.

@@ -1,0 +1,23 @@
+# Служебные настройки SQUAD VPN. Обычно менять не нужно.
+# То, что меняется из приложения (интервал, автозапуск, VPN), хранится в
+# data/settings.json. Любой параметр можно переопределить переменной
+# окружения SQUAD_<РАЗДЕЛ>_<ПАРАМЕТР>, например SQUAD_LOGGING_LEVEL=DEBUG.
+
+logging:
+  level: INFO        # DEBUG, INFO, WARNING, ERROR
+  max_mb: 2          # размер одного файла журнала
+  keep: 5            # сколько старых файлов хранить
+
+rate_limit:          # для запросов не с этого компьютера
+  sub_per_minute: 30
+  api_per_minute: 120
+  auth_failures_per_minute: 10   # после стольких неверных ключей —
+  block_minutes: 10              # блокировка IP на столько минут
+
+cache:
+  sub_seconds: 60    # подписка /sub кэшируется до следующего цикла или на столько
+  stats_seconds: 10
+
+backup:
+  every_hours: 24    # как часто делать копию базы
+  keep: 7            # сколько копий хранить

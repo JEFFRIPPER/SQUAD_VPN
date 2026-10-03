@@ -23,6 +23,8 @@ class Settings:
     # VPN client (v0.8)
     client_profile: str = "balanced"
     client_autoconnect: bool = False
+    # Serve subscriptions to phones in the same Wi-Fi (needs an API key).
+    lan_access: bool = False
 
     def validate(self) -> "Settings":
         if self.interval_minutes not in ALLOWED_INTERVALS:
@@ -31,6 +33,7 @@ class Settings:
             raise ValueError("update_hours: от 0.5 до 48")
         self.auto_update = bool(self.auto_update)
         self.client_autoconnect = bool(self.client_autoconnect)
+        self.lan_access = bool(self.lan_access)
         self.probe_region = str(self.probe_region or "auto").strip()
         if self.probe_region != "auto":
             self.probe_region = self.probe_region.upper()

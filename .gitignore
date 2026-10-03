@@ -31,3 +31,7 @@ SQUAD VPN.exe.*
 data/app-version.txt
 data/settings.json
 data/client/
+data/backups/
+data/api_keys.json
+data/restore-request.json
+data/*.before-restore-*

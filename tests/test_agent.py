@@ -113,3 +113,21 @@ def test_autostart_enable_and_disable(tmp_path, monkeypatch):
     assert "squad_vpn agent" in created[0].read_text(encoding="utf-16")
     assert len(autostart.disable()) >= 2
     assert not any(path.exists() for path in created)
+
+
+def test_zip_copy_becomes_git_checkout(tmp_path):
+    from squad_vpn.agent import ensure_git_checkout
+
+    origin, _ = _setup(tmp_path)
+    copy = tmp_path / "copy"
+    copy.mkdir()
+    (copy / "pyproject.toml").write_text("v1\n", encoding="utf-8")
+    (copy / "local-data.txt").write_text("keep me\n", encoding="utf-8")
+    assert ensure_git_checkout(copy, repo=str(origin)) is True
+    assert (copy / ".git").exists()
+    assert _git(copy, "rev-parse", "HEAD") == _git(origin, "rev-parse", "HEAD")
+    assert (copy / "local-data.txt").read_text(encoding="utf-8") == "keep me\n"
+    (origin / "new.py").write_text("x = 1\n", encoding="utf-8")
+    _git(origin, "add", ".")
+    _git(origin, "commit", "-q", "-m", "two")
+    assert check_for_update(copy) == ["new.py"]

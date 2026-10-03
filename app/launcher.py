@@ -10,14 +10,17 @@ Only the standard library and pywebview are used here on purpose.
 
 from __future__ import annotations
 
+import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import threading
 import time
 import urllib.request
 import webbrowser
+import zipfile
 from pathlib import Path
 
 
@@ -27,6 +30,41 @@ APP_URL = f"{BASE}/app"
 TITLE = "SQUAD VPN"
 NO_WINDOW = 0x08000000  # CREATE_NO_WINDOW
 NEW_CONSOLE = 0x00000010  # CREATE_NEW_CONSOLE
+REPO = "JEFFRIPPER/SQUAD_VPN"
+SOURCE_ZIP = f"https://codeload.github.com/{REPO}/zip/refs/heads/main"
+APP_NAME = "SQUAD VPN.exe"
+
+
+def default_install_dir() -> Path:
+    base = os.environ.get("LOCALAPPDATA") or str(Path.home())
+    return Path(base) / "SQUAD VPN"
+
+
+def installed_copy() -> Path | None:
+    """A previous installation in the default place, if any."""
+    target = default_install_dir()
+    return target if (target / "pyproject.toml").exists() else None
+
+
+def download_source(target: Path, progress=lambda text: None) -> None:
+    """Fetch the project from GitHub and unpack it into ``target``."""
+    progress("Скачиваю SQUAD VPN с GitHub…")
+    with urllib.request.urlopen(SOURCE_ZIP, timeout=120) as response:
+        payload = response.read()
+    progress("Распаковываю…")
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        prefix = archive.namelist()[0].split("/")[0] + "/"
+        target.mkdir(parents=True, exist_ok=True)
+        for member in archive.infolist():
+            relative = member.filename[len(prefix):]
+            if not relative or member.is_dir():
+                continue
+            destination = (target / relative).resolve()
+            if target.resolve() not in destination.parents:
+                continue  # never write outside the target folder
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with archive.open(member) as source, open(destination, "wb") as out:
+                shutil.copyfileobj(source, out)
 
 
 def project_root() -> Path:
@@ -103,7 +141,10 @@ class Api:
 
     def install(self) -> None:
         installer = self._root / "install.cmd"
-        subprocess.Popen(["cmd", "/c", str(installer)], cwd=self._root, creationflags=NEW_CONSOLE)
+        subprocess.Popen(
+            ["cmd", "/c", str(installer)], cwd=self._root, creationflags=NEW_CONSOLE,
+            env={**os.environ, "SQUAD_FROM_APP": "1"},
+        )
         self._window.load_html(page(
             "Устанавливаю…",
             "Открылось окно установки: дождись слова Done. Это окно само переключится на панель.",
@@ -116,6 +157,33 @@ class Api:
         else:
             show_error(self._window, self._root, "Установка не завершилась",
                        "Посмотри окно установки: если там ошибка, пришли её текст.")
+
+    def setup_fresh(self) -> None:
+        """Install SQUAD VPN from scratch into %LOCALAPPDATA%\\SQUAD VPN."""
+        threading.Thread(target=self._setup_fresh, daemon=True).start()
+
+    def _setup_fresh(self) -> None:
+        target = default_install_dir()
+        try:
+            if not (target / "pyproject.toml").exists():
+                download_source(target, lambda text: self._window.load_html(page(text, str(target))))
+            exe = Path(sys.executable)
+            if getattr(sys, "frozen", False) and exe.resolve() != (target / APP_NAME).resolve():
+                shutil.copy2(exe, target / APP_NAME)
+            log(target, f"fresh setup into {target}")
+            self._root = target
+            self.install()
+        except Exception as exc:
+            log(target, f"fresh setup failed: {exc!r}")
+            show_error(self._window, target, "Не удалось установить",
+                       f"{type(exc).__name__}: {exc}. Проверь интернет и попробуй снова.")
+
+    def open_installed(self) -> None:
+        target = installed_copy()
+        if target is None:
+            return
+        subprocess.Popen([str(target / APP_NAME)], cwd=target, close_fds=True)
+        self._window.destroy()
 
     def retry(self) -> None:
         threading.Thread(target=boot, args=(self._window, self._root), daemon=True).start()
@@ -156,11 +224,19 @@ def boot(window, root: Path) -> None:
 def _boot(window, root: Path) -> None:
     log(root, f"start, root={root}")
     if not (root / "pyproject.toml").exists():
+        existing = installed_copy()
+        if existing is not None and (existing / APP_NAME).exists():
+            window.load_html(page(
+                "SQUAD VPN уже установлен",
+                f"Он в папке {existing}. Открыть его?",
+                '<button onclick="pywebview.api.open_installed()">Открыть SQUAD VPN</button>',
+            ))
+            return
         window.load_html(page(
-            "Не та папка",
-            f"Положи «SQUAD VPN.exe» в папку проекта SQUAD VPN (где лежит install.cmd). "
-            f"Сейчас он в {root}.",
-            "",
+            "Установить SQUAD VPN?",
+            f"Программа скачается с GitHub в {default_install_dir()}, сама поставит Python "
+            "и всё нужное, включит автозапуск и создаст ярлык. Это займёт несколько минут.",
+            '<button onclick="pywebview.api.setup_fresh()">Установить</button>',
         ))
         return
     if healthy():
