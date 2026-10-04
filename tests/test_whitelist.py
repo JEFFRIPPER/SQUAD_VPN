@@ -54,38 +54,45 @@ def test_refresh_lists_downloads_and_keeps_fresh(tmp_path, monkeypatch):
 
 def _seed(store):
     nodes = {
-        "both": ProxyNode("vless", "77.88.1.1", 443, userinfo="a", params={"sni": "vk.com"}, source="x"),
-        "ip": ProxyNode("vless", "77.88.2.2", 443, userinfo="b", source="x"),
-        "curated": ProxyNode("vless", "9.9.9.9", 443, userinfo="c", source="white-src"),
-        "sni": ProxyNode("vless", "1.1.1.1", 443, userinfo="d", params={"sni": "vk.com"}, source="x"),
-        "plain": ProxyNode("vless", "2.2.2.2", 443, userinfo="e", source="x"),
-        "ru_exit": ProxyNode("vless", "77.88.3.3", 443, userinfo="f", source="x"),
+        # Curated, our check failed (servers in Russia often drop foreign probes).
+        "curated_dead": ProxyNode("vless", "9.9.9.1", 443, userinfo="a", source="white-src"),
+        # Curated, both lists match, but not confirmed by us.
+        "curated_both": ProxyNode("vless", "77.88.1.1", 443, userinfo="b", params={"sni": "vk.com"}, source="white-src"),
+        # Curated and alive in our check: first.
+        "curated_alive": ProxyNode("vless", "9.9.9.2", 443, userinfo="c", source="white-src"),
+        # Random node that only happens to sit in a listed subnet: never.
+        "random_ip": ProxyNode("vless", "77.88.2.2", 443, userinfo="d", params={"sni": "vk.com"}, source="x"),
+        "curated_ru_exit": ProxyNode("vless", "9.9.9.3", 443, userinfo="e", source="white-src"),
     }
     store.upsert_many(list(nodes.values()))
     for key, node in nodes.items():
-        for _ in range(3):
+        alive = key in {"curated_alive", "random_ip", "curated_ru_exit"}
+        country = "RU" if key == "curated_ru_exit" else ("DE" if alive else None)
+        for _ in range(2):
             store.record_validation(ValidationResult(
-                node.fingerprint, True, latency_ms=50, country="RU" if key == "ru_exit" else "DE",
+                node.fingerprint, alive, latency_ms=50 if alive else None, country=country,
             ))
     return nodes
 
 
-def test_whitelist_profile(tmp_path, monkeypatch):
+def test_whitelist_profile_uses_curated_collections_only(tmp_path, monkeypatch):
     lists = tmp_path / "wl"
     lists.mkdir()
     (lists / "cidr.txt").write_text(CIDRS, encoding="utf-8")
     (lists / "domains.txt").write_text(DOMAINS, encoding="utf-8")
-    monkeypatch.setattr(whitelist, "WHITELIST_DIR", lists)
     monkeypatch.setattr(whitelist.load_index, "__defaults__", (lists,))
     monkeypatch.setattr(smart, "sources_with_tags", lambda tags, path=None: {"white-src"})
     store = NodeStore(tmp_path / "db.sqlite3")
     try:
         _seed(store)
-        profile = SmartProfile("whitelist", whitelist=True, exclude_countries=("RU",), max_asn_share=None)
+        profile = SmartProfile(
+            "whitelist", whitelist=True, require_alive=False, seen_within_hours=3,
+            exclude_countries=("RU",), max_asn_share=None,
+        )
         hosts = [item.node.host for item in select_profile(store, profile)]
     finally:
         store.close()
-    assert hosts == ["77.88.1.1", "77.88.2.2", "9.9.9.9", "1.1.1.1"]
+    assert hosts == ["9.9.9.2", "77.88.1.1", "9.9.9.1"]
 
 
 def test_speed_sort_min_speed_and_prefer_tags(tmp_path, monkeypatch):

@@ -105,3 +105,12 @@ def test_repository_branding_file_is_valid():
     assert branding.title_for("top")
     assert branding.title_for("top") == "SQUAD VPN"
     assert branding.announce_for("top") == "Бесплатная подписка VPN от Сквада."
+
+
+def test_unknown_country_comes_from_the_source_flag():
+    from squad_vpn.branding import country_from_flag
+
+    assert country_from_flag("🇵🇱 Poland | [*CIDR] VK") == "PL"
+    assert country_from_flag("plain name") is None
+    record = RankedNode(ProxyNode("vless", "h.example", 443, userinfo="u", name="🇵🇱 Poland", raw_uri="vless://u@h.example:443"))
+    assert Branding().node_names([record]) == ["🇵🇱 Польша 1"]

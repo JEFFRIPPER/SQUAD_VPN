@@ -51,6 +51,14 @@ def flag(code: str | None) -> str:
     return "".join(chr(0x1F1E6 + ord(letter) - ord("A")) for letter in code)
 
 
+def country_from_flag(text: str | None) -> str | None:
+    """"DE" for a name that contains 🇩🇪 (source names often start with a flag)."""
+    letters = [ord(ch) - 0x1F1E6 for ch in (text or "") if 0x1F1E6 <= ord(ch) <= 0x1F1FF]
+    if len(letters) < 2:
+        return None
+    return chr(ord("A") + letters[0]) + chr(ord("A") + letters[1])
+
+
 def encode_value(value: str) -> str:
     """ASCII stays as is, anything else becomes ``base64:...`` (header-safe)."""
     value = " ".join(str(value).split())  # no line breaks inside a header
@@ -119,7 +127,7 @@ class Branding:
         names: list[str] = []
         seen: set[str] = set()
         for item in records:
-            code = (item.country or "").upper()
+            code = (item.country or country_from_flag(item.node.name) or "").upper()
             per_country[code] = per_country.get(code, 0) + 1
             name = " ".join(_fill(self.node_name, {
                 "flag": flag(code),

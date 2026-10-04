@@ -51,8 +51,13 @@ class SmartProfile:
     # (not yet measured ones stay), and "speed" ranks by it.
     min_speed_kbps: float = 0.0
     sort_by: str = "score"
-    # Only nodes that work under Russian mobile white lists (see whitelist.py).
+    # Only nodes from curated white-list collections (sources tagged
+    # "whitelist"), see _whitelisted.
     whitelist: bool = False
+    # False: a node does not have to pass our own check (servers in Russia
+    # often drop probes from abroad; the collection's author checks them from
+    # Russia). Freshness then comes from seen_within_hours. Alive ones first.
+    require_alive: bool = True
     # Diversity: duplicates of one server make failover useless.
     per_host: int | None = 1
     per_exit_ip: int | None = 1
@@ -148,9 +153,6 @@ def _asn_number(asn: str | None) -> str:
 
 
 DEFAULT_SOURCES_PATH = Path("config/sources.yaml")
-_WHITELIST_ORDER = {"both": 0, "ip": 1, "curated": 2, "sni": 3}
-
-
 def sources_with_tags(tags: tuple[str, ...], path: Path = DEFAULT_SOURCES_PATH) -> set[str]:
     """Names of enabled sources carrying any of ``tags``."""
     from .sources import load_source_specs
@@ -164,24 +166,31 @@ def sources_with_tags(tags: tuple[str, ...], path: Path = DEFAULT_SOURCES_PATH) 
 
 
 def _whitelisted(records: list[RankedNode]) -> list[RankedNode]:
-    """Nodes reachable under white lists, the surest first: white subnet and
-    domain, white subnet, from a curated white-list collection, white domain
-    only (that one works only where operators check just the domain)."""
+    """Nodes from curated white-list collections (sources tagged "whitelist").
+
+    Matching arbitrary nodes against public subnet lists does not work: the
+    lists are aggregated into wide ranges and operators now check IP and
+    domain together. Within the collection, nodes our own check confirmed go
+    first, then those whose server and domain are both on the public lists.
+    """
     from .whitelist import load_index
 
-    index = load_index()
     curated = sources_with_tags(("whitelist",))
+    kept = [item for item in records if item.node.source in curated]
+    index = load_index()
     if not index.empty:
-        index.resolve({item.node.host for item in records})
-    kept = []
-    for item in records:
-        status = None if index.empty else index.status(item)
-        if status is None and item.node.source in curated:
-            status = "curated"
-        if status is not None:
-            kept.append((status, item))
-    kept.sort(key=lambda pair: _WHITELIST_ORDER[pair[0]])  # stable: keeps the ranking
-    return [item for _, item in kept]
+        index.resolve({item.node.host for item in kept})
+
+    from .branding import country_from_flag
+
+    def order(item: RankedNode) -> tuple[int, int, int]:
+        both = not index.empty and index.status(item) == "both"
+        # An exit in Russia keeps Discord/YouTube blocked: such relays go last.
+        exit_ru = (item.country or country_from_flag(item.node.name) or "").upper() == "RU"
+        return (1 if exit_ru else 0, 0 if item.alive else 1, 0 if both else 1)
+
+    kept.sort(key=order)  # stable: keeps the ranking inside each group
+    return kept
 
 
 def diversify(
@@ -228,14 +237,15 @@ def select_profile(store: NodeStore, profile: SmartProfile) -> list[RankedNode]:
     # With required regions, liveness comes from those regions' probes,
     # not from this machine's own checks (a node may work only from there).
     by_region = bool(profile.require_regions)
+    own_check = not by_region and profile.require_alive
     records = store.list_ranked(
-        alive_only=not by_region,
+        alive_only=own_check,
         min_score=profile.min_score,
         min_stability=profile.min_stability,
-        max_latency=None if by_region else profile.max_latency,
+        max_latency=profile.max_latency if own_check else None,
         country=single_country,
         protocol=single_protocol,
-        checked_within_hours=None if by_region else profile.checked_within_hours,
+        checked_within_hours=profile.checked_within_hours if own_check else None,
         seen_within_hours=profile.seen_within_hours,
     )
     countries = {item.upper() for item in profile.countries}

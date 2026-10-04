@@ -16,6 +16,13 @@ sources:
     max_nodes: 150
     tags: [github, ru-checked]
 
+  - name: igareck-white-checked
+    url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-checked.txt
+    enabled: true
+    priority: 3
+    max_nodes: 50
+    tags: [github, whitelist]
+
   - name: igareck-white-cidr
     url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt
     enabled: true
