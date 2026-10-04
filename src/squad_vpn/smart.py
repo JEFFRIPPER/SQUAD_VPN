@@ -42,8 +42,17 @@ class SmartProfile:
     min_checks: int = 0
     # Nodes confirmed alive from these regions go first.
     prefer_regions: tuple[str, ...] = field(default_factory=tuple)
+    # Then nodes from sources with these tags (config/sources.yaml), e.g.
+    # ru-checked: collections their authors test from Russia.
+    prefer_tags: tuple[str, ...] = field(default_factory=tuple)
     # Exit networks to put last (hosting providers throttled in Russia).
     deprioritize_asns: tuple[str, ...] = field(default_factory=tuple)
+    # Throughput of the download check: nodes measured slower are dropped
+    # (not yet measured ones stay), and "speed" ranks by it.
+    min_speed_kbps: float = 0.0
+    sort_by: str = "score"
+    # Only nodes that work under Russian mobile white lists (see whitelist.py).
+    whitelist: bool = False
     # Diversity: duplicates of one server make failover useless.
     per_host: int | None = 1
     per_exit_ip: int | None = 1
@@ -79,7 +88,7 @@ GROUP_PROFILE = SmartProfile("group", limit=50)
 
 _TUPLE_FIELDS = {
     "countries", "exclude_countries", "protocols", "require_regions", "avoid_blocked_in",
-    "prefer_regions", "deprioritize_asns",
+    "prefer_regions", "deprioritize_asns", "prefer_tags",
 }
 _FIELD_NAMES = {item.name for item in fields(SmartProfile)}
 
@@ -136,6 +145,43 @@ def is_masked(item: RankedNode) -> bool:
 
 def _asn_number(asn: str | None) -> str:
     return (asn or "").split()[0].upper() if asn else ""
+
+
+DEFAULT_SOURCES_PATH = Path("config/sources.yaml")
+_WHITELIST_ORDER = {"both": 0, "ip": 1, "curated": 2, "sni": 3}
+
+
+def sources_with_tags(tags: tuple[str, ...], path: Path = DEFAULT_SOURCES_PATH) -> set[str]:
+    """Names of enabled sources carrying any of ``tags``."""
+    from .sources import load_source_specs
+
+    try:
+        specs = load_source_specs(path)
+    except (OSError, ValueError):
+        return set()
+    wanted = set(tags)
+    return {spec.name for spec in specs if wanted & set(spec.tags)}
+
+
+def _whitelisted(records: list[RankedNode]) -> list[RankedNode]:
+    """Nodes reachable under white lists, the surest first: white subnet and
+    domain, white subnet, from a curated white-list collection, white domain
+    only (that one works only where operators check just the domain)."""
+    from .whitelist import load_index
+
+    index = load_index()
+    curated = sources_with_tags(("whitelist",))
+    if not index.empty:
+        index.resolve({item.node.host for item in records})
+    kept = []
+    for item in records:
+        status = None if index.empty else index.status(item)
+        if status is None and item.node.source in curated:
+            status = "curated"
+        if status is not None:
+            kept.append((status, item))
+    kept.sort(key=lambda pair: _WHITELIST_ORDER[pair[0]])  # stable: keeps the ranking
+    return [item for _, item in kept]
 
 
 def diversify(
@@ -205,13 +251,28 @@ def select_profile(store: NodeStore, profile: SmartProfile) -> list[RankedNode]:
         and (not profile.require_tls or is_masked(item))
         and item.success_count >= profile.min_checks
     ]
-    if profile.prefer_regions or profile.deprioritize_asns:
+    if profile.min_speed_kbps:
+        filtered = [
+            item for item in filtered
+            if item.speed_kbps is None or item.speed_kbps >= profile.min_speed_kbps
+        ]
+    if profile.sort_by == "speed":
+        # Measured nodes by speed first; unmeasured keep their score order after.
+        filtered.sort(key=lambda item: -(item.speed_kbps or 0.0))
+    if profile.whitelist:
+        filtered = _whitelisted(filtered)
+    if profile.prefer_regions or profile.deprioritize_asns or profile.prefer_tags:
         avoided = {_asn_number(value) for value in profile.deprioritize_asns}
         preferred = [region.upper() for region in profile.prefer_regions]
+        tagged = sources_with_tags(profile.prefer_tags) if profile.prefer_tags else set()
 
-        def preference(item: RankedNode) -> tuple[int, int]:
+        def preference(item: RankedNode) -> tuple[int, int, int]:
             confirmed = any(item.region_status(region) == "ok" for region in preferred)
-            return (0 if confirmed else 1, 1 if _asn_number(item.asn) in avoided else 0)
+            return (
+                0 if confirmed else 1,
+                0 if item.node.source in tagged else 1,
+                1 if _asn_number(item.asn) in avoided else 0,
+            )
 
         # Stable sort: within each group the quality ranking is kept.
         filtered.sort(key=preference)

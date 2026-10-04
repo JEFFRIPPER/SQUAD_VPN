@@ -51,6 +51,8 @@ class CycleOptions:
     recheck_minutes: int = 60
     install_mihomo: bool = True
     cleanup: bool = True
+    # Refresh the Russian mobile white lists (for the "whitelist" subscription).
+    whitelist: bool = True
     unseen_days: int = 3
     publish: PublishTarget | None = None
     profiles: Path | None = DEFAULT_PROFILES_PATH
@@ -182,6 +184,15 @@ async def validate_step(
     if download_bytes > 0:
         log(f"Отсеяно проверкой загрузки (пинг есть, данные не идут): {stalled}")
     return {"checked": len(results), "alive": alive, "stalled": stalled}
+
+
+def whitelist_step(*, log: Log = print) -> dict[str, object]:
+    from .whitelist import load_index, refresh_lists
+
+    status = refresh_lists()
+    index = load_index()
+    log(f"Белые списки: {status}, подсетей {len(index.starts)}, доменов {len(index.domains)}")
+    return {"status": status, "ranges": len(index.starts), "domains": len(index.domains)}
 
 
 def cleanup_step(database: Path, *, unseen_days: int = 3, log: Log = print) -> dict[str, int]:
@@ -346,6 +357,8 @@ async def run_cycle(options: CycleOptions, *, log: Log = print) -> CycleReport:
             lambda: probes_sync_step(options.database, identity, probe_repo, log=log),
             blocking=True,
         )
+    if options.whitelist:
+        await step("whitelist", lambda: whitelist_step(log=log), blocking=True)
     if options.cleanup:
         await step(
             "cleanup",

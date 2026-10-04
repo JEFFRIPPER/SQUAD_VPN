@@ -37,4 +37,7 @@ node_name: "{flag} {country} {n}"
 #   top:
 #     title: "{brand} · Топ-10"
 #     announce: "10 самых надёжных узлов."
-profiles: {}
+profiles:
+  whitelist:
+    title: "{brand} · Белые списки"
+    announce: "Для режима белых списков, когда глушат мобильный интернет. Обнови подписку заранее, пока интернет работает."

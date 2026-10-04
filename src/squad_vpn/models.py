@@ -48,6 +48,8 @@ class ValidationResult:
     asn: str | None = None
     error: str | None = None
     probe_id: str = "local"
+    # Throughput of the download check, kbit/s (None when not measured).
+    speed_kbps: float | None = None
 
 
 @dataclass(slots=True)
@@ -67,6 +69,7 @@ class RankedNode:
     success_count: int = 0
     failure_count: int = 0
     validation_error: str | None = None
+    speed_kbps: float | None = None
     # Region code -> {"alive", "latency_ms", "checked_at", "probes"} from probes.
     regions: dict[str, dict[str, object]] = field(default_factory=dict)
 

@@ -151,6 +151,7 @@ MIGRATION_COLUMNS = {
     "validation_error": "TEXT",
     "success_count": "INTEGER NOT NULL DEFAULT 0",
     "failure_count": "INTEGER NOT NULL DEFAULT 0",
+    "speed_kbps": "REAL",
 }
 
 
@@ -392,7 +393,12 @@ class NodeStore:
                 stability_score=?, quality_score=?, last_checked=CURRENT_TIMESTAMP,
                 last_alive=CASE WHEN ? = 1 THEN CURRENT_TIMESTAMP ELSE last_alive END,
                 exit_ip=COALESCE(?, exit_ip), country=COALESCE(?, country),
-                asn=COALESCE(?, asn), validation_error=?
+                asn=COALESCE(?, asn), validation_error=?,
+                speed_kbps=CASE
+                    WHEN ? IS NULL THEN speed_kbps
+                    WHEN speed_kbps IS NULL THEN ?
+                    ELSE 0.6 * ? + 0.4 * speed_kbps
+                END
             WHERE fingerprint=?
             """,
             (
@@ -407,6 +413,9 @@ class NodeStore:
                 result.country or None,
                 result.asn or None,
                 result.error,
+                result.speed_kbps,
+                result.speed_kbps,
+                result.speed_kbps,
                 result.fingerprint,
             ),
         )
@@ -890,6 +899,7 @@ class NodeStore:
             success_count=int(row["success_count"] or 0),
             failure_count=int(row["failure_count"] or 0),
             validation_error=row["validation_error"],
+            speed_kbps=row["speed_kbps"] if "speed_kbps" in row.keys() else None,
         )
 
     def list_source_status(self) -> list[dict[str, object]]:

@@ -191,6 +191,7 @@ def test_cycle_survives_failing_steps_and_still_exports(tmp_path):
         probe_region="US",
         probe_identity_file=tmp_path / "probe.json",
         probe_publish=True,
+        whitelist=False,
     )
     logs = []
     report = asyncio.run(run_cycle(options, log=logs.append))

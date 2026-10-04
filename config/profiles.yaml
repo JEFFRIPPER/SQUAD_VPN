@@ -26,6 +26,10 @@
 #   min_checks           — минимум успешных проверок (одна удачная — не в счёт)
 #   prefer_regions       — узлы, подтверждённые пробниками из этих стран, первыми
 #   deprioritize_asns    — эти сети выхода (ASN) ставить в конец списка
+#   prefer_tags          — узлы из источников с этими тегами (sources.yaml) первыми
+#   min_speed_kbps       — убрать узлы, скорость которых измерена ниже, кбит/с
+#   sort_by              — score (по умолчанию) или speed (по скорости загрузки)
+#   whitelist            — только узлы, работающие в режиме «белых списков»
 #
 # Узлы с выходом в России не помогают обходить блокировки, поэтому основные
 # профили их исключают.
@@ -61,6 +65,8 @@ profiles:
     exclude_countries: [RU]
     avoid_blocked_in: [RU]
     prefer_regions: [RU]
+    prefer_tags: [ru-checked]
+    min_speed_kbps: 2000
     deprioritize_asns: *throttled
     max_asn_share: 0.2
 
@@ -75,14 +81,18 @@ profiles:
     exclude_countries: [RU]
     avoid_blocked_in: [RU]
     prefer_regions: [RU]
+    prefer_tags: [ru-checked]
+    min_speed_kbps: 1000
     deprioritize_asns: *throttled
 
   - name: fast
-    description: Самые быстрые
+    description: Самые быстрые по реальной скорости загрузки
     min_score: 60
     min_stability: 50
-    max_latency: 150
+    max_latency: 300
     limit: 30
+    sort_by: speed
+    min_speed_kbps: 3000
     require_tls: true
     exclude_countries: [RU]
     avoid_blocked_in: [RU]
@@ -121,6 +131,20 @@ profiles:
     require_regions: [RU]
     max_latency: 1500
     limit: 30
+
+  # Режим «белых списков»: когда мобильный интернет урезают до разрешённых
+  # сайтов. Сервер — в разрешённой подсети или под разрешённым доменом, выход
+  # за границей, чтобы открывались Telegram, Discord, YouTube.
+  - name: whitelist
+    description: Белые списки — когда глушат мобильный интернет
+    whitelist: true
+    exclude_countries: [RU]
+    min_checks: 2
+    checked_within_hours: 24
+    limit: 30
+    per_host: 1
+    per_exit_ip: null
+    max_asn_share: null
 
   - name: all
     description: Все живые узлы (много, для экспериментов)

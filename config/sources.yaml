@@ -1,4 +1,42 @@
 sources:
+  # igareck/vpn-configs-for-russia: узлы, которые автор проверяет из России.
+  # ru-checked — обычный интернет в РФ («чёрные списки»), whitelist — режим
+  # белых списков на мобильном интернете (сервер в разрешённой подсети/SNI).
+  - name: igareck-ru-mobile
+    url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_VLESS_RUS_mobile.txt
+    enabled: true
+    priority: 1
+    max_nodes: 150
+    tags: [github, ru-checked]
+
+  - name: igareck-ru
+    url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_VLESS_RUS.txt
+    enabled: true
+    priority: 2
+    max_nodes: 150
+    tags: [github, ru-checked]
+
+  - name: igareck-white-cidr
+    url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt
+    enabled: true
+    priority: 3
+    max_nodes: 100
+    tags: [github, whitelist]
+
+  - name: igareck-white-mobile
+    url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt
+    enabled: true
+    priority: 4
+    max_nodes: 100
+    tags: [github, whitelist]
+
+  - name: igareck-white-sni
+    url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-SNI-RU-all.txt
+    enabled: true
+    priority: 5
+    max_nodes: 50
+    tags: [github, whitelist]
+
   - name: morpheus-mini
     url: https://raw.githubusercontent.com/morpheusadam/v2ray-config/main/subs/bundles/mini.txt
     enabled: true

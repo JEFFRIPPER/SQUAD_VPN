@@ -36,13 +36,15 @@ def test_download_failure_marks_node_dead(monkeypatch):
     async def fake_download(batch, concurrency):
         assert nodes[5] not in batch  # dead nodes are not downloaded through
         return {
-            n.fingerprint: ("зависло на 15 КБ" if n is nodes[1] else None) for n in batch
+            n.fingerprint: ("зависло на 15 КБ", None) if n is nodes[1] else (None, 4200.0)
+            for n in batch
         }
 
     monkeypatch.setattr(validator, "_run_download", fake_download)
     asyncio.run(validator._download_batch(nodes, results, 4))
     assert [r.alive for r in results] == [True, False, True, True, True, False]
     assert "15 КБ" in results[1].error
+    assert results[0].speed_kbps == 4200.0 and results[1].speed_kbps is None
 
 
 def test_download_site_down_keeps_ping_verdict(monkeypatch):
@@ -51,7 +53,7 @@ def test_download_site_down_keeps_ping_verdict(monkeypatch):
     results = [ValidationResult(n.fingerprint, True, latency_ms=50) for n in nodes]
 
     async def all_fail(batch, concurrency):
-        return {n.fingerprint: "ConnectError на 0 КБ" for n in batch}
+        return {n.fingerprint: ("ConnectError на 0 КБ", None) for n in batch}
 
     monkeypatch.setattr(validator, "_run_download", all_fail)
     asyncio.run(validator._download_batch(nodes, results, 4))

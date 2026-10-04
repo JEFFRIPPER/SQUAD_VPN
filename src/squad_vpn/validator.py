@@ -240,8 +240,11 @@ class MihomoValidator:
             await self._enrich_batch(nodes, results, geo_limit, geo_known or set())
         return results
 
-    async def _download_one(self, port: int, semaphore: asyncio.Semaphore) -> str | None:
-        """None when ``download_bytes`` arrived through the node, else the reason."""
+    async def _download_one(
+        self, port: int, semaphore: asyncio.Semaphore
+    ) -> tuple[str | None, float | None]:
+        """``(None, kbit/s)`` when ``download_bytes`` arrived through the node,
+        else ``(reason, None)``."""
         async with semaphore:
             errors: list[str] = []
             for template in self.download_urls:
@@ -256,20 +259,25 @@ class MihomoValidator:
                         ) as client:
                             async with client.stream("GET", url) as response:
                                 response.raise_for_status()
+                                # Count from the first byte: the handshake is the ping's job.
+                                started: float | None = None
                                 async for chunk in response.aiter_bytes():
+                                    if started is None:
+                                        started = time.monotonic()
                                     received += len(chunk)
                                     if received >= self.download_bytes:
-                                        return None
+                                        elapsed = max(time.monotonic() - (started or 0.0), 0.001)
+                                        return None, round(received * 8 / 1000 / elapsed, 1)
                     errors.append(f"оборвалось на {received // 1024} КБ")
                 except TimeoutError:
                     errors.append(f"зависло на {received // 1024} КБ")
                 except httpx.HTTPError as exc:
                     errors.append(f"{type(exc).__name__} на {received // 1024} КБ")
-            return "; ".join(errors)
+            return "; ".join(errors), None
 
     async def _run_download(
         self, nodes: list[ProxyNode], concurrency: int
-    ) -> dict[str, str | None]:
+    ) -> dict[str, tuple[str | None, float | None]]:
         ports: dict[str, int] = {}
         used: set[int] = set()
         controller_port = _free_port()
@@ -308,7 +316,7 @@ class MihomoValidator:
         """Mark nodes dead when they answer a ping but cannot carry real data."""
         alive = {r.fingerprint for r in results if r.alive}
         subset = [node for node in nodes if node.fingerprint in alive]
-        outcomes: dict[str, str | None] = {}
+        outcomes: dict[str, tuple[str | None, float | None]] = {}
         for start in range(0, len(subset), DOWNLOAD_CHUNK):
             chunk = subset[start:start + DOWNLOAD_CHUNK]
             try:
@@ -317,13 +325,17 @@ class MihomoValidator:
                 continue  # the ping verdict stands for this chunk
         # Not a single node got through: the test site is down or blocked,
         # not every node at once. Keep the ping verdicts.
-        if len(outcomes) >= 5 and all(outcomes.values()):
+        if len(outcomes) >= 5 and all(error for error, _ in outcomes.values()):
             return
         for result in results:
-            error = outcomes.get(result.fingerprint)
-            if result.alive and error:
+            error, speed = outcomes.get(result.fingerprint, (None, None))
+            if not result.alive:
+                continue
+            if error:
                 result.alive = False
                 result.error = f"{DOWNLOAD_FAILED}: {error}"[:500]
+            else:
+                result.speed_kbps = speed
 
     async def _validate_batch(
         self,
