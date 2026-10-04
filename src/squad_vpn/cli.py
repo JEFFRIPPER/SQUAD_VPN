@@ -596,7 +596,7 @@ def build_parser() -> argparse.ArgumentParser:
     agent.add_argument("--port", type=int, default=8080)
     agent.add_argument("--interval-minutes", type=int, help="по умолчанию из настроек (60)")
     agent.add_argument(
-        "--update-hours", type=float, help="Как часто проверять обновления (по умолчанию 3)"
+        "--update-hours", type=float, help="Как часто проверять обновления, ч (по умолчанию 1)"
     )
     agent.add_argument("--no-update", action="store_true", help="Не обновлять код сам")
     agent.add_argument("--stop", action="store_true", help="Остановить запущенного агента")

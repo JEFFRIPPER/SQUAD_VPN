@@ -225,6 +225,31 @@
   .event .what { min-width: 0; overflow-wrap: anywhere; }
   iframe.panel { width: 100%; height: calc(100vh - 170px); border: 0; border-radius: var(--radius-l); background: var(--md-surface-low); }
 
+  /* over-the-air updates */
+  .ota-banner {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+    padding: 12px 16px; border-radius: var(--radius-l); background: var(--sq-5); color: #fff;
+    box-shadow: var(--glow);
+  }
+  .ota-banner[hidden] { display: none; }
+  .ota-banner .text { flex: 1; min-width: 200px; }
+  .ota-banner .btn.filled { background: #fff; color: var(--sq-1); }
+  .changelog { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+  .changelog .title { font-weight: 500; color: var(--md-on-surface); }
+  .changelog summary { cursor: pointer; }
+  #upd-history .when { width: 104px; }
+  .changelog ul { margin: 4px 0 0; padding-left: 20px; color: var(--md-on-surface-variant); }
+  .changelog li { margin: 2px 0; }
+  .card h4 { font-size: 14px; font-weight: 500; margin: 16px 0 0; color: var(--md-on-surface-variant); letter-spacing: .1px; }
+  .event .what.ok::before { content: "✓ "; color: #fff; }
+  .event .what.bad::before { content: "✕ "; color: var(--md-error); }
+  .event .what.wait::before { content: "… "; color: var(--md-on-surface-variant); }
+  .reconnecting { position: fixed; inset: 0; display: none; place-items: center; z-index: 25; background: rgba(0,0,0,.72); }
+  .reconnecting.open { display: grid; }
+  .reconnecting .box { text-align: center; color: var(--md-on-surface); }
+  .reconnecting .spin { width: 44px; height: 44px; border-radius: 50%; border: 4px solid var(--sq-1); border-right-color: transparent; animation: spin .9s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   /* dialog, snackbar */
   .scrim { position: fixed; inset: 0; background: var(--md-scrim); display: none; place-items: center; z-index: 20; padding: 16px; }
   .scrim.open { display: grid; }
@@ -313,6 +338,11 @@
         <h1 id="page-title">SQUAD VPN</h1>
         <span class="spacer"></span>
         <span class="chip" id="version-chip">—</span>
+      </div>
+      <div class="ota-banner" id="ota-banner" hidden>
+        <svg class="icon"><use href="#i-download"/></svg>
+        <div class="text" id="ota-banner-text"></div>
+        <button class="btn filled" id="ota-relaunch"><svg class="icon"><use href="#i-restart"/></svg>Перезапустить</button>
       </div>
 
       <!-- Подключение -->
@@ -447,7 +477,7 @@
               <label class="switch"><input type="checkbox" id="set-autostart" aria-label="Автозапуск"><span class="track"></span><span class="thumb"></span></label>
             </div>
             <div class="setting">
-              <div class="body"><div class="title">Обновлять программу автоматически</div><div class="muted">Новая версия скачивается с GitHub сама</div></div>
+              <div class="body"><div class="title">Обновлять программу автоматически</div><div class="muted">Раз в час, только проверенные версии, с откатом при сбое</div></div>
               <label class="switch"><input type="checkbox" id="set-autoupdate" aria-label="Автообновление"><span class="track"></span><span class="thumb"></span></label>
             </div>
             <div class="setting">
@@ -486,6 +516,18 @@
               <button class="btn tonal" id="backup-now"><svg class="icon"><use href="#i-backup"/></svg>Создать сейчас</button>
             </div>
             <div class="list" id="backups-list" style="margin-top:12px"></div>
+          </div>
+          <div class="card" id="updates-card">
+            <div class="row" style="justify-content:space-between">
+              <h3>Обновления по воздуху</h3>
+              <button class="btn tonal" id="upd-check"><svg class="icon"><use href="#i-download"/></svg>Проверить сейчас</button>
+            </div>
+            <div class="muted" id="upd-summary" style="margin-top:8px">—</div>
+            <div class="muted" id="upd-message" style="margin-top:4px"></div>
+            <h4>Что нового</h4>
+            <div class="changelog" id="upd-changelog"></div>
+            <h4>История обновлений</h4>
+            <div class="events" id="upd-history"></div>
           </div>
           <div class="card outlined">
             <h3 style="margin-bottom:8px">О программе</h3>
@@ -539,13 +581,16 @@
   </div>
 </div>
 <div class="snackbar" id="snackbar" role="status" aria-live="polite"></div>
+<div class="reconnecting" id="reconnecting" role="status" aria-live="polite">
+  <div class="box"><div class="spin"></div><div id="reconnecting-text">Обновляюсь… переподключаюсь</div></div>
+</div>
 
 <script>
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
   const TITLES = { connect: "SQUAD VPN", home: "Обзор", subs: "Подписки", nodes: "Узлы", settings: "Настройки", log: "Журнал" };
-  const state = { page: "connect", source: "github", format: "base64", log: "agent", links: null, restarting: false };
+  const state = { page: "connect", source: "github", format: "base64", log: "agent", links: null, update: null, build: null, reconnecting: false };
 
   const storage = {
     get(key) { try { return sessionStorage.getItem(key); } catch { return null; } },
@@ -587,10 +632,12 @@
     const hours = Math.round(minutes / 60);
     return hours < 48 ? `${hours} ч назад` : `${Math.round(hours / 24)} дн назад`;
   }
-  function inMinutes(value) {
+  function inMinutes(value, noun = "следующее") {
     if (!value) return "";
     const minutes = Math.max(0, Math.round((new Date(value) - Date.now()) / 60000));
-    return `следующее через ${minutes} мин`;
+    if (minutes < 90) return `${noun} через ${minutes} мин`;
+    const hours = Math.round(minutes / 60);
+    return hours < 48 ? `${noun} через ${hours} ч` : `${noun} через ${Math.round(hours / 24)} дн`;
   }
 
   // navigation
@@ -793,13 +840,183 @@
       setTimeout(refresh, 3000);
     } catch (e) { snack(e.message); }
   });
-  $("check-update").addEventListener("click", async () => {
+  $("check-update").addEventListener("click", checkUpdatesNow);
+  $("upd-check").addEventListener("click", checkUpdatesNow);
+  $("ota-relaunch").addEventListener("click", relaunchApp);
+
+  // over-the-air updates
+  const KIND = { code: "Программа", app: "Приложение" };
+  const RESULT = { ok: "обновлено", rolled_back: "откачено", skipped: "пропущено", failed: "ошибка" };
+
+  function plain(text) { return text.replace(/\*\*|`/g, ""); }
+
+  function renderChangelog(sections) {
+    const box = $("upd-changelog");
+    box.replaceChildren();
+    sections.forEach((section, index) => {
+      // The newest release is open, older ones fold away.
+      const item = document.createElement(index === 0 ? "div" : "details");
+      const title = document.createElement(index === 0 ? "div" : "summary");
+      title.className = "title";
+      title.textContent = plain(section.title);
+      item.appendChild(title);
+      const list = document.createElement("ul");
+      let current = null;
+      for (const line of section.text.split("\n")) {
+        if (line.startsWith("- ")) {
+          current = document.createElement("li");
+          current.textContent = plain(line.slice(2));
+          list.appendChild(current);
+        } else if (line.trim() && current) {
+          current.textContent += " " + plain(line.trim());
+        } else if (line.trim()) {
+          const p = document.createElement("li");
+          p.textContent = plain(line.trim());
+          list.appendChild(p);
+          current = p;
+        }
+      }
+      item.appendChild(list);
+      box.appendChild(item);
+    });
+    if (!sections.length) box.textContent = "—";
+  }
+
+  function renderHistory(history) {
+    const box = $("upd-history");
+    box.replaceChildren();
+    if (!history.length) {
+      box.textContent = "Пока не было — программа проверяет обновления сама каждый час";
+      return;
+    }
+    for (const entry of history) {
+      const row = document.createElement("div");
+      row.className = "event";
+      const when = document.createElement("span");
+      when.className = "when";
+      when.textContent = ago(entry.at);
+      const what = document.createElement("span");
+      what.className = "what " + (entry.result === "ok" ? "ok" : entry.result === "skipped" ? "wait" : "bad");
+      const target = entry.version_to ? `${entry.version_to} (${entry.to})` : (entry.to || "");
+      what.textContent = `${KIND[entry.kind] || entry.kind}: ${RESULT[entry.result] || entry.result} ${target}`
+        + (entry.note ? ` — ${entry.note}` : "");
+      row.append(when, what);
+      box.appendChild(row);
+    }
+  }
+
+  async function loadUpdates() {
+    const info = await api("/api/update");
+    state.update = info;
+    const parts = [`Версия ${info.version}` + (info.commit ? ` · сборка ${info.commit.slice(0, 7)}` : "")];
+    if (!info.agent_running) parts.push("фоновая программа не запущена — обновления не приходят");
+    else if (!info.auto_update) parts.push("автообновление выключено");
+    else parts.push(`проверка ${info.last_check ? ago(info.last_check) : "ещё не было"}`
+      + (info.next_check ? `, ${inMinutes(info.next_check, "следующая")}` : ""));
+    if (info.app_version) parts.push(`приложение ${info.app_version}`);
+    $("upd-summary").textContent = parts.join(" · ");
+    $("upd-message").textContent = info.message || "";
+    $("upd-check").disabled = !info.agent_running;
+    renderChangelog(info.changelog || []);
+    renderHistory(info.history || []);
+    checkAppBuild();
+    return info;
+  }
+
+  async function checkUpdatesNow() {
+    let before = null;
+    try { before = (await api("/api/update")).last_check; } catch { /* old server */ }
     try {
       await api("/api/control/update", { method: "POST" });
-      snack("Проверяю обновления — если есть новая версия, программа перезапустится");
-      waitForRestart();
-    } catch (e) { snack(e.message); }
+    } catch (e) { snack(e.message); return; }
+    snack("Проверяю обновления…");
+    for (let i = 0; i < 40; i += 1) {
+      await new Promise((r) => setTimeout(r, 1500));
+      if (state.reconnecting) return;  // an update is being installed
+      let info;
+      try { info = await api("/api/update"); } catch { continue; }
+      if (info.last_check && info.last_check !== before) {
+        snack(info.message || "Проверка завершена");
+        if (state.page === "settings") loadUpdates().catch(() => {});
+        return;
+      }
+    }
+  }
+
+  // The window of SQUAD VPN.exe exposes its own build through pywebview.
+  async function runningAppBuild() {
+    const bridge = window.pywebview && window.pywebview.api;
+    if (!bridge) return null;
+    if (typeof bridge.version !== "function") return "old";  // exe from before OTA
+    try { return await bridge.version(); } catch { return null; }
+  }
+
+  async function checkAppBuild() {
+    const downloaded = state.update && state.update.app_version;
+    const running = await runningAppBuild();
+    const banner = $("ota-banner");
+    if (!downloaded || !running || running === "dev" || running === downloaded) {
+      banner.hidden = true;
+      return;
+    }
+    const canRelaunch = running !== "old";
+    $("ota-banner-text").textContent = canRelaunch
+      ? `Скачана новая версия приложения ${downloaded}. Перезапусти, чтобы перейти на неё.`
+      : `Скачана новая версия приложения ${downloaded}. Закрой SQUAD VPN и открой снова.`;
+    $("ota-relaunch").hidden = !canRelaunch;
+    banner.hidden = false;
+  }
+
+  async function relaunchApp() {
+    try {
+      const ok = await window.pywebview.api.relaunch();
+      if (!ok) snack("Новая версия не найдена — закрой и открой SQUAD VPN");
+    } catch { snack("Закрой SQUAD VPN и открой снова"); }
+  }
+  window.addEventListener("pywebviewready", () => {
+    api("/api/update").then((info) => { state.update = info; checkAppBuild(); }).catch(() => {});
   });
+
+  // When the server comes back with another commit, this page is old: reload.
+  async function watchBuild() {
+    let health;
+    try {
+      health = await api("/health");
+    } catch {
+      if (!state.reconnecting) reconnect();
+      return;
+    }
+    const build = `${health.version}/${health.commit || ""}`;
+    if (state.build && state.build !== build) {
+      $("reconnecting-text").textContent = `SQUAD VPN обновлён до ${health.version} — перезагружаю…`;
+      $("reconnecting").classList.add("open");
+      setTimeout(() => location.reload(), 1200);
+      return;
+    }
+    state.build = build;
+  }
+
+  async function reconnect() {
+    state.reconnecting = true;
+    let shown = false;
+    for (let i = 0; i < 120; i += 1) {
+      await new Promise((r) => setTimeout(r, 2000));
+      try {
+        await api("/health");
+        break;
+      } catch {
+        if (i === 1) {  // a short hiccup does not deserve an overlay
+          $("reconnecting-text").textContent = "SQUAD VPN перезапускается… переподключаюсь";
+          $("reconnecting").classList.add("open");
+          shown = true;
+        }
+      }
+    }
+    state.reconnecting = false;
+    if (shown) $("reconnecting").classList.remove("open");
+    await watchBuild();
+    refresh();
+  }
   $("open-browser").addEventListener("click", () => window.open("/" + location.search, "_blank"));
   $("open-folder").addEventListener("click", async () => {
     try { await api("/api/control/open-folder", { method: "POST" }); } catch (e) { snack(e.message); }
@@ -835,6 +1052,7 @@
       ? `Адрес в сети: ${keys.lan_address}. Нужен ключ; после включения нажми «Сохранить и перезапустить»`
       : "Подписка с этого компьютера для устройств в той же сети. Нужен ключ";
     loadBackups().catch(() => {});
+    loadUpdates().catch(() => {});
     const self = (await api("/api/probes").catch(() => [])).find((p) => p.is_self);
     $("set-region-note").textContent = self
       ? `Сейчас пробник: ${self.region}. Если включён другой VPN, «Авто» видит его страну — тогда выбери свою вручную`
@@ -869,17 +1087,10 @@
   });
 
   async function waitForRestart() {
-    if (state.restarting) return;
-    state.restarting = true;
-    for (let i = 0; i < 40; i += 1) {
-      await new Promise((r) => setTimeout(r, 1500));
-      try {
-        await api("/health");
-        if (i > 1) break;
-      } catch { /* still restarting */ }
-    }
-    state.restarting = false;
-    refresh();
+    if (state.reconnecting) return;
+    // Give the agent a moment to stop the server, then wait for it to return.
+    await new Promise((r) => setTimeout(r, 1500));
+    reconnect();
   }
 
   // log
@@ -1333,7 +1544,12 @@
   }
 
   refresh();
+  watchBuild();
   setInterval(refresh, 15000);
+  setInterval(() => { if (!state.reconnecting) watchBuild(); }, 5000);
+  setInterval(() => {
+    api("/api/update").then((info) => { state.update = info; checkAppBuild(); }).catch(() => {});
+  }, 60000);
   // The connection page is live: speed and ping every 2 seconds.
   setInterval(() => { if (state.page === "connect" && !document.hidden) loadConnect().catch(() => {}); }, 2000);
 })();

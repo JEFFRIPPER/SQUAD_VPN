@@ -18,11 +18,13 @@ data/smoke*
 data/mihomo-*
 data/logs/
 data/agent.json
+data/update.json
 data/publish/
 data/probe.json
 data/probe-publish/
 data/probes-cache/
 app/icon.ico
+app/build_info.py
 build/
 dist/
 *.spec

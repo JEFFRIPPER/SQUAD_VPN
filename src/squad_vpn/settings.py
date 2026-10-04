@@ -10,13 +10,14 @@ from pathlib import Path
 
 SETTINGS_FILE = Path("data/settings.json")
 ALLOWED_INTERVALS = (15, 30, 60, 120, 180, 360)
+DEFAULT_UPDATE_HOURS = 1.0
 
 
 @dataclass(slots=True)
 class Settings:
     interval_minutes: int = 60
     auto_update: bool = True
-    update_hours: float = 3.0
+    update_hours: float = DEFAULT_UPDATE_HOURS
     # Country of this computer for the probe network: "auto" = by IP.
     # Set it by hand when another VPN changes the IP (e.g. shows NL while in RU).
     probe_region: str = "auto"
@@ -49,7 +50,13 @@ def load_settings(path: Path = SETTINGS_FILE) -> Settings:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return Settings()
+    if not isinstance(data, dict):
+        return Settings()
     known = {item.name for item in fields(Settings)}
+    # update_hours is not editable in the app: a stored 3.0 is the old
+    # default written by "Save", so it follows the new hourly default.
+    if data.get("update_hours") == 3.0:
+        data["update_hours"] = DEFAULT_UPDATE_HOURS
     try:
         return Settings(**{k: v for k, v in data.items() if k in known}).validate()
     except (TypeError, ValueError):

@@ -38,6 +38,16 @@ jobs:
       - name: Draw icon
         run: python app/make_icon.py
 
+      # The exe knows its own build, so the app can tell when a newer one
+      # was downloaded over the air and offer to restart into it.
+      - name: Stamp build version
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path src/squad_vpn/__init__.py -Pattern '__version__ = "(.+)"').Matches[0].Groups[1].Value
+          $build = "$version-$("${{ github.sha }}".Substring(0, 7))"
+          "VERSION = `"$build`"" | Out-File -Encoding ascii app/build_info.py
+          Get-Content app/build_info.py
+
       - name: Build SQUAD-VPN.exe
         run: >-
           pyinstaller --noconfirm --clean --onefile --windowed
@@ -45,15 +55,19 @@ jobs:
           --collect-all webview
           app/launcher.py
 
-      - name: Check the exe
+      - name: Check the exe and write the OTA manifest
         shell: pwsh
         run: |
           $exe = Get-Item dist/SQUAD-VPN.exe
           if ($exe.Length -lt 1MB) { throw "exe is too small: $($exe.Length)" }
           "{0:N1} MB" -f ($exe.Length / 1MB)
           $version = (Select-String -Path src/squad_vpn/__init__.py -Pattern '__version__ = "(.+)"').Matches[0].Groups[1].Value
-          "$version-$("${{ github.sha }}".Substring(0, 7))" | Out-File -Encoding ascii -NoNewline dist/app-version.txt
-          Get-Content dist/app-version.txt
+          $build = "$version-$("${{ github.sha }}".Substring(0, 7))"
+          $build | Out-File -Encoding ascii -NoNewline dist/app-version.txt
+          $sha = (Get-FileHash dist/SQUAD-VPN.exe -Algorithm SHA256).Hash.ToLower()
+          @{ version = $build; sha256 = $sha; size = $exe.Length; commit = "${{ github.sha }}" } |
+            ConvertTo-Json | Out-File -Encoding ascii dist/app-manifest.json
+          Get-Content dist/app-manifest.json
 
       - name: Publish release app-latest
         shell: pwsh
@@ -68,7 +82,7 @@ jobs:
           }
           gh release edit app-latest -R $env:GITHUB_REPOSITORY `
             --notes "Скачай SQUAD-VPN.exe и запусти: на новом компьютере он сам установит SQUAD VPN (Python, всё нужное, автозапуск, ярлык). На уже установленном — это панель управления; обновляется сама."
-          gh release upload app-latest dist/SQUAD-VPN.exe dist/app-version.txt -R $env:GITHUB_REPOSITORY --clobber
+          gh release upload app-latest dist/SQUAD-VPN.exe dist/app-version.txt dist/app-manifest.json -R $env:GITHUB_REPOSITORY --clobber
           $global:LASTEXITCODE = 0
 
       # A version tag (v1.0.0 …) also gets its own release with the exe.

@@ -34,6 +34,11 @@ REPO = "JEFFRIPPER/SQUAD_VPN"
 SOURCE_ZIP = f"https://codeload.github.com/{REPO}/zip/refs/heads/main"
 APP_NAME = "SQUAD VPN.exe"
 
+try:  # written by the release build (build-app.yml)
+    from build_info import VERSION
+except ImportError:
+    VERSION = "dev"
+
 
 def default_install_dir() -> Path:
     base = os.environ.get("LOCALAPPDATA") or str(Path.home())
@@ -187,6 +192,20 @@ class Api:
         subprocess.Popen([str(target / APP_NAME)], cwd=target, close_fds=True)
         self._window.destroy()
 
+    def version(self) -> str:
+        """Build of this running exe, e.g. 1.2.0-abc1234 (the panel compares it)."""
+        return VERSION
+
+    def relaunch(self) -> bool:
+        """Start the exe that the agent downloaded over the air and close this one."""
+        target = self._root / APP_NAME
+        if not target.exists():
+            return False
+        log(self._root, f"relaunch into the updated app ({VERSION} -> new)")
+        subprocess.Popen([str(target)], cwd=self._root, close_fds=True)
+        self._window.destroy()
+        return True
+
     def retry(self) -> None:
         threading.Thread(target=boot, args=(self._window, self._root), daemon=True).start()
 
@@ -224,7 +243,7 @@ def boot(window, root: Path) -> None:
 
 
 def _boot(window, root: Path) -> None:
-    log(root, f"start, root={root}")
+    log(root, f"start {VERSION}, root={root}")
     if not (root / "pyproject.toml").exists():
         existing = installed_copy()
         if existing is not None and (existing / APP_NAME).exists():

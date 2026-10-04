@@ -2,8 +2,9 @@
 
 - runs ``serve --watch`` (dashboard + hourly cycle) as a child process and
   restarts it if it dies;
-- every few hours pulls new code from GitHub (fast-forward only), reinstalls
-  dependencies when ``pyproject.toml`` changed and restarts itself;
+- every hour pulls new code from GitHub (fast-forward only) over the air:
+  only commits that passed CI, after a smoke test of the new code, and with
+  an automatic rollback when the new version does not come up (``ota``);
 - only one agent runs at a time; ``squad-vpn agent --stop`` stops it;
 - logs to ``data/logs`` because under ``pythonw`` there is no console.
 """
@@ -21,12 +22,13 @@ from datetime import UTC, datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
-from . import __version__
+from . import __version__, ota
 
 
 CONTROL_PORT = 8079
 STOP_COMMAND = b"stop"
-COMMANDS = {b"stop", b"update", b"restart"}
+# abort = stop without disconnecting the VPN (used to undo a failed update).
+COMMANDS = {b"stop", b"update", b"restart", b"abort"}
 NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 
 log = logging.getLogger("squad_vpn.agent")
@@ -97,12 +99,11 @@ def ensure_git_checkout(root: Path, repo: str = DEFAULT_REPO) -> bool:
     return True
 
 
-def check_for_update(root: Path, branch: str = "main") -> list[str] | None:
-    """Fast-forward the checkout to ``origin/<branch>``.
+def find_update(root: Path, branch: str = "main") -> tuple[str, str] | None:
+    """``(head, remote)`` when ``origin/<branch>`` can be fast-forwarded to.
 
-    Returns the list of changed files when the code was updated, ``None``
-    when there is nothing to do or the update is not safe (local commits,
-    conflicting local edits, no network).
+    ``None`` when there is nothing to do or the update is not safe (local
+    commits, no network, not a git checkout).
     """
     if not (root / ".git").exists() and not ensure_git_checkout(root):
         log.info("Не git-репозиторий, автообновление пропущено")
@@ -118,13 +119,38 @@ def check_for_update(root: Path, branch: str = "main") -> list[str] | None:
     if _git(root, "merge-base", "--is-ancestor", "HEAD", f"origin/{branch}").returncode != 0:
         log.warning("Есть локальные коммиты, которых нет на GitHub: автообновление пропущено")
         return None
+    return head, remote
+
+
+def apply_update(root: Path, head: str, remote: str) -> list[str] | None:
+    """Fast-forward to ``remote``; the changed files, or ``None`` on conflict."""
     changed = _git(root, "diff", "--name-only", head, remote).stdout.split()
-    merge = _git(root, "merge", "--ff-only", "--quiet", f"origin/{branch}")
+    merge = _git(root, "merge", "--ff-only", "--quiet", remote)
     if merge.returncode != 0:
         log.warning("Обновление не применено: %s", merge.stderr.strip()[-300:])
         return None
     log.info("Код обновлён %s -> %s (%d файлов)", head[:7], remote[:7], len(changed))
     return changed
+
+
+def check_for_update(root: Path, branch: str = "main") -> list[str] | None:
+    """Fast-forward the checkout to ``origin/<branch>``; the changed files."""
+    found = find_update(root, branch)
+    if found is None:
+        return None
+    return apply_update(root, *found)
+
+
+def rollback(root: Path, commit: str) -> bool:
+    """Return tracked files to ``commit``; untracked data/ is never touched."""
+    result = _git(root, "reset", "--keep", "--quiet", commit)
+    if result.returncode != 0:
+        result = _git(root, "reset", "--hard", "--quiet", commit)
+    if result.returncode != 0:
+        log.error("Откат не удался: %s", result.stderr.strip()[-300:])
+        return False
+    log.warning("Откат на %s выполнен", commit[:7])
+    return True
 
 
 def reinstall(root: Path) -> bool:
@@ -186,7 +212,7 @@ class Agent:
         *,
         port: int = 8080,
         interval_minutes: int = 60,
-        update_hours: float = 3.0,
+        update_hours: float = 1.0,
         auto_update: bool = True,
         control_port: int = CONTROL_PORT,
     ) -> None:
@@ -197,7 +223,10 @@ class Agent:
         self.auto_update = auto_update
         self.control_port = control_port
         self.child: subprocess.Popen[bytes] | None = None
+        self.control: socket.socket | None = None
         self._stopping = False
+        # Seconds until the next check when an update is waiting for CI.
+        self._retry_in: float | None = None
         self.child_started = 0.0
         self.backoff = 5.0
         self.status_path = root / "data" / "agent.json"
@@ -290,26 +319,146 @@ class Agent:
             self.child.wait(timeout=5)
         log.info("Сервер остановлен")
 
+    def _agent_args(self) -> list[str]:
+        return [sys.executable, "-m", "squad_vpn", "agent", *sys.argv[2:]]
+
     def _restart_self(self, control: socket.socket) -> None:
-        """Start a fresh agent on the new code, then exit this one."""
+        """Start a fresh agent on the current code, then exit this one."""
         self.stop_server()
         control.close()
-        args = [sys.executable, "-m", "squad_vpn", "agent", *sys.argv[2:]]
-        subprocess.Popen(args, cwd=self.root, creationflags=NO_WINDOW, close_fds=True)
-        log.info("Агент перезапускается на новой версии")
+        subprocess.Popen(self._agent_args(), cwd=self.root, creationflags=NO_WINDOW, close_fds=True)
+        log.info("Агент перезапускается")
+
+    def _repo_slug(self) -> str | None:
+        from .publish import GITHUB_URL, detect_origin
+
+        match = GITHUB_URL.search(detect_origin(self.root) or "")
+        return f"{match.group('owner')}/{match.group('repo')}" if match else None
 
     def _maybe_update(self, control: socket.socket) -> bool:
+        """One over-the-air round. True when this agent handed over and must exit."""
+        journal = ota.Journal(self.root)
+        self._retry_in = None
         self.status["last_update_check"] = _now()
-        changed = check_for_update(self.root)
-        self._save_status()
-        if changed is None:
+        try:
+            return self._update_round(control, journal)
+        finally:
+            journal.checked(self._retry_in if self._retry_in is not None else self.update_seconds)
+            journal.save()
+            self._save_status()
+
+    def _update_round(self, control: socket.socket, journal: ota.Journal) -> bool:
+        found = find_update(self.root)
+        if found is None:
+            journal.note("Установлена последняя версия")
             return False
-        if "pyproject.toml" in changed:
-            reinstall(self.root)
+        head, remote = found
+        if remote in journal.skipped:
+            journal.note(f"Версия {remote[:7]} пропущена: {journal.skipped[remote]}")
+            return False
+
+        verdict = ota.ci_verdict(self._repo_slug(), remote)
+        if verdict == "failure":
+            journal.skip(remote, "не прошла проверки на GitHub")
+            journal.record("code", "skipped", to=remote[:7], note="не прошла проверки на GitHub")
+            journal.note(f"Версия {remote[:7]} не прошла проверки на GitHub — пропущена")
+            log.warning("Версия %s не прошла CI, обновление пропущено", remote[:7])
+            return False
+        if verdict == "pending":
+            waited = datetime.now(UTC) - journal.waiting_since(remote)
+            if waited < ota.CI_WAIT_LIMIT:
+                journal.note(f"Новая версия {remote[:7]} ещё проверяется на GitHub")
+                self._retry_in = 600
+                return False
+        journal.data["pending"] = None
+
+        old_version = __version__
+        changed = apply_update(self.root, head, remote)
+        if changed is None:
+            journal.note("Обновление не применено: локальные изменения мешают")
+            return False
+        new_version = ota.version_on_disk(self.root) or "?"
+        details = {
+            "from": head[:7], "to": remote[:7],
+            "version_from": old_version, "version_to": new_version,
+        }
+        self.status["commit"] = remote[:7]
+
+        if not ota.needs_restart(changed):
+            journal.record("code", "ok", **details, note="без перезапуска")
+            journal.note(f"Обновлено до {remote[:7]}")
+            return False
+
+        deps_changed = "pyproject.toml" in changed
+        problem = None
+        if deps_changed and not reinstall(self.root):
+            problem = "не установились зависимости"
+        else:
+            ok, detail = ota.smoke_test(self.root, sys.executable)
+            if not ok:
+                problem = f"новая версия не запускается: {detail[-300:]}"
+        if problem is not None:
+            self._undo(journal, head, remote, deps_changed, problem, details)
+            return False
+
         self.status["last_update"] = _now()
-        self._save_status()
-        self._restart_self(control)
-        return True
+        return self._handover(control, journal, head, remote, deps_changed, details)
+
+    def _undo(
+        self,
+        journal: ota.Journal,
+        head: str,
+        remote: str,
+        deps_changed: bool,
+        problem: str,
+        details: dict[str, object],
+    ) -> None:
+        rollback(self.root, head)
+        if deps_changed:
+            reinstall(self.root)
+        self.status["commit"] = head[:7]
+        journal.skip(remote, problem)
+        journal.record("code", "rolled_back", **details, note=problem)
+        journal.note(f"Версия {remote[:7]} откачена: {problem}")
+        log.error("Обновление %s откачено: %s", remote[:7], problem)
+
+    def _handover(
+        self,
+        control: socket.socket,
+        journal: ota.Journal,
+        head: str,
+        remote: str,
+        deps_changed: bool,
+        details: dict[str, object],
+    ) -> bool:
+        """Start the agent on the new code; roll back if it does not come up."""
+        self.stop_server()
+        control.close()
+        child = subprocess.Popen(
+            self._agent_args(), cwd=self.root, creationflags=NO_WINDOW, close_fds=True
+        )
+        log.info("Запускаю новую версию %s и жду ответа…", remote[:7])
+        if ota.wait_healthy(self.port, child, remote):
+            journal.record("code", "ok", **details)
+            journal.note(f"Обновлено до версии {details['version_to']} ({remote[:7]})")
+            log.info("Новая версия %s работает, старый агент завершается", remote[:7])
+            return True
+
+        # The new version did not come up: stop it and bring the old one back.
+        send_command("abort", self.control_port)
+        try:
+            child.wait(timeout=30)
+        except subprocess.TimeoutExpired:
+            child.kill()
+        self._undo(journal, head, remote, deps_changed, "новая версия не ответила после запуска", details)
+        new_control = _acquire_control_socket(self.control_port, wait_seconds=60)
+        if new_control is None:
+            # Someone holds the port (a stuck new agent): let autostart sort it out.
+            log.error("Не удалось вернуть управление после отката")
+            return True
+        self.control = new_control
+        self.start_server()
+        return False
 
     def _read_command(self, control: socket.socket) -> bytes | None:
         try:
@@ -348,6 +497,13 @@ class Agent:
         self._save_status()
         if result.startswith("error"):
             log.warning("Приложение не обновлено: %s", result)
+        if result.startswith(("updated", "error")):
+            journal = ota.Journal(self.root)
+            if result.startswith("updated"):
+                journal.record("app", "ok", to=result.split(":", 1)[1].strip())
+            else:
+                journal.record("app", "failed", note=result[7:200])
+            journal.save()
         if result.startswith("updated"):
             from . import autostart
 
@@ -358,36 +514,47 @@ class Agent:
                 log.warning("Ярлык не обновлён: %s", exc)
 
     def run(self) -> int:
-        control = _acquire_control_socket(self.control_port, wait_seconds=30)
-        if control is None:
+        self.control = _acquire_control_socket(self.control_port, wait_seconds=30)
+        if self.control is None:
             log.info("Агент уже запущен — второй экземпляр не нужен")
             return 0
         log.info("Агент SQUAD VPN %s запущен в %s", __version__, self.root)
         self._save_status()
+        ota.Journal(self.root).save()  # creates the file for the app on first start
         next_update = time.monotonic() + (60 if self.auto_update else float("inf"))
         next_app_check = time.monotonic() + 30
+        restart_at: float | None = None
         try:
             self._apply_restore_request()
             self.start_server()
             while True:
-                command = self._read_command(control)
+                command = self._read_command(self.control)
                 if command == b"stop":
                     log.info("Получена команда остановки")
                     self._stopping = True
                     break
+                if command == b"abort":
+                    log.info("Остановка по запросу прежней версии (откат обновления)")
+                    break
                 if command == b"restart":
                     log.info("Получена команда перезапуска")
-                    self._restart_self(control)
+                    self._restart_self(self.control)
                     return 0
                 if command == b"update":
                     log.info("Проверка обновлений по запросу")
                     next_app_check = time.monotonic()
-                    if self._maybe_update(control):
+                    if self._maybe_update(self.control):
                         return 0
+                    if self.auto_update:
+                        next_update = time.monotonic() + (self._retry_in or self.update_seconds)
                 if time.monotonic() >= next_app_check:
                     next_app_check = time.monotonic() + self.update_seconds
                     self._ensure_app()
-                if self.child is not None and self.child.poll() is not None:
+                if (
+                    restart_at is None
+                    and self.child is not None
+                    and self.child.poll() is not None
+                ):
                     code = self.child.returncode
                     lived = time.monotonic() - self.child_started
                     self.backoff = 5.0 if lived > 600 else min(self.backoff * 2, 300.0)
@@ -396,12 +563,15 @@ class Agent:
                     )
                     self.status["server_restarts"] = int(self.status["server_restarts"]) + 1  # type: ignore[call-overload]
                     self._save_status()
-                    time.sleep(self.backoff)
+                    # No sleep here: commands (stop, abort) must work during the pause.
+                    restart_at = time.monotonic() + self.backoff
+                if restart_at is not None and time.monotonic() >= restart_at:
+                    restart_at = None
                     self.start_server()
                 if self.auto_update and time.monotonic() >= next_update:
-                    next_update = time.monotonic() + self.update_seconds
-                    if self._maybe_update(control):
+                    if self._maybe_update(self.control):
                         return 0
+                    next_update = time.monotonic() + (self._retry_in or self.update_seconds)
                 time.sleep(2)
         except KeyboardInterrupt:
             log.info("Остановлено пользователем")
@@ -411,7 +581,7 @@ class Agent:
             if self._stopping:
                 self._cleanup_client()
             try:
-                control.close()
+                self.control.close()
             except OSError:
                 pass
         return 0

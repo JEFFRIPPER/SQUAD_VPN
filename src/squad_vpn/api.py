@@ -526,9 +526,40 @@ def create_app(
             raise HTTPException(status_code=409, detail="Агент не запущен")
         return {"ok": True}
 
+    # The commit this server process runs: the app reloads when it changes.
+    from . import ota
+
+    build = ota.git_head(root)
+
     @app.get("/health")
     def health() -> dict[str, object]:
-        return {"status": "ok", "version": __version__, "auth": bool(token)}
+        return {"status": "ok", "version": __version__, "commit": build, "auth": bool(token)}
+
+    @app.get("/api/update", dependencies=protected)
+    def update_status() -> dict[str, object]:
+        from .appdist import LOCAL_VERSION
+        from .diagnostics import _port_open
+
+        journal = ota.Journal(root)
+        settings = client_settings()
+        try:
+            app_version = (root / LOCAL_VERSION).read_text(encoding="utf-8").strip() or None
+        except OSError:
+            app_version = None
+        return {
+            "version": __version__,
+            "commit": build,
+            "disk_commit": ota.git_head(root),
+            "auto_update": settings.auto_update,
+            "update_hours": settings.update_hours,
+            "agent_running": _port_open(8079),
+            "last_check": journal.data.get("last_check"),
+            "next_check": journal.data.get("next_check"),
+            "message": journal.data.get("message"),
+            "history": list(reversed(journal.history))[:10],
+            "app_version": app_version,
+            "changelog": ota.changelog(root, 3),
+        }
 
     @app.middleware("http")
     async def same_origin(request: Request, call_next):

@@ -44,7 +44,7 @@ def test_agent_commands_are_delivered(tmp_path):
             send_command("rm -rf", port)
     finally:
         control.close()
-    assert {b"stop", b"update", b"restart"} == COMMANDS
+    assert {b"stop", b"update", b"restart", b"abort"} == COMMANDS
 
 
 def test_release_base():
@@ -54,8 +54,12 @@ def test_release_base():
     assert appdist.release_base("https://gitlab.com/x/y.git") is None
 
 
-def _mock_release(monkeypatch, version, exe=b"MZ" + b"\0" * 1_100_000, status=200):
+def _mock_release(monkeypatch, version, exe=b"MZ" + b"\0" * 1_100_000, status=200, manifest=None):
     def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith(appdist.ASSET_MANIFEST):
+            if manifest is None:
+                return httpx.Response(404)
+            return httpx.Response(200, json=manifest)
         if request.url.path.endswith(appdist.ASSET_VERSION):
             return httpx.Response(status, text=version)
         return httpx.Response(200, content=exe)
@@ -83,6 +87,22 @@ def test_ensure_app_rejects_non_exe_and_missing_release(tmp_path, monkeypatch):
     assert not (tmp_path / appdist.APP_FILE).exists()
     _mock_release(monkeypatch, "", status=404)
     assert appdist.ensure_app(tmp_path, repo_url=repo, force=True) == "skipped: no release yet"
+
+
+def test_ensure_app_verifies_the_manifest_checksum(tmp_path, monkeypatch):
+    import hashlib
+
+    repo = "https://github.com/Owner/Repo.git"
+    exe = b"MZ" + b"\1" * 1_100_000
+    good = {"version": "1.2.0-ccccccc", "sha256": hashlib.sha256(exe).hexdigest(), "size": len(exe)}
+    _mock_release(monkeypatch, "ignored", exe=exe, manifest={**good, "sha256": "0" * 64})
+    assert "checksum" in appdist.ensure_app(tmp_path, repo_url=repo, force=True)
+    assert not (tmp_path / appdist.APP_FILE).exists()
+    _mock_release(monkeypatch, "ignored", exe=exe, manifest={**good, "size": 5})
+    assert "size" in appdist.ensure_app(tmp_path, repo_url=repo, force=True)
+    _mock_release(monkeypatch, "ignored", exe=exe, manifest=good)
+    assert appdist.ensure_app(tmp_path, repo_url=repo, force=True) == "updated: 1.2.0-ccccccc"
+    assert (tmp_path / appdist.LOCAL_VERSION).read_text(encoding="utf-8") == "1.2.0-ccccccc"
 
 
 def _client(tmp_path, monkeypatch, host="127.0.0.1"):
