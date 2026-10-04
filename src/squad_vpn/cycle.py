@@ -23,7 +23,12 @@ from .publish import PublishTarget, detect_origin, publish
 from .smart import DEFAULT_PROFILES_PATH, export_smart_catalog, load_profiles
 from .sources import load_source_specs
 from .store import NodeStore
-from .validator import DEFAULT_BINARY, DEFAULT_TEST_URL, MihomoValidator
+from .validator import (
+    DEFAULT_BINARY,
+    DEFAULT_DOWNLOAD_BYTES,
+    DEFAULT_TEST_URL,
+    MihomoValidator,
+)
 
 
 Log = Callable[[str], None]
@@ -38,6 +43,7 @@ class CycleOptions:
     binary: Path = DEFAULT_BINARY
     test_url: str = DEFAULT_TEST_URL
     timeout_ms: int = 5000
+    download_bytes: int = DEFAULT_DOWNLOAD_BYTES
     validation_concurrency: int = 16
     geo_limit: int = 10
     limit: int = 200
@@ -129,6 +135,7 @@ async def validate_step(
     binary: Path = DEFAULT_BINARY,
     test_url: str = DEFAULT_TEST_URL,
     timeout_ms: int = 5000,
+    download_bytes: int = DEFAULT_DOWNLOAD_BYTES,
     concurrency: int = 16,
     geo_limit: int = 10,
     limit: int | None = 200,
@@ -150,7 +157,9 @@ async def validate_step(
         if not nodes:
             log("Нет узлов, которым сейчас нужна проверка")
             return {"checked": 0, "alive": 0}
-        validator = MihomoValidator(binary, test_url=test_url, timeout_ms=timeout_ms)
+        validator = MihomoValidator(
+            binary, test_url=test_url, timeout_ms=timeout_ms, download_bytes=download_bytes
+        )
         geo_known = store.fingerprints_with_country()
         results = await validator.validate(
             nodes, concurrency=concurrency, geo_limit=geo_limit, geo_known=geo_known
@@ -316,6 +325,7 @@ async def run_cycle(options: CycleOptions, *, log: Log = print) -> CycleReport:
             binary=options.binary,
             test_url=options.test_url,
             timeout_ms=options.timeout_ms,
+            download_bytes=options.download_bytes,
             concurrency=options.validation_concurrency,
             geo_limit=options.geo_limit,
             limit=options.limit,

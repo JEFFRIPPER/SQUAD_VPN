@@ -23,12 +23,17 @@ INCY и т. п. как подписку:
 
 | Подписка | v2rayNG / Hiddify / INCY | Clash / Mihomo (с автопереключением) |
 | --- | --- | --- |
-| все живые | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/all.b64` | `…/subs/all.yaml` |
-| баланс | `…/subs/balanced.b64` | `…/subs/balanced.yaml` |
+| **топ-10 — начни с неё** | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/top.b64` | `…/subs/top.yaml` |
+| баланс (до 30) | `…/subs/balanced.b64` | `…/subs/balanced.yaml` |
 | быстрые | `…/subs/fast.b64` | `…/subs/fast.yaml` |
 | стабильные | `…/subs/stable.b64` | `…/subs/stable.yaml` |
 | Европа | `…/subs/europe.b64` | `…/subs/europe.yaml` |
 | проверено из России | `…/subs/russia.b64` | `…/subs/russia.yaml` |
+| все живые (много, для экспериментов) | `…/subs/all.b64` | `…/subs/all.yaml` |
+
+`top` — 10 узлов, которые прошли не один пинг, а реальную загрузку данных,
+живы минимум 4 проверки подряд и маскируются под обычный HTTPS (VLESS
+Reality/TLS, Trojan, Hysteria2). Узлы, подтверждённые из России, идут первыми.
 
 `…` = `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN`. Подписки по
 странам и протоколам перечислены в README ветки
@@ -114,6 +119,21 @@ Exe не подписан цифровой подписью — антивиру
   GitHub не отключил его через 60 дней.
 - **Фоновая программа на компьютере** (агент) — проверяет из твоей сети.
 
+### Как отсеиваются нерабочие узлы
+
+1. **Пинг** через Mihomo (`generate_204`).
+2. **Реальная загрузка**: через каждый ответивший узел скачивается 200 КБ.
+   Узел, который отвечает на пинг, но зависает на передаче (типичная
+   блокировка в России — обрыв после ~16 КБ) или перегружен, считается
+   мёртвым. Отключить: `--download-bytes 0`.
+3. **Маскировка** (`require_tls`): голый Shadowsocks и VMess/VLESS без TLS в
+   основные подписки не попадают — в России их режет DPI.
+4. **История** (`min_checks`, stability): одна удачная проверка не в счёт.
+5. **Сети, которые часто режут из России** (Hetzner, OVH, DigitalOcean,
+   Cloudflare и др., `deprioritize_asns`) идут в конец списка.
+6. **Проверка из России**: если работает агент на компьютере в России, его
+   данные важнее всего — подтверждённые узлы первыми, заблокированные убираются.
+
 ### Рейтинг
 
 - **Quality score** — доля успешных проверок с затуханием (последняя весит
@@ -125,10 +145,11 @@ Exe не подписан цифровой подписью — антивиру
 
 ### Профили (`config/profiles.yaml`)
 
-`balanced`, `fast`, `stable`, `europe`, `russia`, `all` — и любые свои.
+`top`, `balanced`, `fast`, `stable`, `europe`, `russia`, `all` — и любые свои.
 Поля: `min_score`, `min_stability`, `max_latency`, `checked_within_hours`,
 `seen_within_hours`, `limit`, `countries`, `exclude_countries`, `protocols`,
-`require_regions`, `avoid_blocked_in`, `per_host`, `per_exit_ip`,
+`require_regions`, `avoid_blocked_in`, `require_tls`, `min_checks`,
+`prefer_regions`, `deprioritize_asns`, `per_host`, `per_exit_ip`,
 `max_asn_share`, `description`. Основные профили исключают выход в России.
 Файл перечитывается без перезапуска.
 

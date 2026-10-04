@@ -25,7 +25,7 @@ GITHUB_URL = re.compile(
 )
 BOT_NAME = "SQUAD VPN bot"
 BOT_EMAIL = "squad-vpn-bot@users.noreply.github.com"
-PURGE_FILES = ("balanced", "fast", "stable", "all")
+PURGE_FILES = ("top", "balanced", "fast", "stable", "all")
 
 
 @dataclass(slots=True, frozen=True)

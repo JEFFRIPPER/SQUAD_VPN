@@ -15,6 +15,14 @@ from .models import ProxyNode, ValidationResult
 
 
 DEFAULT_TEST_URL = "https://www.gstatic.com/generate_204"
+# A ping only proves the handshake. Real traffic catches nodes that stall
+# after the first ~16 KB (a common DPI pattern in Russia) or are overloaded.
+DEFAULT_DOWNLOAD_BYTES = 200_000
+DOWNLOAD_URLS = (
+    "https://speed.cloudflare.com/__down?bytes={size}",
+    "https://proof.ovh.net/files/1Mb.dat",
+)
+DOWNLOAD_CHUNK = 64
 DEFAULT_BINARY = Path(
     "tools/mihomo/mihomo.exe" if os.name == "nt" else "tools/mihomo/mihomo"
 )
@@ -44,10 +52,16 @@ class MihomoValidator:
         *,
         test_url: str = DEFAULT_TEST_URL,
         timeout_ms: int = 5000,
+        download_bytes: int = 0,
+        download_timeout: float = 15.0,
+        download_urls: tuple[str, ...] = DOWNLOAD_URLS,
     ) -> None:
         self.binary = Path(binary)
         self.test_url = test_url
         self.timeout_ms = timeout_ms
+        self.download_bytes = max(0, int(download_bytes))
+        self.download_timeout = download_timeout
+        self.download_urls = download_urls
 
     def _start(
         self,
@@ -55,6 +69,7 @@ class MihomoValidator:
         directory: Path,
         controller_port: int,
         mixed_port: int,
+        listener_ports: dict[str, int] | None = None,
     ) -> tuple[subprocess.Popen[bytes], list[MihomoProxy]]:
         if not self.binary.exists():
             raise FileNotFoundError(
@@ -63,6 +78,20 @@ class MihomoValidator:
         config, converted = build_runtime_config(
             nodes, controller_port=controller_port, mixed_port=mixed_port
         )
+        if listener_ports:
+            # One local port per node, so downloads run in parallel without
+            # switching a shared selector.
+            config["listeners"] = [
+                {
+                    "name": f"in-{index}",
+                    "type": "mixed",
+                    "listen": "127.0.0.1",
+                    "port": listener_ports[item.fingerprint],
+                    "proxy": item.name,
+                }
+                for index, item in enumerate(converted, start=1)
+                if item.fingerprint in listener_ports
+            ]
         config_path = directory / "config.yaml"
         config_path.write_text(dump_yaml(config), encoding="utf-8")
         flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
@@ -204,9 +233,96 @@ class MihomoValidator:
             or ValidationResult(node.fingerprint, False, error="Не поддерживается конвертером Mihomo")
             for node in nodes
         ]
+        if self.download_bytes > 0:
+            await self._download_batch(nodes, results, concurrency)
         if geo_limit > 0:
             await self._enrich_batch(nodes, results, geo_limit, geo_known or set())
         return results
+
+    async def _download_one(self, port: int, semaphore: asyncio.Semaphore) -> str | None:
+        """None when ``download_bytes`` arrived through the node, else the reason."""
+        async with semaphore:
+            errors: list[str] = []
+            for template in self.download_urls:
+                url = template.format(size=self.download_bytes)
+                received = 0
+                try:
+                    async with asyncio.timeout(self.download_timeout):
+                        async with httpx.AsyncClient(
+                            proxy=f"http://127.0.0.1:{port}",
+                            timeout=self.download_timeout,
+                            trust_env=False,
+                        ) as client:
+                            async with client.stream("GET", url) as response:
+                                response.raise_for_status()
+                                async for chunk in response.aiter_bytes():
+                                    received += len(chunk)
+                                    if received >= self.download_bytes:
+                                        return None
+                    errors.append(f"оборвалось на {received // 1024} КБ")
+                except TimeoutError:
+                    errors.append(f"зависло на {received // 1024} КБ")
+                except httpx.HTTPError as exc:
+                    errors.append(f"{type(exc).__name__} на {received // 1024} КБ")
+            return "; ".join(errors)
+
+    async def _run_download(
+        self, nodes: list[ProxyNode], concurrency: int
+    ) -> dict[str, str | None]:
+        ports: dict[str, int] = {}
+        used: set[int] = set()
+        controller_port = _free_port()
+        mixed_port = _free_port()
+        used.update({controller_port, mixed_port})
+        for node in nodes:
+            port = _free_port()
+            while port in used:
+                port = _free_port()
+            used.add(port)
+            ports[node.fingerprint] = port
+        with tempfile.TemporaryDirectory(prefix="squad-vpn-dl-") as tmp:
+            directory = Path(tmp)
+            process, converted = self._start(
+                nodes, directory, controller_port, mixed_port, ports
+            )
+            try:
+                await self._wait_ready(
+                    process, f"http://127.0.0.1:{controller_port}", directory / "mihomo.log"
+                )
+                semaphore = asyncio.Semaphore(max(1, concurrency))
+                checked = [item.fingerprint for item in converted]
+                outcomes = await asyncio.gather(
+                    *(self._download_one(ports[fp], semaphore) for fp in checked)
+                )
+            finally:
+                self._stop(process)
+        return dict(zip(checked, outcomes, strict=True))
+
+    async def _download_batch(
+        self,
+        nodes: list[ProxyNode],
+        results: list[ValidationResult],
+        concurrency: int,
+    ) -> None:
+        """Mark nodes dead when they answer a ping but cannot carry real data."""
+        alive = {r.fingerprint for r in results if r.alive}
+        subset = [node for node in nodes if node.fingerprint in alive]
+        outcomes: dict[str, str | None] = {}
+        for start in range(0, len(subset), DOWNLOAD_CHUNK):
+            chunk = subset[start:start + DOWNLOAD_CHUNK]
+            try:
+                outcomes.update(await self._run_download(chunk, concurrency))
+            except (MihomoStartError, TimeoutError, OSError):
+                continue  # the ping verdict stands for this chunk
+        # Not a single node got through: the test site is down or blocked,
+        # not every node at once. Keep the ping verdicts.
+        if len(outcomes) >= 5 and all(outcomes.values()):
+            return
+        for result in results:
+            error = outcomes.get(result.fingerprint)
+            if result.alive and error:
+                result.alive = False
+                result.error = f"Пинг есть, но данные не идут: {error}"[:500]
 
     async def _validate_batch(
         self,

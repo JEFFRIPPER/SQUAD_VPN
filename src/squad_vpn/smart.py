@@ -34,6 +34,15 @@ class SmartProfile:
     require_regions: tuple[str, ...] = field(default_factory=tuple)
     # ...and must not be known as blocked there (works elsewhere, fails here).
     avoid_blocked_in: tuple[str, ...] = field(default_factory=tuple)
+    # Only transports that look like ordinary HTTPS (TLS/Reality/QUIC):
+    # plain Shadowsocks and unencrypted VMess/VLESS are cut by DPI in Russia.
+    require_tls: bool = False
+    # Minimum number of successful checks: one lucky ping is not enough.
+    min_checks: int = 0
+    # Nodes confirmed alive from these regions go first.
+    prefer_regions: tuple[str, ...] = field(default_factory=tuple)
+    # Exit networks to put last (hosting providers throttled in Russia).
+    deprioritize_asns: tuple[str, ...] = field(default_factory=tuple)
     # Diversity: duplicates of one server make failover useless.
     per_host: int | None = 1
     per_exit_ip: int | None = 1
@@ -41,6 +50,11 @@ class SmartProfile:
 
 
 DEFAULT_PROFILES = (
+    SmartProfile(
+        "top", "10 самых надёжных — начни с неё",
+        min_score=75, min_stability=80, min_checks=4, max_latency=400, limit=10,
+        require_tls=True, max_asn_share=0.2,
+    ),
     SmartProfile(
         "balanced", "Баланс скорости и надёжности",
         min_score=70, min_stability=55, max_latency=500,
@@ -60,10 +74,11 @@ DEFAULT_PROFILES = (
 )
 
 # Used for per-country and per-protocol subscriptions.
-GROUP_PROFILE = SmartProfile("group", limit=300)
+GROUP_PROFILE = SmartProfile("group", limit=50)
 
 _TUPLE_FIELDS = {
     "countries", "exclude_countries", "protocols", "require_regions", "avoid_blocked_in",
+    "prefer_regions", "deprioritize_asns",
 }
 _FIELD_NAMES = {item.name for item in fields(SmartProfile)}
 
@@ -100,6 +115,26 @@ def load_profiles(path: str | Path | None = DEFAULT_PROFILES_PATH) -> tuple[Smar
     if len(set(names)) != len(names):
         raise ValueError(f"{path}: имена профилей повторяются")
     return profiles
+
+
+def is_masked(item: RankedNode) -> bool:
+    """True when the node's traffic looks like TLS/QUIC rather than a raw tunnel."""
+    node = item.node
+    protocol = node.protocol.lower()
+    params = {key.lower(): str(value).lower() for key, value in node.params.items()}
+    if protocol in {"hysteria2", "hy2"}:
+        return True
+    if protocol == "trojan":
+        return params.get("security", "tls") not in {"none", "false", ""}
+    if protocol == "vless":
+        return params.get("security", "") in {"tls", "reality", "xtls"}
+    if protocol == "vmess":
+        return (params.get("tls") or params.get("security") or "") in {"tls", "1", "true"}
+    return False
+
+
+def _asn_number(asn: str | None) -> str:
+    return (asn or "").split()[0].upper() if asn else ""
 
 
 def diversify(
@@ -166,7 +201,19 @@ def select_profile(store: NodeStore, profile: SmartProfile) -> list[RankedNode]:
         and (not protocols or item.node.protocol.lower() in protocols)
         and all(item.region_status(region) == "ok" for region in profile.require_regions)
         and not any(item.region_status(region) == "blocked" for region in profile.avoid_blocked_in)
+        and (not profile.require_tls or is_masked(item))
+        and item.success_count >= profile.min_checks
     ]
+    if profile.prefer_regions or profile.deprioritize_asns:
+        avoided = {_asn_number(value) for value in profile.deprioritize_asns}
+        preferred = [region.upper() for region in profile.prefer_regions]
+
+        def preference(item: RankedNode) -> tuple[int, int]:
+            confirmed = any(item.region_status(region) == "ok" for region in preferred)
+            return (0 if confirmed else 1, 1 if _asn_number(item.asn) in avoided else 0)
+
+        # Stable sort: within each group the quality ranking is kept.
+        filtered.sort(key=preference)
     if by_region:
         # Rank and cap by the latency measured from the required region itself.
         region = profile.require_regions[0].upper()

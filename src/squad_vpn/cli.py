@@ -25,7 +25,7 @@ from .smart import (
     load_profiles,
 )
 from .store import NodeStore
-from .validator import DEFAULT_BINARY, DEFAULT_TEST_URL
+from .validator import DEFAULT_BINARY, DEFAULT_DOWNLOAD_BYTES, DEFAULT_TEST_URL
 
 
 DEFAULT_DB = Path("data/squad_vpn.sqlite3")
@@ -67,6 +67,7 @@ async def _validate(args: argparse.Namespace) -> int:
             binary=args.binary,
             test_url=args.test_url,
             timeout_ms=args.timeout_ms,
+            download_bytes=args.download_bytes,
             concurrency=args.concurrency,
             geo_limit=args.geo_limit,
             limit=args.limit,
@@ -177,6 +178,7 @@ def _cycle_options(args: argparse.Namespace) -> CycleOptions:
         binary=args.binary,
         test_url=args.test_url,
         timeout_ms=args.timeout_ms,
+        download_bytes=args.download_bytes,
         validation_concurrency=args.validation_concurrency,
         geo_limit=args.geo_limit,
         limit=args.limit,
@@ -404,6 +406,10 @@ def _add_validation_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     parser.add_argument("--test-url", default=DEFAULT_TEST_URL)
     parser.add_argument("--timeout-ms", type=int, default=5000)
+    parser.add_argument(
+        "--download-bytes", type=int, default=DEFAULT_DOWNLOAD_BYTES,
+        help="Сколько байт скачать через каждый живой узел (0 — только пинг)",
+    )
     parser.add_argument("--validation-concurrency", type=int, default=16)
     parser.add_argument("--geo-limit", type=int, default=10)
     parser.add_argument("--limit", type=int, default=200)
@@ -482,6 +488,10 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     validate.add_argument("--test-url", default=DEFAULT_TEST_URL)
     validate.add_argument("--timeout-ms", type=int, default=5000)
+    validate.add_argument(
+        "--download-bytes", type=int, default=DEFAULT_DOWNLOAD_BYTES,
+        help="Сколько байт скачать через каждый живой узел (0 — только пинг)",
+    )
     validate.add_argument("--concurrency", type=int, default=16)
     validate.add_argument("--geo-limit", type=int, default=10)
     validate.add_argument("--limit", type=int, default=200)

@@ -21,7 +21,7 @@ class Settings:
     # Set it by hand when another VPN changes the IP (e.g. shows NL while in RU).
     probe_region: str = "auto"
     # VPN client (v0.8)
-    client_profile: str = "balanced"
+    client_profile: str = "top"
     client_autoconnect: bool = False
     # Serve subscriptions to phones in the same Wi-Fi (needs an API key).
     lan_access: bool = False

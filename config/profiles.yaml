@@ -20,42 +20,97 @@
 #                          стран за последние 24 часа, например [RU]
 #   avoid_blocked_in     — убрать узлы, которые пробники из этих стран видят
 #                          мёртвыми, хотя из других стран они живые
+#   require_tls          — только узлы с маскировкой под HTTPS (VLESS
+#                          Reality/TLS, Trojan, VMess+TLS, Hysteria2); голый
+#                          Shadowsocks и VMess/VLESS без TLS в России режет DPI
+#   min_checks           — минимум успешных проверок (одна удачная — не в счёт)
+#   prefer_regions       — узлы, подтверждённые пробниками из этих стран, первыми
+#   deprioritize_asns    — эти сети выхода (ASN) ставить в конец списка
 #
 # Узлы с выходом в России не помогают обходить блокировки, поэтому основные
 # профили их исключают.
 
+# Хостинги, к которым в России часто режут соединения после первых ~16 КБ.
+# Узлы в этих сетях не убираются, а ставятся в конец списка.
+x-throttled: &throttled
+  - AS13335   # Cloudflare
+  - AS24940   # Hetzner
+  - AS16276   # OVH
+  - AS14061   # DigitalOcean
+  - AS63949   # Akamai / Linode
+  - AS20473   # Vultr
+  - AS16509   # Amazon
+  - AS14618   # Amazon
+  - AS396982  # Google Cloud
+  - AS8075    # Microsoft
+  - AS31898   # Oracle
+  - AS12876   # Scaleway
+  - AS51167   # Contabo
+
 profiles:
+  # Главная подписка: 10 самых надёжных узлов с маскировкой под HTTPS.
+  - name: top
+    description: 10 самых надёжных — начни с неё
+    min_score: 75
+    min_stability: 80
+    min_checks: 4
+    max_latency: 400
+    limit: 10
+    require_tls: true
+    protocols: [vless, trojan, hysteria2]
+    exclude_countries: [RU]
+    avoid_blocked_in: [RU]
+    prefer_regions: [RU]
+    deprioritize_asns: *throttled
+    max_asn_share: 0.2
+
   - name: balanced
     description: Баланс скорости и надёжности
     min_score: 70
-    min_stability: 55
+    min_stability: 60
+    min_checks: 2
     max_latency: 500
+    limit: 30
+    require_tls: true
     exclude_countries: [RU]
     avoid_blocked_in: [RU]
+    prefer_regions: [RU]
+    deprioritize_asns: *throttled
 
   - name: fast
     description: Самые быстрые
     min_score: 60
-    min_stability: 40
+    min_stability: 50
     max_latency: 150
-    limit: 150
+    limit: 30
+    require_tls: true
     exclude_countries: [RU]
     avoid_blocked_in: [RU]
+    deprioritize_asns: *throttled
 
   - name: stable
     description: Стабильно живые много проверок подряд
     min_score: 65
-    min_stability: 75
+    min_stability: 85
+    min_checks: 6
     max_latency: 800
+    limit: 30
+    require_tls: true
     exclude_countries: [RU]
     avoid_blocked_in: [RU]
+    prefer_regions: [RU]
+    deprioritize_asns: *throttled
 
   - name: europe
     description: Выход в Европе
     min_score: 60
+    min_stability: 50
     max_latency: 600
+    limit: 30
+    require_tls: true
     countries: [DE, NL, FI, FR, GB, SE, PL, CZ, AT, CH, IE, EE, LV, LT]
     avoid_blocked_in: [RU]
+    deprioritize_asns: *throttled
 
   # Только узлы, которые реально открываются из России: их подтверждает
   # пробник на компьютере в России (агент SQUAD VPN). Пока такого отчёта
@@ -65,11 +120,11 @@ profiles:
     exclude_countries: [RU]
     require_regions: [RU]
     max_latency: 1500
-    limit: 200
+    limit: 30
 
   - name: all
-    description: Все живые узлы
-    limit: 500
+    description: Все живые узлы (много, для экспериментов)
+    limit: 300
     per_host: null
     per_exit_ip: null
     max_asn_share: null

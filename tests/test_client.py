@@ -215,7 +215,7 @@ def test_client_api(tmp_path, monkeypatch):
     app = create_app(tmp_path / "db.sqlite3", profiles_path=None, client=vpn, client_root=tmp_path)
     with TestClient(app, client=("127.0.0.1", 5000)) as http:
         status = http.get("/api/client").json()
-        assert status["state"] == "disconnected" and status["settings"]["profile"] == "balanced"
+        assert status["state"] == "disconnected" and status["settings"]["profile"] == "top"
         assert http.post("/api/client/connect", json={"profile": "nope"}).status_code == 422
         assert http.post("/api/client/failover").status_code == 409
         connected = http.post("/api/client/connect", json={"profile": "all"}).json()

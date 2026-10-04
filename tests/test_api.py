@@ -18,7 +18,8 @@ def _seed(database):
         slow = ProxyNode(
             "vless", "slow.example", 443,
             userinfo="11111111-1111-1111-1111-111111111111", name="Slow NL",
-            raw_uri="vless://11111111-1111-1111-1111-111111111111@slow.example:443",
+            params={"security": "reality"},
+            raw_uri="vless://11111111-1111-1111-1111-111111111111@slow.example:443?security=reality",
         )
         dead = ProxyNode("trojan", "dead.example", 443, userinfo="pw", raw_uri="trojan://pw@dead.example:443")
         store.upsert_many([fast, slow, dead])
