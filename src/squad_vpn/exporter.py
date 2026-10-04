@@ -23,19 +23,28 @@ PRIVATE_NETWORKS = (
 
 
 def mihomo_proxies(
-    nodes: list[ProxyNode], title: str = "SQUAD"
+    nodes: list[ProxyNode], title: str = "SQUAD", *, use_names: bool = False
 ) -> list[tuple[ProxyNode, dict[str, object]]]:
-    """Convertible nodes with their Mihomo proxy entries (unique names)."""
+    """Convertible nodes with their Mihomo proxy entries (unique names).
+
+    ``use_names`` shows the nodes' own (branded) names instead of technical ones.
+    """
     result = []
+    seen: set[str] = set()
     for index, node in enumerate(nodes, start=1):
         name = f"{title} {index:03d} {node.protocol} {node.fingerprint[:6]}"
+        if use_names and node.name and node.name not in seen:
+            name = node.name
+        seen.add(name)
         converted = node_to_mihomo(node, name)
         if converted is not None:
             result.append((node, converted))
     return result
 
 
-def mihomo_config(nodes: list[ProxyNode], title: str = "SQUAD") -> dict[str, object]:
+def mihomo_config(
+    nodes: list[ProxyNode], title: str = "SQUAD", *, use_names: bool = False
+) -> dict[str, object]:
     """A complete Mihomo/Clash Meta profile with automatic failover.
 
     Groups:
@@ -44,7 +53,7 @@ def mihomo_config(nodes: list[ProxyNode], title: str = "SQUAD") -> dict[str, obj
     - ``FAILOVER`` — fallback: keeps the best-ranked node, switches when it fails.
     Nodes are already ranked, so FAILOVER order follows SQUAD's score.
     """
-    proxies = [proxy for _, proxy in mihomo_proxies(nodes, title)]
+    proxies = [proxy for _, proxy in mihomo_proxies(nodes, title, use_names=use_names)]
     names = [item["name"] for item in proxies]
     if names:
         groups: list[dict[str, object]] = [
@@ -84,8 +93,10 @@ def mihomo_config(nodes: list[ProxyNode], title: str = "SQUAD") -> dict[str, obj
     }
 
 
-def render_mihomo(nodes: list[ProxyNode], title: str = "SQUAD") -> str:
-    return dump_yaml(mihomo_config(nodes, title))
+def render_mihomo(
+    nodes: list[ProxyNode], title: str = "SQUAD", *, use_names: bool = False
+) -> str:
+    return dump_yaml(mihomo_config(nodes, title, use_names=use_names))
 
 
 def ranked_to_dict(item: RankedNode) -> dict[str, object]:

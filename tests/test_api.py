@@ -33,6 +33,11 @@ def _seed(database):
         store.close()
 
 
+def _links(text):
+    """Share links of a subscription body without metadata lines and display names."""
+    return [line.split("#", 1)[0] for line in text.splitlines() if line and not line.startswith("#")]
+
+
 @pytest.fixture()
 def seeded(tmp_path):
     database = tmp_path / "api.sqlite3"
@@ -67,17 +72,18 @@ def test_sub_formats_and_filters(seeded):
     plain = client.get("/sub")
     assert plain.status_code == 200
     assert plain.headers["x-squad-nodes"] == "2"
-    assert fast.raw_uri in plain.text and slow.raw_uri in plain.text
-    assert dead.raw_uri not in plain.text
+    base = lambda node: node.raw_uri.split("#", 1)[0]  # noqa: E731
+    assert _links(plain.text) == [base(fast), base(slow)]
+    assert plain.headers["profile-title"] == "SQUAD VPN"
 
     fast_only = client.get("/sub", params={"profile": "fast"})
-    assert fast_only.text.strip() == fast.raw_uri
+    assert _links(fast_only.text) == [base(fast)]
 
     by_country = client.get("/sub", params={"country": "nl"})
-    assert by_country.text.strip() == slow.raw_uri
+    assert _links(by_country.text) == [base(slow)]
 
     encoded = client.get("/sub", params={"format": "base64", "protocol": "trojan"})
-    assert base64.b64decode(encoded.text).decode().strip() == fast.raw_uri
+    assert _links(base64.b64decode(encoded.text).decode()) == [base(fast)]
 
     yaml_sub = client.get("/sub", params={"format": "mihomo", "limit": 1})
     assert yaml_sub.headers["content-type"].startswith("text/yaml")
@@ -92,7 +98,7 @@ def test_profile_defaults_can_be_overridden(seeded):
     database, (fast, slow, _) = seeded
     client = TestClient(create_app(database))
     relaxed = client.get("/sub", params={"profile": "fast", "max_latency": 2000})
-    assert slow.raw_uri in relaxed.text
+    assert slow.raw_uri.split("#", 1)[0] in _links(relaxed.text)
 
 
 def test_nodes_pagination_sorting_and_no_secrets(seeded):

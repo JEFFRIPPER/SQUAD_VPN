@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import base64
 import json
 import logging
 import secrets
@@ -27,8 +26,15 @@ from .validator import DEFAULT_BINARY
 
 if TYPE_CHECKING:
     from .client import VpnClient
-from .exporter import ranked_to_dict, render_mihomo, render_plain
-from .smart import DEFAULT_PROFILES_PATH, GROUP_PROFILE, load_profiles, select_profile
+from .branding import DEFAULT_BRANDING_PATH, load_branding
+from .exporter import ranked_to_dict
+from .smart import (
+    DEFAULT_PROFILES_PATH,
+    GROUP_PROFILE,
+    load_profiles,
+    render_subscription,
+    select_profile,
+)
 from .store import SORT_COLUMNS, NodeStore
 
 
@@ -176,6 +182,7 @@ def create_app(
     client: "VpnClient | None" = None,
     client_root: Path | None = None,
     config: AppConfig | None = None,
+    branding_path: str | Path | None = DEFAULT_BRANDING_PATH,
 ) -> FastAPI:
     """Build the HTTP API.
 
@@ -653,19 +660,19 @@ def create_app(
         }
         chosen = replace(base, **{k: v for k, v in overrides.items() if v is not None})
         records = select_profile(store, chosen)
-        nodes = [item.node for item in records]
+        rendered = render_subscription(
+            records, load_branding(branding_path), chosen.name, chosen.description
+        )
         headers = {
-            "profile-update-interval": "1",
-            "x-squad-nodes": str(len(nodes)),
+            **rendered.headers,
+            "x-squad-nodes": str(len(records)),
             "cache-control": "no-store",
         }
         if format == "mihomo":
-            body = render_mihomo(nodes, f"SQUAD {chosen.name}")
+            body = rendered.mihomo
             media_type = "text/yaml; charset=utf-8"
         else:
-            body = render_plain(nodes)
-            if format == "base64":
-                body = base64.b64encode(body.encode("utf-8")).decode("ascii")
+            body = rendered.base64 if format == "base64" else rendered.plain
             media_type = "text/plain; charset=utf-8"
         cache.set(cache_key, (body, media_type, headers), config.cache.sub_seconds)
         return Response(body, media_type=media_type, headers=headers)

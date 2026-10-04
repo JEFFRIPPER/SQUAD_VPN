@@ -161,8 +161,8 @@ def test_sub_uses_custom_profiles_file(tmp_path):
     )
     client = TestClient(create_app(database, profiles_path=profiles))
     assert client.get("/api/profiles").json()["noru"]["description"] == "Без России"
-    body = client.get("/sub", params={"profile": "noru"}).text.split()
-    assert body == ["vless://de", "trojan://nl"]
+    body = client.get("/sub", params={"profile": "noru"}).text.splitlines()
+    assert [line.split("#")[0] for line in body if not line.startswith("#")] == ["vless://de", "trojan://nl"]
     assert client.get("/sub", params={"profile": "balanced"}).status_code == 404
     mihomo = yaml.safe_load(client.get("/sub", params={"profile": "noru", "format": "mihomo"}).text)
     assert {g["name"] for g in mihomo["proxy-groups"]} == {"SQUAD", "AUTO", "FAILOVER"}

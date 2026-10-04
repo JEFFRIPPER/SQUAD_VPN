@@ -6,6 +6,13 @@ on:
     - cron: "17 * * * *"
     - cron: "47 * * * *"
   workflow_dispatch:
+  # Owners edit how subscriptions look or what they contain: publish right away.
+  push:
+    branches: [main]
+    paths:
+      - "config/branding.yaml"
+      - "config/profiles.yaml"
+      - "config/sources.yaml"
 
 permissions:
   contents: write

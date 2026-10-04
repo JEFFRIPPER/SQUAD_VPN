@@ -132,7 +132,11 @@ def test_publish_force_pushes_single_commit(tmp_path):
     files = _branch_files(remote, "subs")
     assert {"README.md", "stats.json", "balanced", "balanced.b64", "balanced.yaml",
             "all.b64", "country/DE.b64", "protocol/trojan.b64", "index.json"} <= files
-    assert base64.b64decode(_show(remote, "subs", "fast.b64")).decode().strip() == node.raw_uri
+    lines = base64.b64decode(_show(remote, "subs", "fast.b64")).decode().splitlines()
+    assert lines[0].startswith("#profile-title: ")
+    assert [line.split("#", 1)[0] for line in lines if not line.startswith("#")] == [
+        node.raw_uri.split("#", 1)[0]
+    ]
     commits = subprocess.run(
         ["git", "--git-dir", str(remote), "rev-list", "--count", "subs"],
         check=True, capture_output=True, text=True,

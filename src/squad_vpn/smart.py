@@ -9,7 +9,8 @@ from pathlib import Path
 
 import yaml
 
-from .exporter import export_mihomo, export_plain, remove_stale_files, render_plain
+from .branding import COUNTRY_NAMES, DEFAULT_BRANDING_PATH, Branding, load_branding
+from .exporter import remove_stale_files, render_mihomo, render_plain
 from .models import RankedNode
 from .store import NodeStore
 
@@ -242,17 +243,47 @@ def _safe_name(value: str) -> str:
     return _SAFE_NAME.sub("_", value.strip()).strip("_")[:64]
 
 
-def _export_pair(records: list[RankedNode], base: Path, title: str) -> dict[str, object]:
-    nodes = [item.node for item in records]
-    export_plain(nodes, base)
-    export_mihomo(nodes, Path(str(base) + ".yaml"), title=title)
+@dataclass(slots=True, frozen=True)
+class RenderedSubscription:
+    plain: str
+    base64: str
+    mihomo: str
+    headers: dict[str, str]
+
+
+def render_subscription(
+    records: list[RankedNode],
+    branding: Branding,
+    name: str,
+    description: str = "",
+) -> RenderedSubscription:
+    """One subscription in all formats, with the owners' title and node names."""
+    nodes = branding.apply(records)
+    header = branding.body_header(name, description, len(nodes))
+    plain = header + render_plain(nodes)
     # Most mobile clients (v2rayNG, Hiddify, INCY…) expect base64 subscriptions.
-    Path(str(base) + ".b64").write_text(
-        base64.b64encode(render_plain(nodes).encode("utf-8")).decode("ascii"),
-        encoding="utf-8",
+    encoded = base64.b64encode(plain.encode("utf-8")).decode("ascii")
+    mihomo = header + render_mihomo(nodes, branding.brand, use_names=bool(branding.node_name))
+    return RenderedSubscription(
+        plain, encoded, mihomo, branding.metadata(name, description, len(nodes))
     )
+
+
+def _export_pair(
+    records: list[RankedNode],
+    base: Path,
+    branding: Branding,
+    name: str,
+    description: str = "",
+) -> dict[str, object]:
+    rendered = render_subscription(records, branding, name, description)
+    base.parent.mkdir(parents=True, exist_ok=True)
+    base.write_text(rendered.plain, encoding="utf-8")
+    Path(str(base) + ".b64").write_text(rendered.base64, encoding="utf-8")
+    Path(str(base) + ".yaml").write_text(rendered.mihomo, encoding="utf-8")
     return {
         "count": len(records),
+        "title": branding.title_for(name, description),
         "plain": base.name,
         "base64": base.name + ".b64",
         "mihomo": base.name + ".yaml",
@@ -263,15 +294,17 @@ def export_smart_catalog(
     store: NodeStore,
     directory: str | Path,
     profiles: tuple[SmartProfile, ...] | None = None,
+    branding: Branding | None = None,
 ) -> dict[str, object]:
     root = Path(directory)
+    branding = load_branding(DEFAULT_BRANDING_PATH) if branding is None else branding
     root.mkdir(parents=True, exist_ok=True)
     profiles = DEFAULT_PROFILES if profiles is None else profiles
     index: dict[str, object] = {"profiles": {}, "countries": {}, "protocols": {}}
 
     for profile in profiles:
         records = select_profile(store, profile)
-        meta = _export_pair(records, root / profile.name, f"SQUAD {profile.name}")
+        meta = _export_pair(records, root / profile.name, branding, profile.name, profile.description)
         meta["criteria"] = asdict(profile)
         index["profiles"][profile.name] = meta  # type: ignore[index]
 
@@ -303,7 +336,8 @@ def export_smart_catalog(
                 per_exit_ip=GROUP_PROFILE.per_exit_ip,
                 max_asn_share=GROUP_PROFILE.max_asn_share,
             )
-            index[key][name] = _export_pair(records, folder / name, f"SQUAD {name}")  # type: ignore[index]
+            label = COUNTRY_NAMES.get(name, name) if key == "countries" else name.upper()
+            index[key][name] = _export_pair(records, folder / name, branding, name, label)  # type: ignore[index]
             keep.update({name, name + ".yaml", name + ".b64"})
         remove_stale_files(folder, keep)
 
@@ -340,5 +374,5 @@ def export_custom_subscription(
         limit=limit,
     )
     records = select_profile(store, profile)
-    _export_pair(records, Path(path), "SQUAD custom")
+    _export_pair(records, Path(path), load_branding(DEFAULT_BRANDING_PATH), "custom", "Своя подборка")
     return records
