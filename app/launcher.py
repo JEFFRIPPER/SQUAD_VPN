@@ -102,8 +102,7 @@ def start_agent(root: Path) -> None:
 
 PAGE = """<!doctype html><html lang="ru"><head><meta charset="utf-8">
 <style>
-:root {{ --p:#4355B9; --op:#fff; --s:#FBF8FF; --os:#1B1B21; --v:#46464F; --c:#DEE0FF; }}
-@media (prefers-color-scheme: dark) {{ :root {{ --p:#BAC3FF; --op:#08218A; --s:#121318; --os:#E4E1E9; --v:#C6C5D0; --c:#293CA0; }} }}
+:root {{ color-scheme:dark; --p:#d00018; --op:#fff; --s:#000000; --os:#F6EAEA; --v:#C7A5A5; --c:#190003; }}
 html,body {{ height:100%; margin:0; }}
 body {{ background:var(--s); color:var(--os); font:14px/20px "Segoe UI",Roboto,system-ui,sans-serif;
   display:grid; place-items:center; text-align:center; padding:24px; box-sizing:border-box; }}

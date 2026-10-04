@@ -4,19 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SQUAD VPN</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%224%22 fill=%22%232f6fde%22/%3E%3Cpath d=%22M4 8.5l2.5 2.5L12 5%22 stroke=%22white%22 stroke-width=%222%22 fill=%22none%22/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%224%22 fill=%22%23d00018%22/%3E%3Cpath d=%22M4 8.5l2.5 2.5L12 5%22 stroke=%22white%22 stroke-width=%222%22 fill=%22none%22/%3E%3C/svg%3E">
 <style>
+  /* SQUAD palette: #d00018 … #000000, one dark theme. */
   :root {
-    --bg: #f5f6f8; --panel: #ffffff; --text: #1b1f24; --muted: #667085;
-    --line: #e4e7ec; --accent: #2f6fde; --ok: #1f9d55; --bad: #d64545;
-    --warn: #c98a12; --chip: #eef2f7;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0f1216; --panel: #171b21; --text: #e6e9ee; --muted: #8a94a6;
-      --line: #262c35; --accent: #6b9cf5; --ok: #3fbf7a; --bad: #f06a6a;
-      --warn: #e0a83a; --chip: #1f252e;
-    }
+    color-scheme: dark;
+    --bg: #000000; --panel: #190003; --text: #F6EAEA; --muted: #C7A5A5;
+    --line: #4e0009; --accent: #d00018; --ok: #FFFFFF; --bad: #FF4D5B;
+    --warn: #9c0012; --chip: #330006;
   }
   * { box-sizing: border-box; }
   body {
@@ -123,7 +118,7 @@
       <label class="ctl">Профиль
         <select id="sub-profile">
           <option value="">— свой —</option>
-          <option value="balanced" selected>balanced</option>
+          <option value="top" selected>top</option>
         </select>
       </label>
       <label class="ctl">Страна <select id="sub-country"><option value="">любая</option></select></label>
