@@ -23,6 +23,7 @@ DOWNLOAD_URLS = (
     "https://proof.ovh.net/files/1Mb.dat",
 )
 DOWNLOAD_CHUNK = 64
+DOWNLOAD_FAILED = "Пинг есть, но данные не идут"
 DEFAULT_BINARY = Path(
     "tools/mihomo/mihomo.exe" if os.name == "nt" else "tools/mihomo/mihomo"
 )
@@ -322,7 +323,7 @@ class MihomoValidator:
             error = outcomes.get(result.fingerprint)
             if result.alive and error:
                 result.alive = False
-                result.error = f"Пинг есть, но данные не идут: {error}"[:500]
+                result.error = f"{DOWNLOAD_FAILED}: {error}"[:500]
 
     async def _validate_batch(
         self,

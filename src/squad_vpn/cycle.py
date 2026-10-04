@@ -27,6 +27,7 @@ from .validator import (
     DEFAULT_BINARY,
     DEFAULT_DOWNLOAD_BYTES,
     DEFAULT_TEST_URL,
+    DOWNLOAD_FAILED,
     MihomoValidator,
 )
 
@@ -175,7 +176,12 @@ async def validate_step(
         store.close()
     log(f"Проверено через Mihomo: {len(results)}")
     log(f"Живых: {alive}; мёртвых: {len(results) - alive}")
-    return {"checked": len(results), "alive": alive}
+    stalled = sum(
+        1 for result in results if (result.error or "").startswith(DOWNLOAD_FAILED)
+    )
+    if download_bytes > 0:
+        log(f"Отсеяно проверкой загрузки (пинг есть, данные не идут): {stalled}")
+    return {"checked": len(results), "alive": alive, "stalled": stalled}
 
 
 def cleanup_step(database: Path, *, unseen_days: int = 3, log: Log = print) -> dict[str, int]:
