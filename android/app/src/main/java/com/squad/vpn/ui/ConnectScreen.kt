@@ -11,6 +11,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -43,6 +45,10 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import com.squad.vpn.R
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
@@ -80,7 +86,20 @@ fun ConnectScreen(
             .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(8.dp))
+        Row(
+            Modifier.padding(top = 12.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Image(
+                painterResource(R.drawable.squad_logo),
+                contentDescription = "Логотип SQUAD",
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape),
+            )
+            Spacer(Modifier.width(10.dp))
+            Text("SQUAD VPN", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        }
         PowerButton(status = status, onClick = onPower)
 
         AnimatedContent(
