@@ -25,6 +25,7 @@ import com.squad.vpn.core.Vpn
 import com.squad.vpn.core.XrayConfig
 import com.squad.vpn.ui.MainActivity
 import com.squad.vpn.ui.formatSpeed
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -54,6 +55,11 @@ class SquadVpnService : VpnService() {
     private val lock = Mutex()
     private var tun: ParcelFileDescriptor? = null
     private var monitor: Job? = null
+    private var connecting: Job? = null
+
+    /** The user wants the VPN on; a stop that is still finishing must not undo a newer start. */
+    @Volatile
+    private var wanted = false
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var candidates: List<Node> = emptyList()
     private val failed = mutableSetOf<String>()
@@ -86,6 +92,7 @@ class SquadVpnService : VpnService() {
 
     override fun onDestroy() {
         scope.cancel()
+        unwatchNetwork()
         runCatching { core.stopLoop() }
         tun?.close()
         tun = null
@@ -97,12 +104,17 @@ class SquadVpnService : VpnService() {
         // Always answer startForegroundService() with startForeground(), even when already running.
         val running = Vpn.status.value == Status.Connected || Vpn.status.value == Status.Connecting
         foreground(notification(Vpn.current.value?.name ?: "Подключение…", null))
+        wanted = true
         if (running) return
         Vpn.setStatus(Status.Connecting, "Загружаю узлы…")
-        scope.launch {
+        connecting = scope.launch {
             lock.withLock {
+                if (!wanted) return@withLock
+                Vpn.setStatus(Status.Connecting, "Загружаю узлы…")
                 try {
                     connect()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     Log.e(TAG, "connect", e)
                     Vpn.event("Ошибка: ${e.message}")
@@ -149,7 +161,14 @@ class SquadVpnService : VpnService() {
      * not keep the user waiting.
      */
     private suspend fun pickNode(selectedKey: String?): Node? {
-        candidates.firstOrNull { it.key == selectedKey }?.let { return it }
+        candidates.firstOrNull { it.key == selectedKey }?.let { node ->
+            Vpn.setStatus(Status.Connecting, "Проверяю ${node.name}…")
+            val ms = Pinger.ping(node)
+            Vpn.setPing(node.key, ms)
+            if (ms > 0) return node
+            failed += node.key
+            Vpn.event("Выбранный узел ${node.name} не отвечает, ищу другой")
+        }
         val pool = candidates.filter { it.key !in failed }
         for (batch in pool.chunked(8).take(5)) {
             Vpn.setStatus(Status.Connecting, "Ищу лучший узел…")
@@ -257,6 +276,13 @@ class SquadVpnService : VpnService() {
         networkCallback = callback
     }
 
+    private fun unwatchNetwork() {
+        networkCallback?.let { cb ->
+            runCatching { getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(cb) }
+        }
+        networkCallback = null
+    }
+
     private fun measure(): Long =
         try {
             if (core.isRunning) core.measureDelay(XrayConfig.TEST_URL) else Pinger.DEAD
@@ -338,8 +364,11 @@ class SquadVpnService : VpnService() {
     }
 
     private fun stop(message: String) {
+        wanted = false
         Prefs.wasConnected = false
         Vpn.setStatus(Status.Disconnecting)
+        // A connection still searching for a node is dropped right away.
+        connecting?.cancel()
         scope.launch {
             lock.withLock { shutdown(Status.Disconnected, null) }
             Vpn.event(message)
@@ -349,14 +378,14 @@ class SquadVpnService : VpnService() {
     private fun shutdown(status: Status, message: String?) {
         monitor?.cancel()
         monitor = null
-        networkCallback?.let { cb ->
-            runCatching { getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(cb) }
-        }
-        networkCallback = null
+        unwatchNetwork()
         runCatching { if (core.isRunning) core.stopLoop() }
         tun?.close()
         tun = null
         Vpn.setStatus(status, message)
+        if (status == Status.Failed) wanted = false
+        // A start that came in while this stop was finishing keeps the service.
+        if (wanted) return
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -405,12 +434,19 @@ class SquadVpnService : VpnService() {
         const val ACTION_SWITCH = "com.squad.vpn.SWITCH"
         const val ACTION_FAILOVER = "com.squad.vpn.FAILOVER"
 
-        fun send(context: Context, action: String) {
+        /** False when Android refused to start the service from the background. */
+        fun send(context: Context, action: String): Boolean {
             val intent = Intent(context, SquadVpnService::class.java).setAction(action)
-            if (action == ACTION_START) {
-                ContextCompat.startForegroundService(context, intent)
-            } else {
-                context.startService(intent)
+            return try {
+                if (action == ACTION_START) {
+                    ContextCompat.startForegroundService(context, intent)
+                } else {
+                    context.startService(intent)
+                }
+                true
+            } catch (e: Exception) {
+                Log.w(TAG, "send $action", e)
+                false
             }
         }
     }

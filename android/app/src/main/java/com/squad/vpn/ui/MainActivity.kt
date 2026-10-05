@@ -17,7 +17,13 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -45,7 +51,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.squad.vpn.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -96,7 +107,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.getBooleanExtra(EXTRA_CONNECT, false) && Vpn.status.value != Status.Connected) connect()
+        val status = Vpn.status.value
+        if (intent.getBooleanExtra(EXTRA_CONNECT, false) && status != Status.Connected && status != Status.Connecting) connect()
     }
 
     fun connect() {
@@ -119,7 +131,7 @@ class MainActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
         val snackbar = remember { SnackbarHostState() }
 
-        fun refresh(p: Profile) {
+        fun refresh(p: Profile, quiet: Boolean = false) {
             refreshing = true
             refreshNote = null
             scope.launch {
@@ -130,7 +142,7 @@ class MainActivity : ComponentActivity() {
                     refreshNote = "загружено ${it.size} узлов"
                 }.onFailure {
                     refreshNote = "не загрузилась"
-                    snackbar.showSnackbar("Подписка не загрузилась: ${it.message}")
+                    if (!quiet) snackbar.showSnackbar("Подписка не загрузилась: ${it.message}")
                 }
             }
         }
@@ -147,24 +159,38 @@ class MainActivity : ComponentActivity() {
                 if (cached.isEmpty() && (p != Profile.CUSTOM || Prefs.customUrl.isNotEmpty())) refresh(p)
             }
             // A running VPN moves to the new profile right away.
-            if (status == Status.Connected) {
+            if (status == Status.Connected || status == Status.Connecting) {
                 disconnect()
                 scope.launch {
-                    Vpn.status.first { it == Status.Disconnected }
-                    connect()
+                    val after = Vpn.status.first { it == Status.Disconnected || it == Status.Failed }
+                    if (after == Status.Disconnected) connect()
                 }
             }
         }
 
         LaunchedEffect(Unit) {
+            // A fresh list on every start; the saved or built-in copy stays if the network says no.
             val p = Profile.current
-            if (Subscriptions.cached(p).isEmpty() && p != Profile.CUSTOM) refresh(p)
+            val old = System.currentTimeMillis() - Subscriptions.updatedAt(p) > 10 * 60 * 1000L
+            if (old && p != Profile.CUSTOM && Vpn.status.value != Status.Connecting) refresh(p, quiet = Vpn.nodes.value.isNotEmpty())
         }
 
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = { Text("SQUAD VPN", fontWeight = FontWeight.SemiBold) },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                painterResource(R.drawable.squad_logo),
+                                contentDescription = "Логотип SQUAD",
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape),
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Text("SQUAD VPN", fontWeight = FontWeight.SemiBold)
+                        }
+                    },
                     colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
                 )
             },
@@ -232,7 +258,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             onPingAll = {
-                                scope.launch(Dispatchers.IO) {
+                                if (!Vpn.pinging.value) scope.launch(Dispatchers.IO) {
                                     Vpn.setPinging(true)
                                     try {
                                         Pinger.pingAll(Vpn.nodes.value)

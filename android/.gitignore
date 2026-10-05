@@ -5,3 +5,4 @@ app/libs/*.aar
 app/libs/*.jar
 *.apk
 .idea/
+app/src/main/assets/subs/

@@ -33,23 +33,26 @@ class QuickTile : TileService() {
         when (Vpn.status.value) {
             Status.Connected, Status.Connecting -> SquadVpnService.send(this, SquadVpnService.ACTION_STOP)
             else -> {
-                if (VpnService.prepare(this) != null) {
-                    // Permission is asked from the app's screen.
-                    val intent = Intent(this, MainActivity::class.java)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        .putExtra(MainActivity.EXTRA_CONNECT, true)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                        startActivityAndCollapse(
-                            PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE),
-                        )
-                    } else {
-                        @Suppress("DEPRECATION")
-                        startActivityAndCollapse(intent)
-                    }
-                } else {
-                    SquadVpnService.send(this, SquadVpnService.ACTION_START)
+                // Without the VPN permission, or when Android does not let the
+                // service start from here, the app's screen does the connecting.
+                if (VpnService.prepare(this) != null || !SquadVpnService.send(this, SquadVpnService.ACTION_START)) {
+                    openApp()
                 }
             }
+        }
+    }
+
+    private fun openApp() {
+        val intent = Intent(this, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            .putExtra(MainActivity.EXTRA_CONNECT, true)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startActivityAndCollapse(
+                PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT),
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            startActivityAndCollapse(intent)
         }
     }
 

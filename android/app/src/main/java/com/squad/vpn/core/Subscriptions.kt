@@ -11,8 +11,20 @@ object Subscriptions {
 
     fun updatedAt(profile: Profile): Long = file(profile).takeIf { it.exists() }?.lastModified() ?: 0
 
-    fun cached(profile: Profile): List<Node> =
-        file(profile).takeIf { it.exists() }?.let { Links.parseSubscription(it.readText()) }.orEmpty()
+    /**
+     * The last downloaded copy, or the one built into the app: on a network
+     * that lets nothing through but white-listed servers GitHub may never open,
+     * and the app must still have nodes to start from.
+     */
+    fun cached(profile: Profile): List<Node> {
+        file(profile).takeIf { it.exists() }?.let { return Links.parseSubscription(it.readText()) }
+        return bundled(profile)
+    }
+
+    private fun bundled(profile: Profile): List<Node> =
+        runCatching {
+            App.context.assets.open("subs/${profile.id}.b64").bufferedReader().use { Links.parseSubscription(it.readText()) }
+        }.getOrDefault(emptyList())
 
     /** Fresh copy from the network; throws when nothing usable came back. */
     fun refresh(profile: Profile): List<Node> {
@@ -37,7 +49,7 @@ object Subscriptions {
                 return refresh(profile)
             } catch (e: Exception) {
                 if (cached.isEmpty()) throw e
-                Vpn.event("Подписка не обновилась, беру сохранённую: ${e.message}")
+                Vpn.event("Подписка не обновилась, беру сохранённую копию: ${e.message}")
             }
         }
         return cached

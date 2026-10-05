@@ -43,6 +43,16 @@ jobs:
           gh release download "$LIBXRAY_TAG" -R 2dust/AndroidLibXrayLite -p 'libv2ray.aar' -D android/app/libs --clobber
           ls -la android/app/libs
 
+      # Subscriptions built into the app: its first start may happen where GitHub does not open.
+      - name: Bundle current subscriptions
+        run: |
+          mkdir -p android/app/src/main/assets/subs
+          for id in top best whitelist; do
+            curl -fsSL --retry 3 -o "android/app/src/main/assets/subs/$id.b64" \
+              "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/subs/$id.b64" || echo "no $id subscription"
+          done
+          ls -la android/app/src/main/assets/subs
+
       - name: Build APK
         run: |
           version_code=${{ github.run_number }}
@@ -84,13 +94,17 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tag="android-v$(grep VERSION_NAME android/version.properties | cut -d= -f2)"
+          version=$(grep VERSION_NAME android/version.properties | cut -d= -f2)
+          tag="android-v$version"
+          # Release notes: this version's section of android/CHANGELOG.md.
+          awk -v v="## $version" '$0 == v {on=1; next} /^## / {on=0} on' android/CHANGELOG.md > notes.md
+          printf '\nУстанови SQUAD-VPN.apk (Android 8 и новее), дальше приложение обновляется само.\n' >> notes.md
           if ! gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             gh release create "$tag" dist/SQUAD-VPN.apk -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
-              --title "SQUAD VPN для Android $tag" \
-              --notes "Приложение SQUAD VPN для Android. Установи SQUAD-VPN.apk, дальше оно обновляется само."
+              --title "SQUAD VPN для Android $version" --notes-file notes.md
           else
             gh release upload "$tag" dist/SQUAD-VPN.apk -R "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$tag" -R "$GITHUB_REPOSITORY" --notes-file notes.md
           fi
 
       # The current "Latest" release (the Windows program, v<version>) carries the
