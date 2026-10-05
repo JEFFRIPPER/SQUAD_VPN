@@ -16,7 +16,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
   issues: write
 
 concurrency:
@@ -67,15 +66,6 @@ jobs:
         with:
           path: data/squad_vpn.sqlite3
           key: squad-db-${{ github.run_id }}
-
-      # GitHub disables scheduled workflows after 60 days without repository
-      # activity; re-enabling through the API resets that timer.
-      - name: Keep schedule alive
-        if: always()
-        continue-on-error: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/update-subs.yml/enable"
 
       # An open issue makes GitHub email the owner; it is closed on recovery.
       - name: Report failure
