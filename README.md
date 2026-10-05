@@ -22,7 +22,7 @@ Mihomo и раздаёт подпиской для телефона или в п
 | Подписка | Ссылка |
 | --- | --- |
 | **топ-10**, начни с неё | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/top.b64` |
-| **100 лучших** | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/best.b64` |
+| **300 лучших** | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/best.b64` |
 | **белые списки**, когда глушат мобильный интернет | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/whitelist.b64` |
 
 Для Clash и Mihomo замени `.b64` на `.yaml`. Если GitHub не открывается,

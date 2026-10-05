@@ -24,7 +24,7 @@ sources:
     url: https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt
     enabled: true
     priority: 2
-    max_nodes: 150
+    max_nodes: 300
     tags: [github, whitelist]
 
   - name: rkp-white

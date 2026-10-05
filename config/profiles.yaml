@@ -77,17 +77,17 @@ profiles:
     deprioritize_asns: *throttled
     max_asn_share: 0.2
 
-  # 100 лучших: только проверенные несколько раз подряд, с маскировкой под
+  # 300 лучших: только проверенные несколько раз подряд, с маскировкой под
   # HTTPS, от 1 Мбит/с, по одному узлу на сервер и IP выхода, не больше 20 %
   # от одного провайдера. Заменяет прежние balanced, fast, stable, europe,
   # russia и all: их ссылки отдают эти же узлы.
   - name: best
-    description: 100 лучших узлов
+    description: 300 лучших узлов
     min_score: 70
     min_stability: 60
     min_checks: 3
     max_latency: 500
-    limit: 100
+    limit: 300
     require_tls: true
     exclude_countries: [RU]
     avoid_blocked_in: [RU]
@@ -109,7 +109,9 @@ profiles:
     require_tls: true
     seen_within_hours: 2
     exclude_countries: [RU]
-    limit: 30
-    per_host: 1
+    limit: 100
+    # Серверов под белые списки мало (~40), поэтому до 3 конфигов на сервер:
+    # разные порты и транспорты, если один перекроют, сработает другой.
+    per_host: 3
     per_exit_ip: null
     max_asn_share: null
