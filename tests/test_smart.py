@@ -57,3 +57,28 @@ def test_protocol_export_removes_stale_files(tmp_path):
     (folder / "vmess").write_text("old\n", encoding="utf-8")
     export_by_protocol([ProxyNode("vless", "h", 443, raw_uri="vless://x@h:443")], folder)
     assert sorted(p.name for p in folder.iterdir()) == ["vless"]
+
+
+def test_aliases_repeat_a_profile_and_groups_can_be_off(tmp_path):
+    from squad_vpn.smart import SmartProfile, groups_enabled
+
+    store = NodeStore(tmp_path / "alias.sqlite3")
+    try:
+        node = ProxyNode("trojan", "a.example", 443, userinfo="s", raw_uri="trojan://s@a.example:443")
+        store.upsert_many([node])
+        store.record_validation(ValidationResult(node.fingerprint, True, latency_ms=80, country="DE"))
+        out = tmp_path / "out"
+        (out / "country").mkdir(parents=True)
+        (out / "country" / "NL").write_text("dead\n", encoding="utf-8")
+        profiles = (SmartProfile("best", aliases=("all", "fast")),)
+        index = export_smart_catalog(store, out, profiles, groups=False)
+        assert list(index["profiles"]) == ["best"]
+        assert index["aliases"] == {"all": "best", "fast": "best"}
+        assert (out / "fast.b64").read_text() == (out / "best.b64").read_text()
+        assert index["countries"] == {} and not any((out / "country").iterdir())
+    finally:
+        store.close()
+    config = tmp_path / "profiles.yaml"
+    config.write_text("groups: false\nprofiles:\n  - name: x\n", encoding="utf-8")
+    assert groups_enabled(config) is False
+    assert groups_enabled(tmp_path / "missing.yaml") is True

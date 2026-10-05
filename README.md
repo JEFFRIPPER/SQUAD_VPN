@@ -6,7 +6,7 @@ Shadowsocks, Hysteria2) из нескольких независимых ист�
 живые и быстрые узлы: подпиской для телефона, Clash-профилем с
 автопереключением или прямо в VPN-клиенте для Windows.
 
-**Версия 1.4.3.** История изменений — в [CHANGELOG.md](CHANGELOG.md).
+**Версия 1.5.0.** История изменений — в [CHANGELOG.md](CHANGELOG.md).
 
 SQUAD VPN не поднимает собственных серверов: он отбирает публично доступные
 узлы. Любой такой узел может пропасть в любой момент — поэтому проверка идёт
@@ -24,13 +24,11 @@ INCY и т. п. как подписку:
 | Подписка | v2rayNG / Hiddify / INCY | Clash / Mihomo (с автопереключением) |
 | --- | --- | --- |
 | **топ-10 — начни с неё** | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/top.b64` | `…/subs/top.yaml` |
-| баланс (до 30) | `…/subs/balanced.b64` | `…/subs/balanced.yaml` |
-| быстрые | `…/subs/fast.b64` | `…/subs/fast.yaml` |
-| стабильные | `…/subs/stable.b64` | `…/subs/stable.yaml` |
-| Европа | `…/subs/europe.b64` | `…/subs/europe.yaml` |
-| проверено из России | `…/subs/russia.b64` | `…/subs/russia.yaml` |
+| **100 лучших** | `…/subs/best.b64` | `…/subs/best.yaml` |
 | **белые списки** (когда глушат мобильный интернет) | `…/subs/whitelist.b64` | `…/subs/whitelist.yaml` |
-| все живые (много, для экспериментов) | `…/subs/all.b64` | `…/subs/all.yaml` |
+
+Подписок всего три. Старые ссылки `balanced`, `fast`, `stable`, `europe`,
+`russia` и `all` продолжают работать и отдают те же узлы, что `best`.
 
 **Белые списки.** Когда мобильный интернет урезают до «разрешённых» сайтов,
 работают только серверы в разрешённых подсетях (Яндекс, VK, крупные
@@ -47,11 +45,13 @@ Telegram, Discord, YouTube. Списки подсетей и доменов —
 живы минимум 4 проверки подряд и маскируются под обычный HTTPS (VLESS
 Reality/TLS, Trojan, Hysteria2). Узлы, подтверждённые из России, идут первыми.
 
-`…` = `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN`. Подписки по
-странам и протоколам перечислены в README ветки
-[`subs`](https://github.com/JEFFRIPPER/SQUAD_VPN/tree/subs). Если
+`best` — до 100 узлов: проверены минимум 3 раза, маскируются под HTTPS,
+скорость от 1 Мбит/с, по одному узлу на сервер и IP выхода, не больше 20 %
+от одного провайдера, без выхода в России.
+
+`…` = `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN`. Если
 `raw.githubusercontent.com` не открывается — зеркало:
-`https://cdn.jsdelivr.net/gh/JEFFRIPPER/SQUAD_VPN@subs/all.b64`.
+`https://cdn.jsdelivr.net/gh/JEFFRIPPER/SQUAD_VPN@subs/best.b64`.
 
 ### Программа для Windows
 
@@ -160,8 +160,9 @@ Exe не подписан цифровой подписью — антивиру
 
 ### Профили (`config/profiles.yaml`)
 
-`top`, `balanced`, `fast`, `stable`, `europe`, `russia`, `all` — и любые свои.
-Поля: `min_score`, `min_stability`, `max_latency`, `checked_within_hours`,
+`top`, `best`, `whitelist` — и любые свои. `aliases` — другие имена файлов с
+теми же узлами (старые ссылки не ломаются). `groups: false` в начале файла
+отключает подписки по странам и протоколам. Поля: `min_score`, `min_stability`, `max_latency`, `checked_within_hours`,
 `seen_within_hours`, `limit`, `countries`, `exclude_countries`, `protocols`,
 `require_regions`, `avoid_blocked_in`, `require_tls`, `min_checks`,
 `prefer_regions`, `deprioritize_asns`, `per_host`, `per_exit_ip`,

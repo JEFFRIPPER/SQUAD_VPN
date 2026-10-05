@@ -130,8 +130,10 @@ def test_publish_force_pushes_single_commit(tmp_path):
         store.close()
 
     files = _branch_files(remote, "subs")
-    assert {"README.md", "stats.json", "balanced", "balanced.b64", "balanced.yaml",
-            "all.b64", "country/DE.b64", "protocol/trojan.b64", "index.json"} <= files
+    assert {"README.md", "stats.json", "best", "best.b64", "best.yaml",
+            "balanced.b64", "all.b64", "index.json"} <= files
+    # groups: false in config/profiles.yaml: no per-country/protocol files.
+    assert not any(name.startswith(("country/", "protocol/")) for name in files)
     lines = base64.b64decode(_show(remote, "subs", "fast.b64")).decode().splitlines()
     assert lines[0].startswith("#profile-title: ")
     assert [line.split("#", 1)[0] for line in lines if not line.startswith("#")] == [
@@ -142,7 +144,7 @@ def test_publish_force_pushes_single_commit(tmp_path):
         check=True, capture_output=True, text=True,
     ).stdout.strip()
     assert commits == "1"
-    assert result["profiles"]["fast"] == 1
+    assert result["profiles"]["best"] == 1
 
 
 def test_publish_builds_github_links(tmp_path):
@@ -208,7 +210,7 @@ def test_cycle_survives_failing_steps_and_still_exports(tmp_path):
     assert not report.ok
     assert any(error.startswith("validate:") for error in report.errors)
     assert report.steps["collect"]["ok"] == 0
-    assert report.steps["export"]["profiles"]["fast"] == 1
+    assert report.steps["export"]["profiles"]["best"] == 1
     assert (tmp_path / "out" / "smart" / "fast.b64").exists()
     assert "fast.b64" in _branch_files(remote, "subs")
 
@@ -242,5 +244,5 @@ def test_api_cycle_status(tmp_path):
             import time
             time.sleep(0.05)
         assert status["enabled"] is True
-        assert status["last"]["steps"]["export"]["profiles"]["fast"] == 1
+        assert status["last"]["steps"]["export"]["profiles"]["best"] == 1
         assert client.post("/api/cycle/run").json()["started"] in (True, False)

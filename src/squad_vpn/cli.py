@@ -22,6 +22,7 @@ from .smart import (
     DEFAULT_PROFILES_PATH,
     export_custom_subscription,
     export_smart_catalog,
+    groups_enabled,
     load_profiles,
 )
 from .store import NodeStore
@@ -96,7 +97,10 @@ def _export(args: argparse.Namespace) -> int:
         export_ranked_catalog(records, args.output)
         export_sources(store.list_source_status(), args.output / "sources.json")
         if not args.no_smart:
-            export_smart_catalog(store, args.output / "smart", load_profiles(args.profiles))
+            export_smart_catalog(
+                store, args.output / "smart", load_profiles(args.profiles),
+                groups=groups_enabled(args.profiles),
+            )
     finally:
         store.close()
     alive = sum(item.alive is True for item in records)

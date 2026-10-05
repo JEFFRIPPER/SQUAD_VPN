@@ -20,7 +20,7 @@ from .probe import (
     sync_probes,
 )
 from .publish import PublishTarget, detect_origin, publish
-from .smart import DEFAULT_PROFILES_PATH, export_smart_catalog, load_profiles
+from .smart import DEFAULT_PROFILES_PATH, export_smart_catalog, groups_enabled, load_profiles
 from .sources import load_source_specs
 from .store import NodeStore
 from .validator import (
@@ -221,7 +221,9 @@ def export_step(
         records = store.list_ranked()
         export_ranked_catalog(records, output)
         export_sources(store.list_source_status(), output / "sources.json")
-        index = export_smart_catalog(store, output / "smart", load_profiles(profiles))
+        index = export_smart_catalog(
+            store, output / "smart", load_profiles(profiles), groups=groups_enabled(profiles)
+        )
     finally:
         store.close()
     alive = sum(item.alive is True for item in records)

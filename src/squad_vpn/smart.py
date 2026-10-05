@@ -62,6 +62,9 @@ class SmartProfile:
     per_host: int | None = 1
     per_exit_ip: int | None = 1
     max_asn_share: float | None = 0.34
+    # Extra file names with the same nodes, so links to removed or renamed
+    # subscriptions keep working. Not listed in the README.
+    aliases: tuple[str, ...] = field(default_factory=tuple)
 
 
 DEFAULT_PROFILES = (
@@ -93,7 +96,7 @@ GROUP_PROFILE = SmartProfile("group", limit=50)
 
 _TUPLE_FIELDS = {
     "countries", "exclude_countries", "protocols", "require_regions", "avoid_blocked_in",
-    "prefer_regions", "deprioritize_asns", "prefer_tags",
+    "prefer_regions", "deprioritize_asns", "prefer_tags", "aliases",
 }
 _FIELD_NAMES = {item.name for item in fields(SmartProfile)}
 
@@ -112,8 +115,9 @@ def _profile_from_dict(data: dict[str, object]) -> SmartProfile:
         else:
             values[key] = value
     profile = SmartProfile(**values)  # type: ignore[arg-type]
-    if not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", profile.name):
-        raise ValueError(f"Недопустимое имя профиля: {profile.name}")
+    for name in (profile.name, *profile.aliases):
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", name):
+            raise ValueError(f"Недопустимое имя профиля: {name}")
     return profile
 
 
@@ -126,10 +130,24 @@ def load_profiles(path: str | Path | None = DEFAULT_PROFILES_PATH) -> tuple[Smar
     if not isinstance(entries, list) or not entries:
         raise ValueError(f"{path}: нужен непустой список profiles")
     profiles = tuple(_profile_from_dict(dict(item)) for item in entries)
-    names = [item.name for item in profiles]
+    names = [name for item in profiles for name in (item.name, *item.aliases)]
     if len(set(names)) != len(names):
         raise ValueError(f"{path}: имена профилей повторяются")
     return profiles
+
+
+def groups_enabled(path: str | Path | None = DEFAULT_PROFILES_PATH) -> bool:
+    """``groups: false`` in profiles.yaml turns off per-country and
+    per-protocol subscriptions (on by default)."""
+    if path is None or not Path(path).exists():
+        return True
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+    return not isinstance(data, dict) or data.get("groups", True) is not False
+
+
+def by_name(profiles: tuple[SmartProfile, ...]) -> dict[str, SmartProfile]:
+    """Profiles by name and by each alias."""
+    return {name: item for item in profiles for name in (item.name, *item.aliases)}
 
 
 def is_masked(item: RankedNode) -> bool:
@@ -420,18 +438,28 @@ def export_smart_catalog(
     directory: str | Path,
     profiles: tuple[SmartProfile, ...] | None = None,
     branding: Branding | None = None,
+    *,
+    groups: bool = True,
 ) -> dict[str, object]:
     root = Path(directory)
     branding = load_branding(DEFAULT_BRANDING_PATH) if branding is None else branding
     root.mkdir(parents=True, exist_ok=True)
     profiles = DEFAULT_PROFILES if profiles is None else profiles
-    index: dict[str, object] = {"profiles": {}, "countries": {}, "protocols": {}}
+    index: dict[str, object] = {"profiles": {}, "aliases": {}, "countries": {}, "protocols": {}}
 
     for profile in profiles:
         records = select_profile(store, profile)
         meta = _export_pair(records, root / profile.name, branding, profile.name, profile.description)
         meta["criteria"] = asdict(profile)
         index["profiles"][profile.name] = meta  # type: ignore[index]
+        for alias in profile.aliases:
+            _export_pair(records, root / alias, branding, profile.name, profile.description)
+            index["aliases"][alias] = profile.name  # type: ignore[index]
+
+    if not groups:
+        for folder in (root / "country", root / "protocol"):
+            remove_stale_files(folder, set())
+        return _write_index(root, index)
 
     fresh = store.list_ranked(
         alive_only=True,
@@ -465,7 +493,10 @@ def export_smart_catalog(
             index[key][name] = _export_pair(records, folder / name, branding, name, label)  # type: ignore[index]
             keep.update({name, name + ".yaml", name + ".b64"})
         remove_stale_files(folder, keep)
+    return _write_index(root, index)
 
+
+def _write_index(root: Path, index: dict[str, object]) -> dict[str, object]:
     (root / "index.json").write_text(
         json.dumps(index, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",

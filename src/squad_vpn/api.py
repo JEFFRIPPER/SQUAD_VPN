@@ -31,6 +31,7 @@ from .exporter import ranked_to_dict
 from .smart import (
     DEFAULT_PROFILES_PATH,
     GROUP_PROFILE,
+    by_name,
     load_profiles,
     render_subscription,
     select_profile,
@@ -199,6 +200,11 @@ def create_app(
         # Re-read on each request so edits to profiles.yaml apply without restart.
         return {item.name: item for item in load_profiles(profiles_path)}
 
+    def canonical(name: str) -> str:
+        # Old subscription names (aliases) keep working after a rename.
+        found = by_name(load_profiles(profiles_path)).get(name)
+        return found.name if found is not None else name
+
     runner = CycleRunner(cycle, interval_minutes) if cycle is not None else None
     root = Path(client_root) if client_root is not None else Path.cwd()
     config = config or load_config(root / "config" / "squad.yaml")
@@ -249,7 +255,7 @@ def create_app(
         settings = client_settings()
         resume = vpn.state.load().get("connected")
         if settings.client_autoconnect or resume:
-            profile = str(vpn.state.load().get("profile") or settings.client_profile)
+            profile = canonical(str(vpn.state.load().get("profile") or settings.client_profile))
             connecting = asyncio.create_task(vpn.connect(profile))
             background.add(connecting)
             connecting.add_done_callback(background.discard)
@@ -641,6 +647,7 @@ def create_app(
             body, media_type, headers = cached  # type: ignore[misc]
             return Response(body, media_type=media_type, headers=headers)
         available = profiles()
+        profile = canonical(profile) if profile is not None else None
         if profile is not None and profile not in available:
             raise HTTPException(
                 status_code=404,
@@ -785,7 +792,7 @@ def create_app(
         from .settings import save_settings
 
         settings = client_settings()
-        profile = str((payload or {}).get("profile") or settings.client_profile)
+        profile = canonical(str((payload or {}).get("profile") or settings.client_profile))
         if profile not in profiles():
             raise HTTPException(status_code=422, detail="Неизвестный профиль")
         if profile != settings.client_profile:

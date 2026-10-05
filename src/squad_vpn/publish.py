@@ -14,7 +14,7 @@ from pathlib import Path
 
 import httpx
 
-from .smart import DEFAULT_PROFILES_PATH, export_smart_catalog, load_profiles
+from .smart import DEFAULT_PROFILES_PATH, export_smart_catalog, groups_enabled, load_profiles
 from .store import NodeStore
 
 
@@ -25,7 +25,7 @@ GITHUB_URL = re.compile(
 )
 BOT_NAME = "SQUAD VPN bot"
 BOT_EMAIL = "squad-vpn-bot@users.noreply.github.com"
-PURGE_FILES = ("top", "balanced", "fast", "stable", "all")
+PURGE_FILES = ("top", "best", "whitelist", "all", "balanced", "fast", "stable")
 
 
 @dataclass(slots=True, frozen=True)
@@ -139,7 +139,9 @@ def _prefixed(meta: object, prefix: str) -> dict[str, object]:
 
 def build_site(store: NodeStore, directory: Path, target: PublishTarget) -> dict[str, object]:
     """Render everything that goes onto the publish branch into ``directory``."""
-    index = export_smart_catalog(store, directory, load_profiles(target.profiles))
+    index = export_smart_catalog(
+        store, directory, load_profiles(target.profiles), groups=groups_enabled(target.profiles)
+    )
     stats = store.stats()
     updated = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
     stats["updated_at"] = updated

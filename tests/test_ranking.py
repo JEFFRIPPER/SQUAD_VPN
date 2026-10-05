@@ -8,6 +8,7 @@ from squad_vpn.scoring import representative_latency, weighted_success_rate
 from squad_vpn.smart import (
     DEFAULT_PROFILES,
     SmartProfile,
+    by_name,
     diversify,
     load_profiles,
     select_profile,
@@ -97,8 +98,11 @@ def test_load_profiles_rejects_bad_files(tmp_path, body):
 
 
 def test_repo_profiles_file_is_valid():
-    names = [p.name for p in load_profiles("config/profiles.yaml")]
-    assert {"balanced", "fast", "stable", "all"} <= set(names)
+    profiles = load_profiles("config/profiles.yaml")
+    assert [p.name for p in profiles] == ["top", "best", "whitelist"]
+    # Old subscription links keep working as aliases of "best".
+    assert set(by_name(profiles)) >= {"all", "balanced", "fast", "stable", "europe", "russia"}
+    assert by_name(profiles)["fast"].name == "best"
 
 
 def _seed(store):
@@ -156,11 +160,14 @@ def test_sub_uses_custom_profiles_file(tmp_path):
         store.close()
     profiles = tmp_path / "profiles.yaml"
     profiles.write_text(
-        "profiles:\n  - name: noru\n    description: Без России\n    exclude_countries: [RU]\n",
+        "profiles:\n  - name: noru\n    description: Без России\n    exclude_countries: [RU]\n"
+        "    aliases: [old]\n",
         encoding="utf-8",
     )
     client = TestClient(create_app(database, profiles_path=profiles))
+    assert list(client.get("/api/profiles").json()) == ["noru"]
     assert client.get("/api/profiles").json()["noru"]["description"] == "Без России"
+    assert client.get("/sub", params={"profile": "old"}).text == client.get("/sub", params={"profile": "noru"}).text
     body = client.get("/sub", params={"profile": "noru"}).text.splitlines()
     assert [line.split("#")[0] for line in body if not line.startswith("#")] == ["vless://de", "trojan://nl"]
     assert client.get("/sub", params={"profile": "balanced"}).status_code == 404
