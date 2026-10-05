@@ -141,10 +141,11 @@ profiles:
     description: Белые списки — когда глушат мобильный интернет
     whitelist: true
     require_alive: false
-    seen_within_hours: 3
+    require_tls: true
+    seen_within_hours: 2
     exclude_countries: [RU]
     limit: 30
-    per_host: 2
+    per_host: 1
     per_exit_ip: null
     max_asn_share: null
 

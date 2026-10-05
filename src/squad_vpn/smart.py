@@ -168,29 +168,80 @@ def sources_with_tags(tags: tuple[str, ...], path: Path = DEFAULT_SOURCES_PATH) 
     }
 
 
-def _whitelisted(records: list[RankedNode]) -> list[RankedNode]:
+def _source_authors(tag: str, path: Path = DEFAULT_SOURCES_PATH) -> dict[str, str]:
+    """Enabled sources carrying ``tag``: name/URL -> author (the GitHub owner,
+    or the host for other sites). Several files of one author count once."""
+    from urllib.parse import urlsplit
+
+    from .sources import load_source_specs
+
+    try:
+        specs = load_source_specs(path)
+    except (OSError, ValueError):
+        return {}
+    authors: dict[str, str] = {}
+    for spec in specs:
+        if tag not in spec.tags:
+            continue
+        url = urlsplit(spec.url)
+        parts = [part for part in url.path.split("/") if part]
+        github = url.hostname in {"raw.githubusercontent.com", "github.com"}
+        author = (parts[0] if github and parts else url.hostname or spec.name).lower()
+        authors[spec.name] = authors[spec.url] = author
+    return authors
+
+
+def _whitelisted(records: list[RankedNode], excluded: set[str] = frozenset()) -> list[RankedNode]:
     """Nodes from curated white-list collections (sources tagged "whitelist").
 
     Matching arbitrary nodes against public subnet lists does not work: the
     lists are aggregated into wide ranges and operators now check IP and
-    domain together. Within the collection, nodes our own check confirmed go
-    first, then those whose server and domain are both on the public lists.
+    domain together. Our own check runs from abroad and says little about
+    Russian mobile networks, so the strongest signal is agreement: a server
+    published by several independent authors (each checks it from Russia on
+    their own operators) goes first. Then nodes our check confirmed, then
+    those whose server and domain are both on the public lists.
+
+    Authors mark the exit country with a flag; one server often carries
+    several labels, so an exit country in ``excluded`` (usually RU, where
+    Telegram stays blocked) named by any label drops the whole server.
     """
     from .whitelist import load_index
 
-    curated = sources_with_tags(("whitelist",))
-    kept = [item for item in records if item.node.source in curated]
+    authors = _source_authors("whitelist")
+    kept = [
+        item for item in records
+        if item.node.source in authors and not item.node.host.startswith(("0.", "127."))
+    ]
+
+    from .branding import country_from_flag
+
+    def exit_country(item: RankedNode) -> str:
+        return (item.country or country_from_flag(item.node.name) or "").upper()
+
+    by_host: dict[str, set[str]] = {}
+    exits: dict[str, set[str]] = {}
+    for item in kept:
+        host = item.node.host.lower()
+        by_host.setdefault(host, set()).add(authors[item.node.source])
+        exits.setdefault(host, set()).add(exit_country(item))
+    kept = [item for item in kept if not exits[item.node.host.lower()] & excluded]
     index = load_index()
     if not index.empty:
         index.resolve({item.node.host for item in kept})
 
-    from .branding import country_from_flag
-
-    def order(item: RankedNode) -> tuple[int, int, int]:
+    def order(item: RankedNode) -> tuple[int, int, int, int, int]:
         both = not index.empty and index.status(item) == "both"
-        # An exit in Russia keeps Discord/YouTube blocked: such relays go last.
-        exit_ru = (item.country or country_from_flag(item.node.name) or "").upper() == "RU"
-        return (1 if exit_ru else 0, 0 if item.alive else 1, 0 if both else 1)
+        host = item.node.host.lower()
+        # An exit in Russia keeps Discord/YouTube blocked: such relays go last,
+        # and servers whose exit nobody named go after the named ones.
+        exit_ru = "RU" in exits[host]
+        unknown = exits[host] <= {""}
+        agreed = len(by_host[host])
+        return (
+            1 if exit_ru else 0, 1 if unknown else 0, -agreed,
+            0 if item.alive else 1, 0 if both else 1,
+        )
 
     kept.sort(key=order)  # stable: keeps the ranking inside each group
     return kept
@@ -273,7 +324,7 @@ def select_profile(store: NodeStore, profile: SmartProfile) -> list[RankedNode]:
         # Measured nodes by speed first; unmeasured keep their score order after.
         filtered.sort(key=lambda item: -(item.speed_kbps or 0.0))
     if profile.whitelist:
-        filtered = _whitelisted(filtered)
+        filtered = _whitelisted(filtered, excluded)
     if profile.prefer_regions or profile.deprioritize_asns or profile.prefer_tags:
         avoided = {_asn_number(value) for value in profile.deprioritize_asns}
         preferred = [region.upper() for region in profile.prefer_regions]

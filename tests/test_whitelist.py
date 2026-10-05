@@ -81,7 +81,7 @@ def test_whitelist_profile_uses_curated_collections_only(tmp_path, monkeypatch):
     (lists / "cidr.txt").write_text(CIDRS, encoding="utf-8")
     (lists / "domains.txt").write_text(DOMAINS, encoding="utf-8")
     monkeypatch.setattr(whitelist.load_index, "__defaults__", (lists,))
-    monkeypatch.setattr(smart, "sources_with_tags", lambda tags, path=None: {"white-src"})
+    monkeypatch.setattr(smart, "_source_authors", lambda tag, path=None: {"white-src": "a"})
     store = NodeStore(tmp_path / "db.sqlite3")
     try:
         _seed(store)
@@ -143,3 +143,46 @@ def test_sources_with_tags_matches_how_nodes_store_their_source(tmp_path):
     found = sources_with_tags(("whitelist",), path)
     assert "https://example.com/white.txt" in found and "white" in found
     assert "https://example.com/other.txt" not in found
+
+
+def test_whitelist_puts_servers_several_authors_agree_on_first(tmp_path, monkeypatch):
+    monkeypatch.setattr(whitelist.load_index, "__defaults__", (tmp_path / "none",))
+    monkeypatch.setattr(
+        smart, "_source_authors",
+        lambda tag, path=None: {"a1": "alice", "a2": "alice", "b": "bob"},
+    )
+    store = NodeStore(tmp_path / "db.sqlite3")
+    try:
+        nodes = [
+            ProxyNode("vless", "1.1.1.1", 443, userinfo="x", params={"security": "reality"}, source="a1"),
+            ProxyNode("vless", "1.1.1.1", 443, userinfo="y", params={"security": "reality"}, source="a2"),
+            ProxyNode("vless", "2.2.2.2", 443, userinfo="z", params={"security": "reality"}, source="a1"),
+            ProxyNode("vless", "2.2.2.2", 443, userinfo="w", params={"security": "reality"}, source="b"),
+            ProxyNode("vless", "0.0.0.0", 1, userinfo="v", params={"security": "reality"}, source="b"),
+            ProxyNode("vless", "3.3.3.3", 443, userinfo="u", params={"security": "none"}, source="b"),
+        ]
+        store.upsert_many(nodes)
+        profile = SmartProfile(
+            "whitelist", whitelist=True, require_alive=False, require_tls=True,
+            per_host=1, max_asn_share=None,
+        )
+        hosts = [item.node.host for item in select_profile(store, profile)]
+    finally:
+        store.close()
+    # Two authors beat two files of one author; placeholders and plain-text nodes are dropped.
+    assert hosts == ["2.2.2.2", "1.1.1.1"]
+
+
+def test_source_authors_counts_one_owner_once(tmp_path):
+    path = tmp_path / "sources.yaml"
+    path.write_text(
+        "sources:\n"
+        "  - name: i1\n    url: https://raw.githubusercontent.com/Igareck/r/main/a.txt\n    tags: [whitelist]\n"
+        "  - name: i2\n    url: https://raw.githubusercontent.com/igareck/r/main/b.txt\n    tags: [whitelist]\n"
+        "  - name: z\n    url: https://codeberg.org/zieng2/wl/raw/branch/main/x.txt\n    tags: [whitelist]\n"
+        "  - name: other\n    url: https://example.com/o.txt\n",
+        encoding="utf-8",
+    )
+    authors = smart._source_authors("whitelist", path)
+    assert authors["i1"] == authors["i2"] == "igareck"
+    assert authors["z"] == "codeberg.org" and "other" not in authors

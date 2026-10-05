@@ -16,6 +16,24 @@ sources:
     max_nodes: 150
     tags: [github, ru-checked]
 
+  # zieng2/wl: самая популярная подписка под белые списки (обновляется раз в
+  # час). Узлы, которые публикуют несколько независимых авторов, идут первыми.
+  # Приоритет выше igareck: у zieng2 и RKP в названии есть флаг страны выхода,
+  # а при совпадении узла в двух источниках сохраняется первый.
+  - name: zieng2-white
+    url: https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt
+    enabled: true
+    priority: 2
+    max_nodes: 150
+    tags: [github, whitelist]
+
+  - name: rkp-white
+    url: https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/main/whitelist.txt
+    enabled: true
+    priority: 2
+    max_nodes: 100
+    tags: [github, whitelist]
+
   - name: igareck-white-checked
     url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-checked.txt
     enabled: true
