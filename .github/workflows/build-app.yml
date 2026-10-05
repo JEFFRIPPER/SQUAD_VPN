@@ -8,6 +8,8 @@ on:
       - ".github/workflows/build-app.yml"
       # A version bump publishes a release even when the exe code is unchanged.
       - "src/squad_vpn/__init__.py"
+      # Docs next to the code do not need a new exe.
+      - "!app/**/*.md"
     tags: ["v*"]
   workflow_dispatch:
     inputs:
