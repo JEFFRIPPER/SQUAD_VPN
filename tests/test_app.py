@@ -190,3 +190,31 @@ def test_launcher_escapes_messages():
     launcher = _launcher()
     html = launcher.page("<b>x</b>", "C:\\\\path<script>alert(1)</script>")
     assert "<script>" not in html and "&lt;script&gt;" in html
+
+
+def test_launcher_frameless_window_controls(tmp_path):
+    # The window has no system frame: our title bar needs a drag region and
+    # working minimize/close/place calls.
+    launcher = _launcher()
+    assert "pywebview-drag-region" in launcher.CHROME_JS
+    calls = []
+
+    class Window:
+        def move(self, x, y):
+            calls.append(("move", x, y))
+
+        def resize(self, *args):
+            calls.append(("resize", *args))
+
+        def minimize(self):
+            calls.append(("minimize",))
+
+        def destroy(self):
+            calls.append(("destroy",))
+
+    api = launcher.Api(tmp_path)
+    api._window = Window()
+    api.window_place(10.4, 20, 1280, 720)
+    api.window_minimize()
+    api.window_close()
+    assert calls == [("move", 10, 20), ("resize", 1280, 720), ("minimize",), ("destroy",)]
