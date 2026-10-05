@@ -127,3 +127,19 @@ def test_speed_is_smoothed(tmp_path):
         assert store.get_ranked(node.fingerprint).speed_kbps == 1600.0
     finally:
         store.close()
+
+
+def test_sources_with_tags_matches_how_nodes_store_their_source(tmp_path):
+    from squad_vpn.collector import collect_source_specs  # noqa: F401  (source format)
+    from squad_vpn.smart import sources_with_tags
+
+    path = tmp_path / "sources.yaml"
+    path.write_text(
+        "sources:\n"
+        "  - name: white\n    url: https://example.com/white.txt\n    tags: [whitelist]\n"
+        "  - name: other\n    url: https://example.com/other.txt\n",
+        encoding="utf-8",
+    )
+    found = sources_with_tags(("whitelist",), path)
+    assert "https://example.com/white.txt" in found and "white" in found
+    assert "https://example.com/other.txt" not in found

@@ -154,7 +154,8 @@ def _asn_number(asn: str | None) -> str:
 
 DEFAULT_SOURCES_PATH = Path("config/sources.yaml")
 def sources_with_tags(tags: tuple[str, ...], path: Path = DEFAULT_SOURCES_PATH) -> set[str]:
-    """Names of enabled sources carrying any of ``tags``."""
+    """Enabled sources carrying any of ``tags``: names and URLs (nodes store
+    the URL they were collected from in ``source``)."""
     from .sources import load_source_specs
 
     try:
@@ -162,7 +163,9 @@ def sources_with_tags(tags: tuple[str, ...], path: Path = DEFAULT_SOURCES_PATH) 
     except (OSError, ValueError):
         return set()
     wanted = set(tags)
-    return {spec.name for spec in specs if wanted & set(spec.tags)}
+    return {
+        value for spec in specs if wanted & set(spec.tags) for value in (spec.name, spec.url)
+    }
 
 
 def _whitelisted(records: list[RankedNode]) -> list[RankedNode]:
