@@ -1,28 +1,38 @@
-"""Draw the SQUAD VPN app icon (red shield on black) into app/icon.ico."""
+"""Turn the SQUAD logo (assets/logo.jpg) into the app icon app/icon.ico.
+
+Small sizes show only the pentagram in the middle: the full logo turns into
+a red blur at 16-32 px.
+"""
 
 from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-SIZE = 512
-PRIMARY = (208, 0, 24, 255)  # #d00018
-CONTAINER = (0, 0, 0, 255)  # #000000
+ROOT = Path(__file__).resolve().parents[1]
+LOGO = ROOT / "assets" / "logo.jpg"
+SIZES = [16, 24, 32, 48, 64, 128, 256]
 
 
-def draw() -> Image.Image:
-    image = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-    canvas = ImageDraw.Draw(image)
-    canvas.rounded_rectangle((16, 16, SIZE - 16, SIZE - 16), radius=120, fill=CONTAINER)
-    # Shield: top edge, sides, pointed bottom (scaled from a 24px glyph).
-    s = SIZE / 24
-    shield = [(12, 3), (19, 5.6), (19, 11), (17.6, 15.8), (12, 21), (6.4, 15.8), (5, 11), (5, 5.6)]
-    canvas.polygon([(x * s, y * s) for x, y in shield], fill=PRIMARY)
-    check = [(8.6, 11.8), (11, 14.2), (15.6, 9.6)]
-    canvas.line([(x * s, y * s) for x, y in check], fill=CONTAINER, width=int(1.7 * s), joint="curve")
+def rounded(image: Image.Image, size: int) -> Image.Image:
+    image = image.resize((size, size), Image.LANCZOS).convert("RGBA")
+    mask = Image.new("L", (size * 4, size * 4), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, size * 4 - 1, size * 4 - 1), radius=size, fill=255)
+    image.putalpha(mask.resize((size, size), Image.LANCZOS))
     return image
+
+
+def frames() -> list[Image.Image]:
+    logo = Image.open(LOGO).convert("RGB")
+    w, h = logo.size
+    side = min(w, h)
+    full = logo.crop(((w - side) // 2, (h - side) // 2, (w + side) // 2, (h + side) // 2))
+    inset = side * 0.22
+    centre = full.crop((inset, inset, side - inset, side - inset))
+    return [rounded(centre if size <= 32 else full, size) for size in SIZES]
 
 
 if __name__ == "__main__":
     target = Path(__file__).with_name("icon.ico")
-    draw().save(target, sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+    images = frames()
+    images[-1].save(target, sizes=[(s, s) for s in SIZES], append_images=images[:-1])
     print(f"icon: {target}")
