@@ -1,0 +1,82 @@
+name: Create APK signing key
+
+# One-off, started by hand: creates the apk signing key inside GitHub and
+# stores it straight into the repository secrets SQUAD_KEYSTORE_B64 and
+# SQUAD_KEYSTORE_PASSWORD. The key never appears in the repo, in the logs or
+# anywhere else. Secrets can only be written with a token: put a fine-grained
+# token with "Secrets: Read and write" on this repo into the secret
+# SQUAD_SECRETS_TOKEN first.
+#
+# A new key means apps signed with the old one will not update over: every
+# phone has to remove the app and install it again once.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Напиши NEW-KEY: после нового ключа apk на всех телефонах придётся один раз переустановить"
+        required: true
+      replace:
+        description: "Заменить уже созданный ключ (ещё одна переустановка на всех телефонах)"
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: apk-signing-key
+  cancel-in-progress: false
+
+jobs:
+  key:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Create the key and store it in repository secrets
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+          REPLACE: ${{ inputs.replace }}
+          GH_TOKEN: ${{ secrets.SQUAD_SECRETS_TOKEN }}
+          EXISTING_KEY: ${{ secrets.SQUAD_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          if [ "$CONFIRM" != "NEW-KEY" ]; then
+            echo "::error::Не подтверждено: в поле confirm нужно написать NEW-KEY"
+            exit 1
+          fi
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::Нет секрета SQUAD_SECRETS_TOKEN (fine-grained токен с доступом Secrets: Read and write к этому репозиторию)"
+            exit 1
+          fi
+          if [ -n "$EXISTING_KEY" ] && [ "$REPLACE" != "true" ]; then
+            echo "::error::Ключ уже есть в секретах. Чтобы заменить его, запусти ещё раз с галочкой replace"
+            exit 1
+          fi
+
+          pass=$(openssl rand -hex 24)
+          echo "::add-mask::$pass"
+          store="$RUNNER_TEMP/squad.p12"
+          keytool -genkeypair -keystore "$store" -storetype PKCS12 -alias squad \
+            -keyalg RSA -keysize 4096 -validity 36500 \
+            -storepass "$pass" -keypass "$pass" -dname "CN=SQUAD VPN, O=SQUAD, C=RU" > /dev/null
+
+          base64 -w0 "$store" | gh secret set SQUAD_KEYSTORE_B64 -R "$GITHUB_REPOSITORY"
+          printf '%s' "$pass" | gh secret set SQUAD_KEYSTORE_PASSWORD -R "$GITHUB_REPOSITORY"
+
+          # The certificate fingerprint is public: it lets anyone check which key signed an apk.
+          fingerprint=$(keytool -list -v -keystore "$store" -storepass "$pass" -alias squad \
+            | awk -F': ' '/SHA256:/ {print $2; exit}')
+          rm -f "$store"
+          {
+            echo "### Новый ключ подписи apk записан в секреты"
+            echo
+            echo "SHA-256 сертификата: \`$fingerprint\`"
+            echo
+            echo "Секрет SQUAD_SECRETS_TOKEN больше не нужен, его и сам токен можно удалить."
+          } >> "$GITHUB_STEP_SUMMARY"
