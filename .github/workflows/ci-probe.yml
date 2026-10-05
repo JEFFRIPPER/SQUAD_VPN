@@ -1,0 +1,23 @@
+name: CI probe
+on:
+  push:
+    branches: [ci-probe]
+permissions:
+  contents: read
+jobs:
+  plain:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo plain ok
+  with-key-secret:
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          K: ${{ secrets.SQUAD_KEYSTORE_B64 }}
+        run: echo "key length ${#K}"
+  with-pass-secret:
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          P: ${{ secrets.SQUAD_KEYSTORE_PASSWORD }}
+        run: echo "pass length ${#P}"
