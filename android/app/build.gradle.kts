@@ -26,14 +26,19 @@ android {
         }
     }
 
+    // The release key is not in the repo. CI decodes it from the repository
+    // secret SQUAD_KEYSTORE_B64 into a file and passes its path and password;
+    // without them release builds stop instead of signing with another key.
+    val keystore = System.getenv("SQUAD_KEYSTORE")?.takeIf { it.isNotBlank() }
     signingConfigs {
-        create("release") {
-            // The key lives next to the code so every CI build is signed the
-            // same way and updates install over the previous version.
-            storeFile = file(System.getenv("SQUAD_KEYSTORE") ?: "squad-release.jks")
-            storePassword = System.getenv("SQUAD_KEYSTORE_PASSWORD") ?: "squadvpn"
-            keyAlias = System.getenv("SQUAD_KEY_ALIAS") ?: "squad"
-            keyPassword = System.getenv("SQUAD_KEY_PASSWORD") ?: "squadvpn"
+        if (keystore != null) {
+            create("release") {
+                storeFile = file(keystore)
+                storeType = "pkcs12"
+                storePassword = System.getenv("SQUAD_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("SQUAD_KEY_ALIAS") ?: "squad"
+                keyPassword = System.getenv("SQUAD_KEY_PASSWORD") ?: System.getenv("SQUAD_KEYSTORE_PASSWORD")
+            }
         }
     }
 
@@ -41,11 +46,9 @@ android {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.findByName("release")
         }
-        debug {
-            signingConfig = signingConfigs.getByName("release")
-        }
+        // Local debug builds use the standard Android debug key.
     }
 
     compileOptions {

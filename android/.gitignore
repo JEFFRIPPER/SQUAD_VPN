@@ -6,3 +6,8 @@ app/libs/*.jar
 *.apk
 .idea/
 app/src/main/assets/subs/
+
+# Signing keys never go into the repo (CI takes the key from secrets).
+*.jks
+*.p12
+*.keystore

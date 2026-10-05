@@ -55,12 +55,41 @@ jobs:
           done
           ls -la android/app/src/main/assets/subs
 
+      # Signing key from the repository secrets (made once by apk-signing-key.yml).
+      # Without it nothing is built: an apk signed with any other key would not
+      # install over the app people already have.
       - name: Build APK
+        shell: bash
+        env:
+          SQUAD_KEYSTORE_B64: ${{ secrets.SQUAD_KEYSTORE_B64 }}
+          SQUAD_KEYSTORE_PASSWORD: ${{ secrets.SQUAD_KEYSTORE_PASSWORD }}
         run: |
+          if [ -z "$SQUAD_KEYSTORE_B64" ] || [ -z "$SQUAD_KEYSTORE_PASSWORD" ]; then
+            echo "::error::Нет ключа подписи: секреты SQUAD_KEYSTORE_B64 и SQUAD_KEYSTORE_PASSWORD создаёт workflow «Create APK signing key»"
+            exit 1
+          fi
+          umask 077
+          export SQUAD_KEYSTORE="$RUNNER_TEMP/squad.p12"
+          printf '%s' "$SQUAD_KEYSTORE_B64" | base64 -d > "$SQUAD_KEYSTORE"
           version_code=${{ github.run_number }}
           gradle -p android --no-daemon assembleRelease -PversionCode=$version_code
+          rm -f "$SQUAD_KEYSTORE"
           mkdir -p dist
           cp android/app/build/outputs/apk/release/app-release.apk dist/SQUAD-VPN.apk
+
+      - name: Verify the APK signature
+        shell: bash
+        run: |
+          apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          [ -x "$apksigner" ] || { echo "::error::apksigner не найден"; exit 1; }
+          "$apksigner" verify --print-certs dist/SQUAD-VPN.apk | tee signers.txt
+          grep -Eq 'Signer #1 certificate SHA-256 digest: [0-9a-f]{64}' signers.txt \
+            || { echo "::error::apksigner не показал подпись apk"; exit 1; }
+          # The old key was public in this repo (up to android 1.4); it must never sign again.
+          if grep -qi "a24613f6a964171d60f6411a0ba6824e739282067e4774df963a4ab1363b2f0b" signers.txt; then
+            echo "::error::apk подписан старым публичным ключом"
+            exit 1
+          fi
 
       - name: Check the APK and write the OTA manifest
         run: |
@@ -68,27 +97,34 @@ jobs:
           if [ "$size" -lt 5000000 ]; then echo "apk is too small: $size"; exit 1; fi
           echo "$((size / 1048576)) MB"
           sha=$(sha256sum dist/SQUAD-VPN.apk | cut -d' ' -f1)
-          jq -n \
-            --argjson versionCode ${{ github.run_number }} \
-            --arg versionName "$(grep VERSION_NAME android/version.properties | cut -d= -f2) (сборка ${{ github.run_number }})" \
-            --arg sha256 "$sha" \
-            --argjson size "$size" \
-            --arg commit "${{ github.sha }}" \
-            '{versionCode: $versionCode, versionName: $versionName, sha256: $sha256, size: $size, commit: $commit}' \
-            > dist/android-manifest.json
-          cat dist/android-manifest.json
+          version=$(grep VERSION_NAME android/version.properties | cut -d= -f2)
+          manifest() {
+            jq -n \
+              --argjson versionCode ${{ github.run_number }} \
+              --arg versionName "$1" \
+              --arg sha256 "$sha" \
+              --argjson size "$size" \
+              --arg commit "${{ github.sha }}" \
+              '{versionCode: $versionCode, versionName: $versionName, sha256: $sha256, size: $size, commit: $commit}'
+          }
+          # Apps from 1.5 on (new signing key) read android-manifest-v2.json.
+          manifest "$version (сборка ${{ github.run_number }})" > dist/android-manifest-v2.json
+          # 1.4 and older read android-manifest.json and show only versionName,
+          # in the banner and the notification: it tells them to reinstall.
+          manifest "$version: удали старое и поставь заново" > dist/android-manifest.json
+          cat dist/android-manifest-v2.json dist/android-manifest.json
 
       - name: Publish release android-latest
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          notes="Скачай SQUAD-VPN.apk на телефон и установи (разреши установку из этого источника). Дальше приложение обновляется само."
+          notes="Скачай SQUAD-VPN.apk на телефон и установи (разреши установку из этого источника). Дальше приложение обновляется само. Если на телефоне стоит версия 1.4 или более ранняя, сначала удали её: с 1.5 у приложения новый ключ подписи, поверх оно не встанет."
           if ! gh release view android-latest -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             gh release create android-latest -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
               --title "SQUAD VPN — приложение для Android" --notes "$notes"
           fi
           gh release edit android-latest -R "$GITHUB_REPOSITORY" --notes "$notes"
-          gh release upload android-latest dist/SQUAD-VPN.apk dist/android-manifest.json -R "$GITHUB_REPOSITORY" --clobber
+          gh release upload android-latest dist/SQUAD-VPN.apk dist/android-manifest-v2.json dist/android-manifest.json -R "$GITHUB_REPOSITORY" --clobber
 
       # Each app version also gets its own release android-v<version> (never "Latest",
       # that one belongs to the Windows program).
@@ -99,8 +135,9 @@ jobs:
           version=$(grep VERSION_NAME android/version.properties | cut -d= -f2)
           tag="android-v$version"
           # Release notes: this version's section of android/CHANGELOG.md.
-          awk -v v="## $version" '$0 == v {on=1; next} /^## / {on=0} on' android/CHANGELOG.md > notes.md
-          printf '\nУстанови SQUAD-VPN.apk (Android 8 и новее), дальше приложение обновляется само.\n' >> notes.md
+          # The header may carry a title after the number: "## 1.5 — новый ключ подписи".
+          awk -v v="## $version" '$0 == v || index($0, v " ") == 1 {on=1; next} /^## / {on=0} on' android/CHANGELOG.md > notes.md
+          printf '\nУстанови SQUAD-VPN.apk (Android 8 и новее), дальше приложение обновляется само. Если на телефоне стоит версия 1.4 или более ранняя, сначала удали её: с 1.5 у приложения новый ключ подписи, поверх оно не встанет.\n' >> notes.md
           if ! gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             gh release create "$tag" dist/SQUAD-VPN.apk -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
               --title "SQUAD VPN для Android $version" --notes-file notes.md
@@ -121,5 +158,9 @@ jobs:
           body=$(gh release view "$tag" -R "$GITHUB_REPOSITORY" --json body -q .body)
           if ! grep -q "SQUAD-VPN.apk" <<< "$body"; then
             printf '%s\n\nДля телефона скачай **SQUAD-VPN.apk** и установи (Android 8 и новее), дальше приложение обновляется само.\n' "$body" > body.md
+            body=$(cat body.md)
+          fi
+          if ! grep -q "новый ключ подписи" <<< "$body"; then
+            printf '%s\n\n'"Если на телефоне стоит версия 1.4 или более ранняя, сначала удали её: с 1.5 у приложения новый ключ подписи, поверх оно не встанет."'\n' "$body" > body.md
             gh release edit "$tag" -R "$GITHUB_REPOSITORY" --notes-file body.md
           fi

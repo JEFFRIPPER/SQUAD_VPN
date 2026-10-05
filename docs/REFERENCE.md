@@ -225,7 +225,9 @@ tun-инбаундом, поэтому работают все транспор�
   белых списков.
 - Плитка в шторке, автоподключение после перезагрузки, системный Always-on VPN.
 - Сборка: `.github/workflows/build-android.yml` при правке `android/**`.
-  APK и `android-manifest.json` уходят в релиз `android-latest`, приложение
+  APK и манифест уходят в релиз `android-latest` (с 1.5 приложение читает
+  `android-manifest-v2.json`, а `android-manifest.json` для 1.4 и старше
+  просит переустановить apk), приложение
   проверяет его при каждом запуске и фоновым заданием (JobScheduler) раз в
   4 часа; о новой версии приходит уведомление, а в приложении горит плашка
   «ОБНОВИТЬ». Версия для людей
@@ -246,8 +248,12 @@ tun-инбаундом, поэтому работают все транспор�
 - Кнопка подключения: эмблема SQUAD (`res/drawable-nodpi/connect_button.jpg`).
   Пока VPN подключён, в круге без звука по кругу играет
   `res/raw/connected_loop.mp4` (`ui/LoopVideo.kt`, TextureView + MediaPlayer).
-- Подпись: `android/app/squad-release.jks`; если ключ сменить, обновление
-  поверх старой версии не встанет.
+- Подпись (с 1.5): ключ только в секретах репозитория `SQUAD_KEYSTORE_B64`
+  и `SQUAD_KEYSTORE_PASSWORD`, их один раз создаёт workflow
+  `apk-signing-key.yml` (нужен секрет `SQUAD_SECRETS_TOKEN`: fine-grained
+  токен с доступом Secrets: Read and write). Без них apk не собирается.
+  Старый ключ до 1.4 был публичным, CI отвергает apk с ним. Если ключ
+  сменить, обновление поверх не встанет: apk переустанавливают вручную.
 
 ## Справочник
 

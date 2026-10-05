@@ -23,6 +23,11 @@ import java.security.MessageDigest
  */
 object Updater {
     private const val BASE = "https://github.com/${BuildConfig.REPO}/releases/download/android-latest"
+
+    // From 1.5 (new signing key) the app reads its own manifest. The old
+    // android-manifest.json is only for 1.4 and older: it tells them to
+    // reinstall, because an apk with the new key cannot update them.
+    private const val MANIFEST = "android-manifest-v2.json"
     /** How often the app itself looks while it is open; the background job runs every few hours. */
     private const val CHECK_EVERY_MS = 10 * 60 * 1000L
 
@@ -68,7 +73,7 @@ object Updater {
         val before = _state.value
         if (!quiet) _state.value = State.Checking
         try {
-            val json = JSONObject(Http.getText(listOf("$BASE/android-manifest.json")))
+            val json = JSONObject(Http.getText(listOf("$BASE/$MANIFEST")))
             Prefs.lastUpdateCheck = System.currentTimeMillis()
             val info = Info(
                 versionCode = json.getInt("versionCode"),
