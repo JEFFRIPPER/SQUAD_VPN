@@ -1,0 +1,79 @@
+name: Build Android app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - ".github/workflows/build-android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-android
+  cancel-in-progress: true
+
+env:
+  # Xray core for Android (gomobile build of AndroidLibXrayLite).
+  LIBXRAY_TAG: v26.9.30
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Download Xray core (libv2ray.aar)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p android/app/libs
+          gh release download "$LIBXRAY_TAG" -R 2dust/AndroidLibXrayLite -p 'libv2ray.aar' -D android/app/libs --clobber
+          ls -la android/app/libs
+
+      - name: Build APK
+        run: |
+          version_code=${{ github.run_number }}
+          gradle -p android --no-daemon assembleRelease -PversionCode=$version_code
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk dist/SQUAD-VPN.apk
+
+      - name: Check the APK and write the OTA manifest
+        run: |
+          size=$(stat -c %s dist/SQUAD-VPN.apk)
+          if [ "$size" -lt 5000000 ]; then echo "apk is too small: $size"; exit 1; fi
+          echo "$((size / 1048576)) MB"
+          sha=$(sha256sum dist/SQUAD-VPN.apk | cut -d' ' -f1)
+          jq -n \
+            --argjson versionCode ${{ github.run_number }} \
+            --arg versionName "1.0.${{ github.run_number }}" \
+            --arg sha256 "$sha" \
+            --argjson size "$size" \
+            --arg commit "${{ github.sha }}" \
+            '{versionCode: $versionCode, versionName: $versionName, sha256: $sha256, size: $size, commit: $commit}' \
+            > dist/android-manifest.json
+          cat dist/android-manifest.json
+
+      - name: Publish release android-latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          notes="Скачай SQUAD-VPN.apk на телефон и установи (разреши установку из этого источника). Дальше приложение обновляется само."
+          if ! gh release view android-latest -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create android-latest -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
+              --title "SQUAD VPN — приложение для Android" --notes "$notes"
+          fi
+          gh release edit android-latest -R "$GITHUB_REPOSITORY" --notes "$notes"
+          gh release upload android-latest dist/SQUAD-VPN.apk dist/android-manifest.json -R "$GITHUB_REPOSITORY" --clobber

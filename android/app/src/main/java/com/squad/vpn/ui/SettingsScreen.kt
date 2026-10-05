@@ -1,0 +1,237 @@
+package com.squad.vpn.ui
+
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.SystemUpdate
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.squad.vpn.BuildConfig
+import com.squad.vpn.core.Prefs
+import com.squad.vpn.core.Profile
+import com.squad.vpn.core.Subscriptions
+import com.squad.vpn.core.Updater
+import kotlinx.coroutines.launch
+import libv2ray.Libv2ray
+
+@Composable
+fun SettingsScreen(
+    profile: Profile,
+    onProfile: (Profile) -> Unit,
+    refreshing: Boolean,
+    refreshNote: String?,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val update by Updater.state.collectAsStateWithLifecycle()
+    var customUrl by remember { mutableStateOf(Prefs.customUrl) }
+    var ruDirect by remember { mutableStateOf(Prefs.ruDirect) }
+    var autoConnect by remember { mutableStateOf(Prefs.autoConnect) }
+    val coreVersion = remember { runCatching { Libv2ray.checkVersionX() }.getOrDefault("") }
+
+    Column(
+        modifier
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text("Настройки", style = MaterialTheme.typography.headlineMedium)
+
+        StatCard("Подписка", Modifier.fillMaxWidth(), index = 0) {
+            Profile.entries.forEach { p ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { onProfile(p) }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = profile == p, onClick = { onProfile(p) })
+                    Column(Modifier.weight(1f)) {
+                        Text(p.title, style = MaterialTheme.typography.titleMedium)
+                        Text(p.hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            AnimatedVisibility(
+                visible = profile == Profile.CUSTOM,
+                enter = expandVertically(Motion.gentle()) + fadeIn(),
+                exit = shrinkVertically(Motion.gentle()) + fadeOut(),
+            ) {
+                OutlinedTextField(
+                    value = customUrl,
+                    onValueChange = {
+                        customUrl = it
+                        Prefs.customUrl = it
+                    },
+                    label = { Text("Ссылка на подписку") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FilledTonalButton(onClick = onRefresh, enabled = !refreshing) {
+                    if (refreshing) {
+                        CircularProgressIndicator(Modifier.size(ButtonDefaults.IconSize), strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Rounded.Refresh, null, Modifier.size(ButtonDefaults.IconSize))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text("Обновить подписку")
+                }
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    refreshNote ?: formatAgo(Subscriptions.updatedAt(profile)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        StatCard("Подключение", Modifier.fillMaxWidth(), index = 1) {
+            SwitchRow(
+                "Российские сайты напрямую",
+                "Банки и Госуслуги видят твой обычный адрес. В «Белых списках» всё идёт через VPN",
+                ruDirect,
+            ) {
+                ruDirect = it
+                Prefs.ruDirect = it
+            }
+            SwitchRow(
+                "Подключаться автоматически",
+                "При запуске приложения и после перезагрузки телефона",
+                autoConnect,
+            ) {
+                autoConnect = it
+                Prefs.autoConnect = it
+            }
+        }
+
+        StatCard("Обновления", Modifier.fillMaxWidth(), index = 2) {
+            Text("Версия ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.titleMedium)
+            if (coreVersion.isNotEmpty()) {
+                Text(coreVersion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Spacer(Modifier.height(8.dp))
+            AnimatedContent(targetState = update, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "update") { s ->
+                Column {
+                    when (s) {
+                        is Updater.State.Available -> {
+                            Text("Доступна версия ${s.info.versionName}")
+                            Button(onClick = { scope.launch { Updater.download(s.info) } }, modifier = Modifier.padding(top = 8.dp)) {
+                                Icon(Icons.Rounded.SystemUpdate, null, Modifier.size(ButtonDefaults.IconSize))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Скачать и установить")
+                            }
+                        }
+                        is Updater.State.Downloading -> {
+                            Text("Скачиваю ${s.info.versionName}…")
+                            LinearProgressIndicator(
+                                progress = { s.progress },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                            )
+                        }
+                        is Updater.State.Ready -> {
+                            Text("Версия ${s.info.versionName} скачана")
+                            Button(onClick = { Updater.install(context, s.file) }, modifier = Modifier.padding(top = 8.dp)) {
+                                Text("Установить")
+                            }
+                        }
+                        else -> {
+                            val note = when (s) {
+                                Updater.State.Checking -> "Проверяю…"
+                                Updater.State.UpToDate -> "У тебя последняя версия"
+                                is Updater.State.Error -> s.message
+                                else -> "Приложение обновляется само: проверка раз в 6 часов"
+                            }
+                            Text(note, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            FilledTonalButton(
+                                onClick = { scope.launch { Updater.check() } },
+                                enabled = s != Updater.State.Checking,
+                                modifier = Modifier.padding(top = 8.dp),
+                            ) {
+                                Text("Проверить обновления")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        StatCard("О приложении", Modifier.fillMaxWidth(), index = 3) {
+            Text("SQUAD VPN для Android: те же подписки и узлы, что у программы для Windows.")
+            TextButton(onClick = {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/${BuildConfig.REPO}")))
+            }) {
+                Text("Открыть GitHub")
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun SwitchRow(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable { onChange(!checked) }
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Spacer(Modifier.width(12.dp))
+        Switch(checked = checked, onCheckedChange = onChange)
+    }
+}
