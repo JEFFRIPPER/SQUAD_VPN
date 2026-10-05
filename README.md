@@ -41,3 +41,5 @@ Mihomo и раздаёт подпиской для телефона или в п
 безопасность описаны в [docs/REFERENCE.md](docs/REFERENCE.md).
 
 Разработка: `pip install -e ".[dev]"`, затем `pytest -q` и `ruff check .`.
+
+Лицензия: [MIT](LICENSE).
