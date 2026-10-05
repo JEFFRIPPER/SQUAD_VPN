@@ -69,22 +69,26 @@ jobs:
           done
           ls -la android/app/src/main/assets/subs
 
-      # Signing key from the repository secrets (made once by apk-signing-key.yml).
+      # Signing key from the repository secrets (made once by apk-signing-key.yml):
+      # the keystore in base64, split into four secrets, and its password.
       # Without it nothing is built: an apk signed with any other key would not
       # install over the app people already have.
       - name: Build APK
         shell: bash
         env:
-          SQUAD_KEYSTORE_B64: ${{ secrets.SQUAD_KEYSTORE_B64 }}
+          SQUAD_KEYSTORE_1: ${{ secrets.SQUAD_KEYSTORE_1 }}
+          SQUAD_KEYSTORE_2: ${{ secrets.SQUAD_KEYSTORE_2 }}
+          SQUAD_KEYSTORE_3: ${{ secrets.SQUAD_KEYSTORE_3 }}
+          SQUAD_KEYSTORE_4: ${{ secrets.SQUAD_KEYSTORE_4 }}
           SQUAD_KEYSTORE_PASSWORD: ${{ secrets.SQUAD_KEYSTORE_PASSWORD }}
         run: |
-          if [ -z "$SQUAD_KEYSTORE_B64" ] || [ -z "$SQUAD_KEYSTORE_PASSWORD" ]; then
-            echo "::error::Нет ключа подписи: секреты SQUAD_KEYSTORE_B64 и SQUAD_KEYSTORE_PASSWORD создаёт workflow «Create APK signing key»"
+          if [ -z "$SQUAD_KEYSTORE_1" ] || [ -z "$SQUAD_KEYSTORE_4" ] || [ -z "$SQUAD_KEYSTORE_PASSWORD" ]; then
+            echo "::error::Нет ключа подписи: секреты SQUAD_KEYSTORE_1..4 и SQUAD_KEYSTORE_PASSWORD создаёт workflow «Create APK signing key»"
             exit 1
           fi
           umask 077
           export SQUAD_KEYSTORE="$RUNNER_TEMP/squad.p12"
-          printf '%s' "$SQUAD_KEYSTORE_B64" | base64 -d > "$SQUAD_KEYSTORE"
+          printf '%s' "$SQUAD_KEYSTORE_1$SQUAD_KEYSTORE_2$SQUAD_KEYSTORE_3$SQUAD_KEYSTORE_4" | base64 -d > "$SQUAD_KEYSTORE"
           version_code=${{ github.run_number }}
           gradle -p android --no-daemon assembleRelease -PversionCode=$version_code
           rm -f "$SQUAD_KEYSTORE"

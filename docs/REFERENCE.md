@@ -248,10 +248,11 @@ tun-инбаундом, поэтому работают все транспор�
 - Кнопка подключения: эмблема SQUAD (`res/drawable-nodpi/connect_button.jpg`).
   Пока VPN подключён, в круге без звука по кругу играет
   `res/raw/connected_loop.mp4` (`ui/LoopVideo.kt`, TextureView + MediaPlayer).
-- Подпись (с 1.5): ключ только в секретах репозитория `SQUAD_KEYSTORE_B64`
-  и `SQUAD_KEYSTORE_PASSWORD`, их один раз создаёт workflow
-  `apk-signing-key.yml` (нужен секрет `SQUAD_SECRETS_TOKEN`: fine-grained
-  токен с доступом Secrets: Read and write). Без них apk не собирается.
+- Подпись (с 1.5): ключ только в секретах репозитория `SQUAD_KEYSTORE_1..4`
+  (keystore в base64, разбит на части: один большой секрет GitHub не
+  выдаёт задачам) и `SQUAD_KEYSTORE_PASSWORD`, их один раз создаёт workflow
+  `apk-signing-key.yml` (нужен секрет `SQUAD_SECRETS_TOKEN`: токен
+  с доступом к секретам репозитория, classic со scope repo). Без них apk не собирается.
   Старый ключ до 1.4 был публичным, CI отвергает apk с ним. Если ключ
   сменить, обновление поверх не встанет: apk переустанавливают вручную.
 

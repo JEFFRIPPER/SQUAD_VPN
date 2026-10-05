@@ -1,10 +1,12 @@
 name: Create APK signing key
 
 # One-off, started by hand: creates the apk signing key inside GitHub and
-# stores it straight into the repository secrets SQUAD_KEYSTORE_B64 and
-# SQUAD_KEYSTORE_PASSWORD. The key never appears in the repo, in the logs or
-# anywhere else. Secrets can only be written with a token: put a fine-grained
-# token with "Secrets: Read and write" on this repo into the secret
+# stores it straight into repository secrets: the keystore (base64) split into
+# SQUAD_KEYSTORE_1..4 and its password SQUAD_KEYSTORE_PASSWORD. The key never
+# appears in the repo, in the logs or anywhere else. The keystore is split
+# because GitHub never starts a job that references one secret this large
+# (seen 2026-10-05 with a 5.7 KB secret). Secrets can only be written with a
+# token: put one with access to this repo's secrets into the secret
 # SQUAD_SECRETS_TOKEN first.
 #
 # A new key means apps signed with the old one will not update over: every
@@ -29,7 +31,7 @@ concurrency:
 
 jobs:
   key:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/setup-java@v4
@@ -42,7 +44,7 @@ jobs:
           CONFIRM: ${{ inputs.confirm }}
           REPLACE: ${{ inputs.replace }}
           GH_TOKEN: ${{ secrets.SQUAD_SECRETS_TOKEN }}
-          EXISTING_KEY: ${{ secrets.SQUAD_KEYSTORE_B64 }}
+          EXISTING_KEY: ${{ secrets.SQUAD_KEYSTORE_1 }}
         run: |
           set -euo pipefail
           umask 077
@@ -51,7 +53,7 @@ jobs:
             exit 1
           fi
           if [ -z "$GH_TOKEN" ]; then
-            echo "::error::Нет секрета SQUAD_SECRETS_TOKEN (fine-grained токен с доступом Secrets: Read and write к этому репозиторию)"
+            echo "::error::Нет секрета SQUAD_SECRETS_TOKEN (токен с доступом к секретам этого репозитория)"
             exit 1
           fi
           if [ -n "$EXISTING_KEY" ] && [ "$REPLACE" != "true" ]; then
@@ -59,20 +61,26 @@ jobs:
             exit 1
           fi
 
-          pass=$(openssl rand -hex 24)
+          pass=$(openssl rand -hex 32)
           echo "::add-mask::$pass"
           store="$RUNNER_TEMP/squad.p12"
           keytool -genkeypair -keystore "$store" -storetype PKCS12 -alias squad \
-            -keyalg RSA -keysize 4096 -validity 36500 \
+            -keyalg EC -groupname secp256r1 -validity 36500 \
             -storepass "$pass" -keypass "$pass" -dname "CN=SQUAD VPN, O=SQUAD, C=RU" > /dev/null
 
-          base64 -w0 "$store" | gh secret set SQUAD_KEYSTORE_B64 -R "$GITHUB_REPOSITORY"
+          base64 -w0 "$store" > "$RUNNER_TEMP/squad.b64"
+          split -n 4 -d -a 1 "$RUNNER_TEMP/squad.b64" "$RUNNER_TEMP/part"
+          for i in 0 1 2 3; do
+            gh secret set "SQUAD_KEYSTORE_$((i + 1))" -R "$GITHUB_REPOSITORY" < "$RUNNER_TEMP/part$i"
+          done
           printf '%s' "$pass" | gh secret set SQUAD_KEYSTORE_PASSWORD -R "$GITHUB_REPOSITORY"
+          # Left over from the first attempt, which kept the keystore in one secret.
+          gh secret delete SQUAD_KEYSTORE_B64 -R "$GITHUB_REPOSITORY" 2> /dev/null || true
 
           # The certificate fingerprint is public: it lets anyone check which key signed an apk.
           fingerprint=$(keytool -list -v -keystore "$store" -storepass "$pass" -alias squad \
             | awk -F': ' '/SHA256:/ {print $2; exit}')
-          rm -f "$store"
+          rm -f "$store" "$RUNNER_TEMP/squad.b64" "$RUNNER_TEMP"/part?
           {
             echo "### Новый ключ подписи apk записан в секреты"
             echo

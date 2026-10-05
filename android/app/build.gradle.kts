@@ -27,7 +27,7 @@ android {
     }
 
     // The release key is not in the repo. CI decodes it from the repository
-    // secret SQUAD_KEYSTORE_B64 into a file and passes its path and password;
+    // secrets SQUAD_KEYSTORE_1..4 into a file and passes its path and password;
     // without them release builds stop instead of signing with another key.
     val keystore = System.getenv("SQUAD_KEYSTORE")?.takeIf { it.isNotBlank() }
     signingConfigs {
