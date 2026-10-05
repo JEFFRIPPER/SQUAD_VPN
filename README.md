@@ -6,6 +6,10 @@ Mihomo и раздаёт подпиской для телефона или в п
 
 **Версия 1.5.2.** Что нового — в [CHANGELOG.md](CHANGELOG.md).
 
+**Скачать:** [SQUAD-VPN.exe для Windows](https://github.com/JEFFRIPPER/SQUAD_VPN/releases/latest/download/SQUAD-VPN.exe)
+и [SQUAD-VPN.apk для Android](https://github.com/JEFFRIPPER/SQUAD_VPN/releases/latest/download/SQUAD-VPN.apk),
+оба файла лежат в [последнем релизе](https://github.com/JEFFRIPPER/SQUAD_VPN/releases/latest).
+
 Своих серверов у проекта нет: это чужие публичные узлы, любой может пропасть
 в любой момент. Поэтому проверка идёт постоянно, а программа сама
 переключается на рабочий узел.
@@ -37,7 +41,8 @@ Mihomo и раздаёт подпиской для телефона или в п
 
 ## Приложение для Android
 
-Скачай [SQUAD-VPN.apk](https://github.com/JEFFRIPPER/SQUAD_VPN/releases/download/android-latest/SQUAD-VPN.apk)
+Скачай **SQUAD-VPN.apk** из
+[последнего релиза](https://github.com/JEFFRIPPER/SQUAD_VPN/releases/latest)
 на телефон и установи (Android 8 и новее; разреши установку из браузера).
 Внутри те же подписки SQUAD, ядро Xray, выбор лучшего узла и смена узла,
 если текущий перестал отвечать. Приложение обновляется само.

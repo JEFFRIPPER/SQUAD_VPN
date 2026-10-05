@@ -109,6 +109,8 @@ jobs:
           if ($notes.Count -eq 0) { $notes.Add("SQUAD VPN $version") }
           $notes.Add("")
           $notes.Add("Скачай **SQUAD-VPN.exe** и запусти: на новом компьютере он сам установит SQUAD VPN, на установленном обновляется сам.")
+          $notes.Add("")
+          $notes.Add("Для телефона скачай **SQUAD-VPN.apk** и установи (Android 8 и новее), дальше приложение обновляется само.")
           $notes | Out-File -Encoding utf8 dist/release-notes.md
           gh release view $tag -R $env:GITHUB_REPOSITORY *> $null
           if ($LASTEXITCODE -ne 0) {
@@ -119,3 +121,7 @@ jobs:
             gh release upload $tag dist/SQUAD-VPN.exe -R $env:GITHUB_REPOSITORY --clobber
           }
           if ($LASTEXITCODE -ne 0) { throw "release $tag failed" }
+          # The Android app rides along in every release (built by build-android.yml).
+          gh release download android-latest -R $env:GITHUB_REPOSITORY -p SQUAD-VPN.apk -D dist --clobber
+          if ($LASTEXITCODE -eq 0) { gh release upload $tag dist/SQUAD-VPN.apk -R $env:GITHUB_REPOSITORY --clobber }
+          $global:LASTEXITCODE = 0

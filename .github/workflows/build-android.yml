@@ -92,3 +92,18 @@ jobs:
           else
             gh release upload "$tag" dist/SQUAD-VPN.apk -R "$GITHUB_REPOSITORY" --clobber
           fi
+
+      # The current "Latest" release (the Windows program, v<version>) carries the
+      # apk too, so both downloads sit side by side on the releases page.
+      - name: Attach the APK to the latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag=$(gh release view -R "$GITHUB_REPOSITORY" --json tagName -q .tagName) || exit 0
+          case "$tag" in v*) ;; *) echo "latest release is $tag, skipping"; exit 0;; esac
+          gh release upload "$tag" dist/SQUAD-VPN.apk -R "$GITHUB_REPOSITORY" --clobber
+          body=$(gh release view "$tag" -R "$GITHUB_REPOSITORY" --json body -q .body)
+          if ! grep -q "SQUAD-VPN.apk" <<< "$body"; then
+            printf '%s\n\nДля телефона скачай **SQUAD-VPN.apk** и установи (Android 8 и новее), дальше приложение обновляется само.\n' "$body" > body.md
+            gh release edit "$tag" -R "$GITHUB_REPOSITORY" --notes-file body.md
+          fi
