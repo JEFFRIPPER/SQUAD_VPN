@@ -3,10 +3,12 @@ package com.squad.vpn.ui
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,38 +16,41 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -55,12 +60,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
-import com.squad.vpn.R
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import com.squad.vpn.R
 import com.squad.vpn.bg.SquadVpnService
 import com.squad.vpn.core.Pinger
 import com.squad.vpn.core.Prefs
@@ -69,6 +74,21 @@ import com.squad.vpn.core.Status
 import com.squad.vpn.core.Subscriptions
 import com.squad.vpn.core.Updater
 import com.squad.vpn.core.Vpn
+import com.squad.vpn.ui.glass.GlassBackground
+import com.squad.vpn.ui.glass.GlassColors
+import com.squad.vpn.ui.glass.GlassDialog
+import com.squad.vpn.ui.glass.GlassDuration
+import com.squad.vpn.ui.glass.GlassEasing
+import com.squad.vpn.ui.glass.GlassNavBar
+import com.squad.vpn.ui.glass.GlassNavItem
+import com.squad.vpn.ui.glass.GlassSheet
+import com.squad.vpn.ui.glass.GlassSize
+import com.squad.vpn.ui.glass.GlassSnackbarHost
+import com.squad.vpn.ui.glass.GlassSpacing
+import com.squad.vpn.ui.glass.GlassSpring
+import com.squad.vpn.ui.glass.GlassTopBar
+import com.squad.vpn.ui.glass.LocalBackdrop
+import com.squad.vpn.ui.glass.rememberBackdrop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -84,7 +104,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        // The app is always dark: light system bar icons on a transparent bar.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
+        )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
@@ -118,18 +142,21 @@ class MainActivity : ComponentActivity() {
 
     fun disconnect() = SquadVpnService.send(this, SquadVpnService.ACTION_STOP)
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun App() {
-        var tab by rememberSaveable { mutableStateOf(0) }
+        var tab by rememberSaveable { mutableIntStateOf(0) }
         var profile by remember { mutableStateOf(Profile.current) }
         var selected by remember { mutableStateOf(Prefs.selectedNode) }
         var refreshing by remember { mutableStateOf(false) }
         var refreshNote by remember { mutableStateOf<String?>(null) }
+        var showEvents by rememberSaveable { mutableStateOf(false) }
+        var dismissedUpdate by rememberSaveable { mutableIntStateOf(0) }
         val status by Vpn.status.collectAsStateWithLifecycle()
         val update by Updater.state.collectAsStateWithLifecycle()
+        val events by Vpn.events.collectAsStateWithLifecycle()
         val scope = rememberCoroutineScope()
         val snackbar = remember { SnackbarHostState() }
+        val backdrop = rememberBackdrop()
 
         fun refresh(p: Profile, quiet: Boolean = false) {
             refreshing = true
@@ -175,110 +202,153 @@ class MainActivity : ComponentActivity() {
             if (old && p != Profile.CUSTOM && Vpn.status.value != Status.Connecting) refresh(p, quiet = Vpn.nodes.value.isNotEmpty())
         }
 
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Image(
-                                painterResource(R.drawable.squad_logo),
-                                contentDescription = "Логотип SQUAD",
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape),
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            Text("SQUAD VPN", fontWeight = FontWeight.SemiBold)
-                        }
+        // The page under the bars: it starts below the top bar and ends above the floating navigation.
+        val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        val contentPadding = PaddingValues(
+            top = top + GlassSize.topBar,
+            bottom = bottom + GlassSize.navBar + GlassSize.navMargin * 2 + GlassSpacing.xs,
+        )
+
+        CompositionLocalProvider(LocalBackdrop provides backdrop, LocalContentColor provides GlassColors.onGlass) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(GlassColors.backdropBottom),
+            ) {
+                GlassBackground(backdrop)
+
+                AnimatedContent(
+                    targetState = tab,
+                    transitionSpec = {
+                        val direction = if (targetState > initialState) 1 else -1
+                        (
+                            slideInHorizontally(GlassSpring.spatial()) { it / 5 * direction } +
+                                fadeIn(tween(GlassDuration.medium, easing = GlassEasing.standard)) +
+                                scaleIn(GlassSpring.spatial(), initialScale = 0.98f)
+                            ).togetherWith(
+                            slideOutHorizontally(GlassSpring.spatial()) { -it / 5 * direction } +
+                                fadeOut(tween(GlassDuration.short, easing = GlassEasing.standard)),
+                        )
                     },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
-                )
-            },
-            bottomBar = {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
-                    NavigationBarItem(
-                        selected = tab == 0,
-                        onClick = { tab = 0 },
-                        icon = { Icon(Icons.Rounded.PowerSettingsNew, null) },
-                        label = { Text("VPN") },
-                    )
-                    NavigationBarItem(
-                        selected = tab == 1,
-                        onClick = { tab = 1 },
-                        icon = { Icon(Icons.Rounded.Dns, null) },
-                        label = { Text("Узлы") },
-                    )
-                    NavigationBarItem(
-                        selected = tab == 2,
-                        onClick = { tab = 2 },
-                        icon = {
-                            BadgedBox(badge = {
-                                if (update is Updater.State.Available || update is Updater.State.Ready) Badge()
-                            }) { Icon(Icons.Rounded.Settings, null) }
-                        },
-                        label = { Text("Настройки") },
-                    )
-                }
-            },
-            snackbarHost = { SnackbarHost(snackbar) },
-            containerColor = MaterialTheme.colorScheme.surface,
-        ) { padding ->
-            AnimatedContent(
-                targetState = tab,
-                transitionSpec = {
-                    val direction = if (targetState > initialState) 1 else -1
-                    (slideInHorizontally(Motion.gentle()) { it / 4 * direction } + fadeIn(tween(220)))
-                        .togetherWith(slideOutHorizontally(Motion.gentle()) { -it / 4 * direction } + fadeOut(tween(120)))
-                },
-                modifier = Modifier.padding(padding),
-                label = "tabs",
-            ) { page ->
-                Box(Modifier.fillMaxSize()) {
-                    when (page) {
-                        0 -> ConnectScreen(
-                            profile = profile,
-                            onProfile = ::changeProfile,
-                            onPower = {
-                                when (status) {
-                                    Status.Connected, Status.Connecting -> disconnect()
-                                    else -> connect()
-                                }
-                            },
-                            onFailover = { SquadVpnService.send(this@MainActivity, SquadVpnService.ACTION_FAILOVER) },
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        1 -> NodesScreen(
-                            profile = profile,
-                            selected = selected,
-                            onSelect = { key ->
-                                selected = key
-                                Prefs.selectedNode = key
-                                if (status == Status.Connected) {
-                                    SquadVpnService.send(this@MainActivity, SquadVpnService.ACTION_SWITCH)
-                                }
-                            },
-                            onPingAll = {
-                                if (!Vpn.pinging.value) scope.launch(Dispatchers.IO) {
-                                    Vpn.setPinging(true)
-                                    try {
-                                        Pinger.pingAll(Vpn.nodes.value)
-                                    } finally {
-                                        Vpn.setPinging(false)
+                    label = "tabs",
+                ) { page ->
+                    Box(Modifier.fillMaxSize()) {
+                        when (page) {
+                            0 -> ConnectScreen(
+                                profile = profile,
+                                onProfile = ::changeProfile,
+                                onPower = {
+                                    when (status) {
+                                        Status.Connected, Status.Connecting -> disconnect()
+                                        else -> connect()
                                     }
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        else -> SettingsScreen(
-                            profile = profile,
-                            onProfile = ::changeProfile,
-                            refreshing = refreshing,
-                            refreshNote = refreshNote,
-                            onRefresh = { refresh(profile) },
-                            modifier = Modifier.fillMaxSize(),
-                        )
+                                },
+                                onFailover = { SquadVpnService.send(this@MainActivity, SquadVpnService.ACTION_FAILOVER) },
+                                onOpenEvents = { showEvents = true },
+                                contentPadding = contentPadding,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            1 -> NodesScreen(
+                                profile = profile,
+                                selected = selected,
+                                onSelect = { key ->
+                                    selected = key
+                                    Prefs.selectedNode = key
+                                    if (status == Status.Connected) {
+                                        SquadVpnService.send(this@MainActivity, SquadVpnService.ACTION_SWITCH)
+                                    }
+                                },
+                                onPingAll = {
+                                    if (!Vpn.pinging.value) scope.launch(Dispatchers.IO) {
+                                        Vpn.setPinging(true)
+                                        try {
+                                            Pinger.pingAll(Vpn.nodes.value)
+                                        } finally {
+                                            Vpn.setPinging(false)
+                                        }
+                                    }
+                                },
+                                contentPadding = contentPadding,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            else -> SettingsScreen(
+                                profile = profile,
+                                onProfile = ::changeProfile,
+                                refreshing = refreshing,
+                                refreshNote = refreshNote,
+                                onRefresh = { refresh(profile) },
+                                contentPadding = contentPadding,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
                     }
                 }
+
+                GlassTopBar(Modifier.align(Alignment.TopCenter)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painterResource(R.drawable.squad_logo),
+                            contentDescription = "Логотип SQUAD",
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape),
+                        )
+                        Spacer(Modifier.width(GlassSpacing.sm))
+                        Text("SQUAD VPN", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                GlassNavBar(
+                    items = listOf(
+                        GlassNavItem("VPN", Icons.Rounded.PowerSettingsNew),
+                        GlassNavItem("Узлы", Icons.Rounded.Dns),
+                        GlassNavItem(
+                            "Настройки",
+                            Icons.Rounded.Settings,
+                            badge = update is Updater.State.Available || update is Updater.State.Ready,
+                        ),
+                    ),
+                    selected = tab,
+                    onSelect = {
+                        if (it != tab) backdrop.scroll = 0f
+                        tab = it
+                    },
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
+
+                GlassSnackbarHost(
+                    snackbar,
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = contentPadding.calculateBottomPadding()),
+                )
+
+                GlassSheet(visible = showEvents, onDismiss = { showEvents = false }, title = "События") {
+                    LazyColumn(Modifier.heightIn(max = 420.dp)) {
+                        items(events) {
+                            Text(it, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = GlassSpacing.xxs))
+                        }
+                    }
+                }
+
+                val offer = update as? Updater.State.Available
+                GlassDialog(
+                    visible = offer != null && offer.info.versionCode != dismissedUpdate,
+                    title = "Есть новая версия",
+                    text = "SQUAD VPN ${offer?.info?.versionName.orEmpty()} готов. Скачать и установить сейчас?",
+                    confirmText = "Обновить",
+                    onConfirm = {
+                        val info = offer?.info
+                        if (info != null) {
+                            dismissedUpdate = info.versionCode
+                            tab = 2
+                            scope.launch { Updater.download(info) }
+                        }
+                    },
+                    dismissText = "Позже",
+                    onDismiss = { dismissedUpdate = offer?.info?.versionCode ?: 0 },
+                )
             }
         }
     }

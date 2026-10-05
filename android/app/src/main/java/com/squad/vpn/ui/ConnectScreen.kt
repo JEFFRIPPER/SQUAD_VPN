@@ -7,12 +7,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,25 +25,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.SwapHoriz
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -50,12 +48,20 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.squad.vpn.core.Profile
 import com.squad.vpn.core.Status
 import com.squad.vpn.core.Vpn
+import com.squad.vpn.ui.glass.GlassButton
+import com.squad.vpn.ui.glass.GlassCard
+import com.squad.vpn.ui.glass.GlassColors
+import com.squad.vpn.ui.glass.GlassDuration
+import com.squad.vpn.ui.glass.GlassScale
+import com.squad.vpn.ui.glass.GlassSegmented
+import com.squad.vpn.ui.glass.GlassSpacing
+import com.squad.vpn.ui.glass.GlassSpring
+import com.squad.vpn.ui.glass.LocalBackdrop
 import kotlinx.coroutines.delay
 
 @Composable
@@ -64,6 +70,8 @@ fun ConnectScreen(
     onProfile: (Profile) -> Unit,
     onPower: () -> Unit,
     onFailover: () -> Unit,
+    onOpenEvents: () -> Unit,
+    contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
     val status by Vpn.status.collectAsStateWithLifecycle()
@@ -74,20 +82,24 @@ fun ConnectScreen(
     val since by Vpn.since.collectAsStateWithLifecycle()
     val events by Vpn.events.collectAsStateWithLifecycle()
 
+    val scroll = rememberScrollState()
+    val backdrop = LocalBackdrop.current
+    LaunchedEffect(scroll) { snapshotFlow { scroll.value.toFloat() }.collect { backdrop.scroll = it } }
+
     Column(
         modifier
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp),
+            .verticalScroll(scroll)
+            .padding(contentPadding)
+            .padding(horizontal = GlassSpacing.md),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(Modifier.height(8.dp))
         PowerButton(status = status, onClick = onPower)
 
         AnimatedContent(
             targetState = status,
             transitionSpec = {
-                (slideInVertically(Motion.bouncy()) { it / 2 } + fadeIn(tween(220)))
-                    .togetherWith(slideOutVertically(Motion.gentle()) { -it / 2 } + fadeOut(tween(150)))
+                (slideInVertically(GlassSpring.bouncy()) { it / 2 } + fadeIn(tween(GlassDuration.medium)))
+                    .togetherWith(slideOutVertically(GlassSpring.spatial()) { -it / 2 } + fadeOut(tween(GlassDuration.short)))
             },
             label = "state",
         ) { s ->
@@ -100,7 +112,7 @@ fun ConnectScreen(
                     Status.Failed -> "Не удалось подключиться"
                 },
                 style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier.padding(top = GlassSpacing.xxs),
             )
         }
         val sub = when (status) {
@@ -108,55 +120,58 @@ fun ConnectScreen(
             Status.Connecting, Status.Failed -> message ?: ""
             else -> "Нажми, чтобы пустить трафик телефона через лучшие узлы"
         }
-        AnimatedContent(targetState = sub, transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) }, label = "sub") {
+        AnimatedContent(
+            targetState = sub,
+            transitionSpec = { fadeIn(tween(GlassDuration.medium)) togetherWith fadeOut(tween(GlassDuration.short)) },
+            label = "sub",
+        ) {
             Text(
                 it,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = GlassColors.onGlassVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 6.dp, start = 24.dp, end = 24.dp),
+                modifier = Modifier.padding(top = GlassSpacing.xs, start = GlassSpacing.lg, end = GlassSpacing.lg),
             )
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(GlassSpacing.lg))
         val choices = listOf(Profile.TOP, Profile.BEST, Profile.WHITELIST)
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-            choices.forEachIndexed { index, p ->
-                SegmentedButton(
-                    selected = profile == p,
-                    onClick = { onProfile(p) },
-                    shape = SegmentedButtonDefaults.itemShape(index, choices.size),
-                ) {
-                    Text(p.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-        }
-        AnimatedContent(targetState = profile, label = "hint") {
+        GlassSegmented(
+            options = choices.map { it.title },
+            selected = choices.indexOf(profile),
+            onSelect = { onProfile(choices[it]) },
+        )
+        AnimatedContent(
+            targetState = profile,
+            transitionSpec = { fadeIn(tween(GlassDuration.medium)) togetherWith fadeOut(tween(GlassDuration.short)) },
+            label = "hint",
+        ) {
             Text(
                 if (it == Profile.CUSTOM) "Своя подписка из настроек" else it.hint,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp),
+                color = GlassColors.onGlassVariant,
+                modifier = Modifier.padding(top = GlassSpacing.xs),
             )
         }
 
         AnimatedVisibility(
             visible = status == Status.Connected,
-            enter = fadeIn() + scaleIn(Motion.bouncy(), initialScale = 0.8f),
-            exit = fadeOut(),
+            enter = fadeIn(tween(GlassDuration.medium)) + scaleIn(GlassSpring.bouncy(), initialScale = GlassScale.enter),
+            exit = fadeOut(tween(GlassDuration.short)) + scaleOut(tween(GlassDuration.short), targetScale = GlassScale.enter),
         ) {
-            FilledTonalButton(onClick = onFailover, modifier = Modifier.padding(top = 12.dp)) {
-                Icon(Icons.Rounded.SwapHoriz, null, Modifier.size(ButtonDefaults.IconSize))
-                Spacer(Modifier.width(8.dp))
-                Text("Сменить узел")
-            }
+            GlassButton(
+                text = "Сменить узел",
+                onClick = onFailover,
+                icon = Icons.Rounded.SwapHoriz,
+                modifier = Modifier.padding(top = GlassSpacing.sm),
+            )
         }
 
-        Spacer(Modifier.height(16.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Spacer(Modifier.height(GlassSpacing.md))
+        Row(horizontalArrangement = Arrangement.spacedBy(GlassSpacing.sm)) {
             StatCard("Пинг сейчас", Modifier.weight(1f), index = 0) {
                 Text(ping?.let { "$it мс" } ?: "—", style = numberStyle)
-                Text("проверка каждые 16 с", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("проверка каждые 16 с", style = MaterialTheme.typography.bodySmall, color = GlassColors.onGlassVariant)
             }
             StatCard("Эта сессия", Modifier.weight(1f), index = 1) {
                 var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -170,72 +185,93 @@ fun ConnectScreen(
                 Text(
                     "↓ ${formatBytes(traffic.downTotal)}  ↑ ${formatBytes(traffic.upTotal)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = GlassColors.onGlassVariant,
                 )
             }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(GlassSpacing.sm))
         StatCard("Скорость", Modifier.fillMaxWidth(), index = 2) {
-            Row(horizontalArrangement = Arrangement.spacedBy(20.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(GlassSpacing.lg), verticalAlignment = Alignment.CenterVertically) {
                 Speed(Icons.Rounded.ArrowDownward, formatSpeed(traffic.downBps))
                 Speed(Icons.Rounded.ArrowUpward, formatSpeed(traffic.upBps))
             }
-            Sparkline(traffic.history, Modifier.fillMaxWidth().height(40.dp).padding(top = 8.dp))
+            Sparkline(
+                traffic.history,
+                Modifier
+                    .fillMaxWidth()
+                    .height(40.dp)
+                    .padding(top = GlassSpacing.xs),
+            )
         }
-        Spacer(Modifier.height(12.dp))
-        StatCard("События", Modifier.fillMaxWidth(), index = 3) {
+        Spacer(Modifier.height(GlassSpacing.sm))
+        StatCard("События", Modifier.fillMaxWidth(), index = 3, onClick = if (events.isEmpty()) null else onOpenEvents) {
             if (events.isEmpty()) {
-                Text("пока пусто", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("пока пусто", color = GlassColors.onGlassVariant)
             } else {
-                events.take(8).forEach {
-                    Text(it, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
+                events.take(4).forEach {
+                    Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 1, modifier = Modifier.padding(vertical = 2.dp))
+                }
+                Row(Modifier.padding(top = GlassSpacing.xs), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Все события", style = MaterialTheme.typography.labelLarge, color = GlassColors.focusRing)
+                    Icon(
+                        Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                        null,
+                        tint = GlassColors.focusRing,
+                        modifier = Modifier.size(18.dp),
+                    )
                 }
             }
         }
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(GlassSpacing.lg))
     }
 }
 
 @Composable
 private fun Speed(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-        Spacer(Modifier.width(4.dp))
+        Icon(icon, null, tint = GlassColors.focusRing, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(GlassSpacing.xxs))
         Text(text, style = MaterialTheme.typography.titleLarge)
     }
 }
 
-/** A card that springs into place, staggered by [index]. */
+/**
+ * A glass card with a label that rises into place on a spring when first
+ * shown, staggered by [index] (fade + translate + soft scale).
+ */
 @Composable
-fun StatCard(label: String, modifier: Modifier = Modifier, index: Int = 0, content: @Composable () -> Unit) {
-    var shown by remember { androidx.compose.runtime.mutableStateOf(false) }
+fun StatCard(
+    label: String,
+    modifier: Modifier = Modifier,
+    index: Int = 0,
+    onClick: (() -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    var shown by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         delay(60L * index)
         shown = true
     }
-    val progress by animateFloatAsState(if (shown) 1f else 0f, Motion.bouncy(), label = "card")
-    Card(
-        modifier.graphicsLayer {
+    val progress by animateFloatAsState(if (shown) 1f else 0f, GlassSpring.bouncy(), label = "card")
+    GlassCard(
+        modifier = modifier.graphicsLayer {
             alpha = progress.coerceIn(0f, 1f)
             translationY = (1f - progress) * 48.dp.toPx()
-            val s = 0.92f + 0.08f * progress
+            val s = GlassScale.enter + (1f - GlassScale.enter) * progress
             scaleX = s
             scaleY = s
         },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-        shape = MaterialTheme.shapes.large,
+        onClick = onClick,
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(6.dp))
-            content()
-        }
+        Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = GlassColors.onGlassVariant)
+        Spacer(Modifier.height(GlassSpacing.xs))
+        content()
     }
 }
 
 @Composable
 private fun Sparkline(values: List<Long>, modifier: Modifier = Modifier) {
-    val color = MaterialTheme.colorScheme.primary
+    val color = GlassColors.focusRing
     Canvas(modifier) {
         if (values.size < 2) return@Canvas
         val max = (values.maxOrNull() ?: 1L).coerceAtLeast(1L).toFloat()

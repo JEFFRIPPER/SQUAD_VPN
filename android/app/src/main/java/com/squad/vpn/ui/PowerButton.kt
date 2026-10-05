@@ -45,6 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.squad.vpn.core.Status
+import com.squad.vpn.ui.glass.GlassColors
+import com.squad.vpn.ui.glass.GlassLevel
+import com.squad.vpn.ui.glass.GlassSurface
 import kotlinx.coroutines.launch
 import kotlin.math.sqrt
 
@@ -78,10 +81,11 @@ fun PowerButton(status: Status, onClick: () -> Unit, modifier: Modifier = Modifi
     )
     val fill by animateColorAsState(
         when {
-            connected -> Sq.c1
-            busy -> Sq.c5
-            failed -> Sq.c8
-            else -> Sq.c7
+            connected -> GlassColors.red
+            busy -> GlassColors.red5.copy(alpha = 0.75f)
+            failed -> GlassColors.red8.copy(alpha = 0.6f)
+            // Idle the button is glass with a faint brand tint.
+            else -> GlassColors.red7.copy(alpha = 0.35f)
         },
         tween(400, easing = Motion.emphasized),
         label = "fill",
@@ -158,8 +162,8 @@ fun PowerButton(status: Status, onClick: () -> Unit, modifier: Modifier = Modifi
         }
 
         val shape = RoundedCornerShape(percent = corner.toInt())
-        Box(
-            Modifier
+        GlassSurface(
+            modifier = Modifier
                 .graphicsLayer {
                     translationX = offsetX.value
                     translationY = offsetY.value
@@ -175,9 +179,10 @@ fun PowerButton(status: Status, onClick: () -> Unit, modifier: Modifier = Modifi
                             style = Stroke(width = 2.dp.toPx()),
                         )
                     }
-                }
-                .clip(shape)
-                .background(fill)
+                },
+            shape = shape,
+            level = GlassLevel.Raised,
+            inner = Modifier
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDragEnd = {
@@ -201,13 +206,15 @@ fun PowerButton(status: Status, onClick: () -> Unit, modifier: Modifier = Modifi
                     onClick()
                 }
                 .semantics { contentDescription = if (connected) "Отключиться" else "Подключиться" },
-            contentAlignment = Alignment.Center,
         ) {
+            // Over the glass: the state colour (solid red when connected).
+            Box(Modifier.matchParentSize().background(fill))
             Icon(
                 Icons.Rounded.PowerSettingsNew,
                 contentDescription = null,
                 tint = tint,
                 modifier = Modifier
+                    .align(Alignment.Center)
                     .size(size * 0.42f)
                     .graphicsLayer {
                         rotationZ = iconTurn

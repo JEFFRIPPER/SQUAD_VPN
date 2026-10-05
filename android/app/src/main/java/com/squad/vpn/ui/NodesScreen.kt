@@ -1,49 +1,52 @@
 package com.squad.vpn.ui
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Sort
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Speed
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.squad.vpn.core.Node
 import com.squad.vpn.core.Pinger
 import com.squad.vpn.core.Profile
 import com.squad.vpn.core.Vpn
+import com.squad.vpn.ui.glass.GlassButton
+import com.squad.vpn.ui.glass.GlassCard
+import com.squad.vpn.ui.glass.GlassChip
+import com.squad.vpn.ui.glass.GlassColors
+import com.squad.vpn.ui.glass.GlassLevel
+import com.squad.vpn.ui.glass.GlassRadius
+import com.squad.vpn.ui.glass.GlassSpacing
+import com.squad.vpn.ui.glass.LocalBackdrop
 
 @Composable
 fun NodesScreen(
@@ -51,6 +54,7 @@ fun NodesScreen(
     selected: String?,
     onSelect: (String?) -> Unit,
     onPingAll: () -> Unit,
+    contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
     val nodes by Vpn.nodes.collectAsStateWithLifecycle()
@@ -58,6 +62,14 @@ fun NodesScreen(
     val pinging by Vpn.pinging.collectAsStateWithLifecycle()
     val current by Vpn.current.collectAsStateWithLifecycle()
     var byPing by rememberSaveable { mutableStateOf(true) }
+
+    val list = rememberLazyListState()
+    val backdrop = LocalBackdrop.current
+    LaunchedEffect(list) {
+        // Rows are about 72 dp; an estimate is enough for parallax and the top bar.
+        snapshotFlow { list.firstVisibleItemIndex * 200f + list.firstVisibleItemScrollOffset }
+            .collect { backdrop.scroll = it }
+    }
 
     val shown = remember(nodes, pings, byPing) {
         if (!byPing) {
@@ -74,40 +86,48 @@ fun NodesScreen(
             )
         }
     }
-    val alive = pings.count { (k, v) -> v > 0 && nodes.any { it.key == k } }
+    val alive = remember(nodes, pings) {
+        val keys = nodes.mapTo(HashSet()) { it.key }
+        pings.count { (k, v) -> v > 0 && k in keys }
+    }
 
+    val direction = LocalLayoutDirection.current
     LazyColumn(
         modifier,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        state = list,
+        contentPadding = PaddingValues(
+            start = contentPadding.calculateStartPadding(direction) + GlassSpacing.md,
+            end = contentPadding.calculateEndPadding(direction) + GlassSpacing.md,
+            top = contentPadding.calculateTopPadding(),
+            bottom = contentPadding.calculateBottomPadding() + GlassSpacing.md,
+        ),
+        verticalArrangement = Arrangement.spacedBy(GlassSpacing.xs),
     ) {
         item(key = "header") {
-            Column(Modifier.padding(bottom = 8.dp)) {
+            Column(Modifier.padding(bottom = GlassSpacing.xs)) {
                 Text(profile.title, style = MaterialTheme.typography.headlineMedium)
                 Text(
                     if (nodes.isEmpty()) "Узлы появятся после первой загрузки подписки"
                     else "${nodes.size} узлов · отвечают $alive",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = GlassColors.onGlassVariant,
                 )
                 Row(
-                    Modifier.padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    Modifier.padding(top = GlassSpacing.sm),
+                    horizontalArrangement = Arrangement.spacedBy(GlassSpacing.xs),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    FilledTonalButton(onClick = onPingAll, enabled = !pinging && nodes.isNotEmpty()) {
-                        if (pinging) {
-                            CircularProgressIndicator(Modifier.size(ButtonDefaults.IconSize), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Rounded.Speed, null, Modifier.size(ButtonDefaults.IconSize))
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (pinging) "Проверяю…" else "Проверить пинг")
-                    }
-                    FilterChip(
+                    GlassButton(
+                        text = if (pinging) "Проверяю…" else "Проверить пинг",
+                        onClick = onPingAll,
+                        icon = Icons.Rounded.Speed,
+                        enabled = nodes.isNotEmpty(),
+                        loading = pinging,
+                    )
+                    GlassChip(
+                        text = "По пингу",
                         selected = byPing,
                         onClick = { byPing = !byPing },
-                        label = { Text("По пингу") },
-                        leadingIcon = { Icon(Icons.Rounded.Sort, null, Modifier.size(18.dp)) },
+                        icon = Icons.Rounded.Sort,
                     )
                 }
             }
@@ -139,6 +159,7 @@ fun NodesScreen(
     }
 }
 
+/** A list row: tonal (unblurred) glass, so the long list stays light and readable. */
 @Composable
 private fun NodeRow(
     title: String,
@@ -150,34 +171,39 @@ private fun NodeRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val container by animateColorAsState(
-        if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
-        Motion.gentle(),
-        label = "container",
-    )
-    val lift by animateFloatAsState(if (selected) 1.02f else 1f, Motion.bouncy(), label = "lift")
-    Card(
-        modifier
-            .fillMaxWidth()
-            .graphicsLayer {
-                scaleX = lift
-                scaleY = lift
-            }
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = container),
-        shape = MaterialTheme.shapes.large,
+    GlassCard(
+        modifier = modifier.fillMaxWidth(),
+        onClick = onClick,
+        selected = selected,
+        radius = GlassRadius.lg,
+        level = GlassLevel.Flat,
+        contentPadding = PaddingValues(horizontal = GlassSpacing.sm, vertical = GlassSpacing.xs),
+        role = Role.RadioButton,
     ) {
-        Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            RadioButton(selected = selected, onClick = onClick)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RadioButton(
+                selected = selected,
+                onClick = null,
+                colors = RadioButtonDefaults.colors(selectedColor = GlassColors.focusRing, unselectedColor = GlassColors.onGlassVariant),
+            )
             if (icon) {
-                Icon(Icons.Rounded.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 8.dp))
+                Icon(
+                    Icons.Rounded.AutoAwesome,
+                    null,
+                    tint = GlassColors.focusRing,
+                    modifier = Modifier.padding(start = GlassSpacing.xs, end = GlassSpacing.xs),
+                )
             }
-            Column(Modifier.weight(1f)) {
+            Column(
+                Modifier
+                    .weight(1f)
+                    .padding(start = GlassSpacing.xs),
+            ) {
                 Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     if (active) "сейчас используется" else subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (active) GlassColors.focusRing else GlassColors.onGlassVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -190,12 +216,12 @@ private fun NodeRow(
 @Composable
 private fun PingLabel(ping: Long?) {
     val (text, color) = when {
-        ping == null -> "—" to MaterialTheme.colorScheme.onSurfaceVariant
-        ping <= 0 -> "нет ответа" to MaterialTheme.colorScheme.error
-        ping < 400 -> "$ping мс" to Sq.good
-        ping < 1000 -> "$ping мс" to Sq.warn
-        else -> "$ping мс" to MaterialTheme.colorScheme.error
+        ping == null -> "—" to GlassColors.onGlassVariant
+        ping <= 0 -> "нет ответа" to GlassColors.bad
+        ping < 400 -> "$ping мс" to GlassColors.good
+        ping < 1000 -> "$ping мс" to GlassColors.warn
+        else -> "$ping мс" to GlassColors.bad
     }
     val animated by animateColorAsState(color, label = "ping")
-    Text(text, color = animated, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 8.dp))
+    Text(text, color = animated, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = GlassSpacing.xs))
 }

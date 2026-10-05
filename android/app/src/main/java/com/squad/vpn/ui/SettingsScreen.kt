@@ -11,6 +11,8 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,19 +26,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SystemUpdate
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +54,12 @@ import com.squad.vpn.core.Prefs
 import com.squad.vpn.core.Profile
 import com.squad.vpn.core.Subscriptions
 import com.squad.vpn.core.Updater
+import com.squad.vpn.ui.glass.GlassButton
+import com.squad.vpn.ui.glass.GlassButtonStyle
+import com.squad.vpn.ui.glass.GlassColors
+import com.squad.vpn.ui.glass.GlassRadius
+import com.squad.vpn.ui.glass.GlassSpacing
+import com.squad.vpn.ui.glass.LocalBackdrop
 import kotlinx.coroutines.launch
 import libv2ray.Libv2ray
 
@@ -62,6 +70,7 @@ fun SettingsScreen(
     refreshing: Boolean,
     refreshNote: String?,
     onRefresh: () -> Unit,
+    contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -71,12 +80,17 @@ fun SettingsScreen(
     var ruDirect by remember { mutableStateOf(Prefs.ruDirect) }
     var autoConnect by remember { mutableStateOf(Prefs.autoConnect) }
     val coreVersion = remember { runCatching { Libv2ray.checkVersionX() }.getOrDefault("") }
+    val scroll = rememberScrollState()
+    val backdrop = LocalBackdrop.current
+    LaunchedEffect(scroll) { snapshotFlow { scroll.value.toFloat() }.collect { backdrop.scroll = it } }
+    val radio = RadioButtonDefaults.colors(selectedColor = GlassColors.focusRing, unselectedColor = GlassColors.onGlassVariant)
 
     Column(
         modifier
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .verticalScroll(scroll)
+            .padding(contentPadding)
+            .padding(horizontal = GlassSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(GlassSpacing.sm),
     ) {
         Text("Настройки", style = MaterialTheme.typography.headlineMedium)
 
@@ -89,10 +103,10 @@ fun SettingsScreen(
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    RadioButton(selected = profile == p, onClick = { onProfile(p) })
+                    RadioButton(selected = profile == p, onClick = { onProfile(p) }, colors = radio)
                     Column(Modifier.weight(1f)) {
                         Text(p.title, style = MaterialTheme.typography.titleMedium)
-                        Text(p.hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(p.hint, style = MaterialTheme.typography.bodySmall, color = GlassColors.onGlassVariant)
                     }
                 }
             }
@@ -109,6 +123,13 @@ fun SettingsScreen(
                     },
                     label = { Text("Ссылка на подписку") },
                     singleLine = true,
+                    shape = RoundedCornerShape(GlassRadius.md),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = GlassColors.focusRing,
+                        unfocusedBorderColor = GlassColors.onGlassVariant.copy(alpha = 0.4f),
+                        focusedLabelColor = GlassColors.focusRing,
+                        cursorColor = GlassColors.focusRing,
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp),
@@ -116,20 +137,17 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                FilledTonalButton(onClick = onRefresh, enabled = !refreshing) {
-                    if (refreshing) {
-                        CircularProgressIndicator(Modifier.size(ButtonDefaults.IconSize), strokeWidth = 2.dp)
-                    } else {
-                        Icon(Icons.Rounded.Refresh, null, Modifier.size(ButtonDefaults.IconSize))
-                    }
-                    Spacer(Modifier.width(8.dp))
-                    Text("Обновить подписку")
-                }
+                GlassButton(
+                    text = "Обновить",
+                    onClick = onRefresh,
+                    icon = Icons.Rounded.Refresh,
+                    loading = refreshing,
+                )
                 Spacer(Modifier.width(12.dp))
                 Text(
                     refreshNote ?: formatAgo(Subscriptions.updatedAt(profile)),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = GlassColors.onGlassVariant,
                 )
             }
         }
@@ -156,7 +174,7 @@ fun SettingsScreen(
         StatCard("Обновления", Modifier.fillMaxWidth(), index = 2) {
             Text("Версия ${BuildConfig.VERSION_NAME} (сборка ${BuildConfig.VERSION_CODE})", style = MaterialTheme.typography.titleMedium)
             if (coreVersion.isNotEmpty()) {
-                Text(coreVersion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(coreVersion, style = MaterialTheme.typography.bodySmall, color = GlassColors.onGlassVariant)
             }
             Spacer(Modifier.height(8.dp))
             AnimatedContent(targetState = update, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "update") { s ->
@@ -164,11 +182,13 @@ fun SettingsScreen(
                     when (s) {
                         is Updater.State.Available -> {
                             Text("Доступна версия ${s.info.versionName}")
-                            Button(onClick = { scope.launch { Updater.download(s.info) } }, modifier = Modifier.padding(top = 8.dp)) {
-                                Icon(Icons.Rounded.SystemUpdate, null, Modifier.size(ButtonDefaults.IconSize))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Скачать и установить")
-                            }
+                            GlassButton(
+                                text = "Скачать и установить",
+                                onClick = { scope.launch { Updater.download(s.info) } },
+                                icon = Icons.Rounded.SystemUpdate,
+                                style = GlassButtonStyle.Filled,
+                                modifier = Modifier.padding(top = GlassSpacing.xs),
+                            )
                         }
                         is Updater.State.Downloading -> {
                             Text("Скачиваю ${s.info.versionName}…")
@@ -176,14 +196,19 @@ fun SettingsScreen(
                                 progress = { s.progress },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 8.dp),
+                                    .padding(top = GlassSpacing.xs),
+                                color = GlassColors.red,
+                                trackColor = GlassColors.onGlass.copy(alpha = 0.12f),
                             )
                         }
                         is Updater.State.Ready -> {
                             Text("Версия ${s.info.versionName} скачана")
-                            Button(onClick = { Updater.install(context, s.file) }, modifier = Modifier.padding(top = 8.dp)) {
-                                Text("Установить")
-                            }
+                            GlassButton(
+                                text = "Установить",
+                                onClick = { Updater.install(context, s.file) },
+                                style = GlassButtonStyle.Filled,
+                                modifier = Modifier.padding(top = GlassSpacing.xs),
+                            )
                         }
                         else -> {
                             val note = when (s) {
@@ -192,14 +217,13 @@ fun SettingsScreen(
                                 is Updater.State.Error -> s.message
                                 else -> "Приложение обновляется само: проверка раз в 6 часов"
                             }
-                            Text(note, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            FilledTonalButton(
+                            Text(note, color = GlassColors.onGlassVariant)
+                            GlassButton(
+                                text = "Проверить обновления",
                                 onClick = { scope.launch { Updater.check() } },
-                                enabled = s != Updater.State.Checking,
-                                modifier = Modifier.padding(top = 8.dp),
-                            ) {
-                                Text("Проверить обновления")
-                            }
+                                loading = s == Updater.State.Checking,
+                                modifier = Modifier.padding(top = GlassSpacing.xs),
+                            )
                         }
                     }
                 }
@@ -208,11 +232,11 @@ fun SettingsScreen(
 
         StatCard("О приложении", Modifier.fillMaxWidth(), index = 3) {
             Text("SQUAD VPN для Android: те же подписки и узлы, что у программы для Windows.")
-            TextButton(onClick = {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/${BuildConfig.REPO}")))
-            }) {
-                Text("Открыть GitHub")
-            }
+            GlassButton(
+                text = "Открыть GitHub",
+                onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/${BuildConfig.REPO}"))) },
+                modifier = Modifier.padding(top = GlassSpacing.sm),
+            )
         }
         Spacer(Modifier.height(16.dp))
     }
@@ -229,9 +253,19 @@ private fun SwitchRow(title: String, subtitle: String, checked: Boolean, onChang
     ) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = GlassColors.onGlassVariant)
         }
         Spacer(Modifier.width(12.dp))
-        Switch(checked = checked, onCheckedChange = onChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(
+                checkedTrackColor = GlassColors.red,
+                checkedThumbColor = GlassColors.onAccent,
+                uncheckedTrackColor = GlassColors.onGlass.copy(alpha = 0.08f),
+                uncheckedBorderColor = GlassColors.onGlassVariant.copy(alpha = 0.6f),
+                uncheckedThumbColor = GlassColors.onGlassVariant,
+            ),
+        )
     }
 }
