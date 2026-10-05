@@ -215,7 +215,7 @@ fun SettingsScreen(
                                 Updater.State.Checking -> "Проверяю…"
                                 Updater.State.UpToDate -> "У тебя последняя версия"
                                 is Updater.State.Error -> s.message
-                                else -> "Приложение обновляется само: проверка раз в 6 часов"
+                                else -> "Новая версия ищется при каждом запуске и раз в 4 часа в фоне"
                             }
                             Text(note, color = GlassColors.onGlassVariant)
                             GlassButton(

@@ -56,6 +56,11 @@
                 android:value="false" />
         </service>
 
+        <service
+            android:name=".bg.UpdateJob"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+
         <receiver
             android:name=".bg.BootReceiver"
             android:exported="true">

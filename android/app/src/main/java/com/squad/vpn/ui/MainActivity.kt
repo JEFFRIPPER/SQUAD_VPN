@@ -13,6 +13,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -67,6 +71,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.squad.vpn.R
 import com.squad.vpn.bg.SquadVpnService
+import com.squad.vpn.bg.UpdateJob
 import com.squad.vpn.core.Pinger
 import com.squad.vpn.core.Prefs
 import com.squad.vpn.core.Profile
@@ -76,7 +81,6 @@ import com.squad.vpn.core.Updater
 import com.squad.vpn.core.Vpn
 import com.squad.vpn.ui.glass.GlassBackground
 import com.squad.vpn.ui.glass.GlassColors
-import com.squad.vpn.ui.glass.GlassDialog
 import com.squad.vpn.ui.glass.GlassDuration
 import com.squad.vpn.ui.glass.GlassEasing
 import com.squad.vpn.ui.glass.GlassNavBar
@@ -117,8 +121,8 @@ class MainActivity : ComponentActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             if (Vpn.nodes.value.isEmpty()) Vpn.setNodes(Subscriptions.cached(Profile.current))
-            Updater.checkIfDue()
         }
+        if (intent?.getBooleanExtra(UpdateJob.EXTRA_UPDATE, false) == true) updateRequested = true
         val wantsConnect = intent?.getBooleanExtra(EXTRA_CONNECT, false) == true
         if (savedInstanceState == null && (wantsConnect || Prefs.autoConnect) && Vpn.status.value == Status.Disconnected) {
             connect()
@@ -129,8 +133,18 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Set when the update notification opened the app: the download starts right away. */
+    private var updateRequested by mutableStateOf(false)
+
+    override fun onStart() {
+        super.onStart()
+        // Every time the app comes to the screen: is there a newer version?
+        lifecycleScope.launch { Updater.checkIfDue() }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        if (intent.getBooleanExtra(UpdateJob.EXTRA_UPDATE, false)) updateRequested = true
         val status = Vpn.status.value
         if (intent.getBooleanExtra(EXTRA_CONNECT, false) && status != Status.Connected && status != Status.Connecting) connect()
     }
@@ -150,7 +164,6 @@ class MainActivity : ComponentActivity() {
         var refreshing by remember { mutableStateOf(false) }
         var refreshNote by remember { mutableStateOf<String?>(null) }
         var showEvents by rememberSaveable { mutableStateOf(false) }
-        var dismissedUpdate by rememberSaveable { mutableIntStateOf(0) }
         val status by Vpn.status.collectAsStateWithLifecycle()
         val update by Updater.state.collectAsStateWithLifecycle()
         val events by Vpn.events.collectAsStateWithLifecycle()
@@ -205,8 +218,35 @@ class MainActivity : ComponentActivity() {
         // The page under the bars: it starts below the top bar and ends above the floating navigation.
         val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+        fun startUpdate() {
+            when (val s = Updater.state.value) {
+                is Updater.State.Ready -> Updater.install(this@MainActivity, s.file)
+                else -> {
+                    val info = Updater.available() ?: return
+                    scope.launch {
+                        Updater.download(info)
+                        // Straight on to the installer once the file is here and checked.
+                        (Updater.state.value as? Updater.State.Ready)?.let { Updater.install(this@MainActivity, it.file) }
+                    }
+                }
+            }
+        }
+
+        LaunchedEffect(updateRequested, update) {
+            if (updateRequested && Updater.available() != null) {
+                updateRequested = false
+                startUpdate()
+            }
+        }
+
+        val bannerShown = Updater.hasUpdate
+        val bannerSpace by animateDpAsState(
+            if (bannerShown) UpdateBannerHeight + GlassSpacing.xs else 0.dp,
+            GlassSpring.spatial(),
+            label = "bannerSpace",
+        )
         val contentPadding = PaddingValues(
-            top = top + GlassSize.topBar,
+            top = top + GlassSize.topBar + bannerSpace,
             bottom = bottom + GlassSize.navBar + GlassSize.navMargin * 2 + GlassSpacing.xs,
         )
 
@@ -285,6 +325,19 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                AnimatedVisibility(
+                    visible = bannerShown,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = top + GlassSize.topBar)
+                        .padding(horizontal = GlassSpacing.md),
+                    enter = slideInVertically(GlassSpring.spatial()) { -it } + fadeIn(tween(GlassDuration.medium)),
+                    exit = slideOutVertically(tween(GlassDuration.medium, easing = GlassEasing.emphasizedAccelerate)) { -it } +
+                        fadeOut(tween(GlassDuration.short)),
+                ) {
+                    UpdateBanner(state = update, onUpdate = ::startUpdate)
+                }
+
                 GlassTopBar(Modifier.align(Alignment.TopCenter)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
@@ -332,23 +385,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                val offer = update as? Updater.State.Available
-                GlassDialog(
-                    visible = offer != null && offer.info.versionCode != dismissedUpdate,
-                    title = "Есть новая версия",
-                    text = "SQUAD VPN ${offer?.info?.versionName.orEmpty()} готов. Скачать и установить сейчас?",
-                    confirmText = "Обновить",
-                    onConfirm = {
-                        val info = offer?.info
-                        if (info != null) {
-                            dismissedUpdate = info.versionCode
-                            tab = 2
-                            scope.launch { Updater.download(info) }
-                        }
-                    },
-                    dismissText = "Позже",
-                    onDismiss = { dismissedUpdate = offer?.info?.versionCode ?: 0 },
-                )
             }
         }
     }

@@ -357,7 +357,7 @@ class SquadVpnService : VpnService() {
         if (Vpn.pinging.value) return
         Vpn.setPinging(true)
         try {
-            withTimeoutOrNull(120_000) { Pinger.pingAll(nodes.filter { it.key !in Vpn.pings.value }) }
+            withTimeoutOrNull(300_000) { Pinger.pingAll(nodes.filter { it.key !in Vpn.pings.value }) }
         } finally {
             Vpn.setPinging(false)
         }

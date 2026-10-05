@@ -39,6 +39,11 @@ object Prefs {
         get() = sp.getBoolean("was_connected", false)
         set(value) = sp.edit().putBoolean("was_connected", value).apply()
 
+    /** versionCode the user was last notified about, so each version is announced once. */
+    var notifiedVersion: Int
+        get() = sp.getInt("notified_version", 0)
+        set(value) = sp.edit().putInt("notified_version", value).apply()
+
     var lastUpdateCheck: Long
         get() = sp.getLong("last_update_check", 0)
         set(value) = sp.edit().putLong("last_update_check", value).apply()
