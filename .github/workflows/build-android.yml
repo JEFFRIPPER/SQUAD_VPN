@@ -58,7 +58,7 @@ jobs:
           sha=$(sha256sum dist/SQUAD-VPN.apk | cut -d' ' -f1)
           jq -n \
             --argjson versionCode ${{ github.run_number }} \
-            --arg versionName "1.0.${{ github.run_number }}" \
+            --arg versionName "$(grep VERSION_NAME android/version.properties | cut -d= -f2) (сборка ${{ github.run_number }})" \
             --arg sha256 "$sha" \
             --argjson size "$size" \
             --arg commit "${{ github.sha }}" \
@@ -77,3 +77,18 @@ jobs:
           fi
           gh release edit android-latest -R "$GITHUB_REPOSITORY" --notes "$notes"
           gh release upload android-latest dist/SQUAD-VPN.apk dist/android-manifest.json -R "$GITHUB_REPOSITORY" --clobber
+
+      # Each app version also gets its own release android-v<version> (never "Latest",
+      # that one belongs to the Windows program).
+      - name: Publish versioned release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="android-v$(grep VERSION_NAME android/version.properties | cut -d= -f2)"
+          if ! gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$tag" dist/SQUAD-VPN.apk -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
+              --title "SQUAD VPN для Android $tag" \
+              --notes "Приложение SQUAD VPN для Android. Установи SQUAD-VPN.apk, дальше оно обновляется само."
+          else
+            gh release upload "$tag" dist/SQUAD-VPN.apk -R "$GITHUB_REPOSITORY" --clobber
+          fi

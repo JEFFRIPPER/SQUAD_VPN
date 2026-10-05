@@ -154,7 +154,7 @@ fun SettingsScreen(
         }
 
         StatCard("Обновления", Modifier.fillMaxWidth(), index = 2) {
-            Text("Версия ${BuildConfig.VERSION_NAME}", style = MaterialTheme.typography.titleMedium)
+            Text("Версия ${BuildConfig.VERSION_NAME} (сборка ${BuildConfig.VERSION_CODE})", style = MaterialTheme.typography.titleMedium)
             if (coreVersion.isNotEmpty()) {
                 Text(coreVersion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }

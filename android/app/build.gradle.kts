@@ -6,6 +6,10 @@ plugins {
 
 // CI passes -PversionCode=<run number>; local builds stay at 1.
 val buildNumber = (findProperty("versionCode") as String?)?.toIntOrNull() ?: 1
+// The user-facing version lives in android/version.properties; builds differ by versionCode.
+val appVersion = java.util.Properties().apply {
+    rootProject.file("version.properties").inputStream().use { load(it) }
+}.getProperty("VERSION_NAME", "1.0")
 
 android {
     namespace = "com.squad.vpn"
@@ -16,7 +20,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = buildNumber
-        versionName = "1.0.$buildNumber"
+        versionName = appVersion
         buildConfigField("String", "REPO", "\"JEFFRIPPER/SQUAD_VPN\"")
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
