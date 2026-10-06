@@ -42,4 +42,4 @@
 
 Код на Kotlin и Jetpack Compose, пакет `com.squad.vpn`. Собирает
 `.github/workflows/build-android.yml`, готовый apk попадает в релиз вместе
-с exe.
+с exe. Перед сборкой идут юнит-тесты: `gradle -p android testReleaseUnitTest`.

@@ -69,6 +69,11 @@ jobs:
           done
           ls -la android/app/src/main/assets/subs
 
+      # Link parsing and Xray configs, also over the subscriptions bundled
+      # above: a failing test stops the build, so no update reaches phones.
+      - name: Unit tests
+        run: gradle -p android --no-daemon testReleaseUnitTest
+
       # Signing key from the repository secrets (made once by apk-signing-key.yml):
       # the keystore in base64, split into four secrets, and its password.
       # Without it nothing is built: an apk signed with any other key would not
