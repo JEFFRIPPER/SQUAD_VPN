@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material3.Icon
@@ -70,6 +71,7 @@ fun SettingsScreen(
     refreshing: Boolean,
     refreshNote: String?,
     onRefresh: () -> Unit,
+    onOpenApps: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -155,11 +157,28 @@ fun SettingsScreen(
         StatCard("Подключение", Modifier.fillMaxWidth(), index = 1) {
             SwitchRow(
                 "Российские сайты напрямую",
-                "Банки и Госуслуги видят твой обычный адрес. В «Белых списках» всё идёт через VPN",
+                "Сайты .ru, .su и .рф видят твой обычный адрес. В «Белых списках» всё идёт через VPN",
                 ruDirect,
             ) {
                 ruDirect = it
                 Prefs.ruDirect = it
+            }
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onOpenApps)
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Приложения без VPN", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Банки, Госуслуги и другие отмеченные приложения ходят напрямую",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = GlassColors.onGlassVariant,
+                    )
+                }
+                Icon(Icons.Rounded.ChevronRight, null, tint = GlassColors.onGlassVariant)
             }
             SwitchRow(
                 "Подключаться автоматически",

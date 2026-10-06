@@ -36,6 +36,11 @@ object Prefs {
         get() = sp.getBoolean("hide_dead", true)
         set(value) = sp.edit().putBoolean("hide_dead", value).apply()
 
+    /** Apps that bypass the VPN; null = [DirectApps.PRESET] (the user never changed the list). */
+    var directApps: Set<String>?
+        get() = sp.getStringSet("direct_apps", null)?.toSet()
+        set(value) = sp.edit().putStringSet("direct_apps", value).apply()
+
     var ruDirect: Boolean
         get() = sp.getBoolean("ru_direct", true)
         set(value) = sp.edit().putBoolean("ru_direct", value).apply()

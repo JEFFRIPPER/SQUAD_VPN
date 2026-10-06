@@ -15,6 +15,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.squad.vpn.App
 import com.squad.vpn.R
+import com.squad.vpn.core.DirectApps
 import com.squad.vpn.core.Node
 import com.squad.vpn.core.Pinger
 import com.squad.vpn.core.Prefs
@@ -80,6 +81,7 @@ class SquadVpnService : VpnService() {
             ACTION_STOP -> stop("Отключено")
             ACTION_SWITCH -> scope.launch { switchTo(Prefs.selectedNode, "выбран вручную") }
             ACTION_FAILOVER -> scope.launch { failover("сменить узел") }
+            ACTION_RELOAD_APPS -> scope.launch { reloadApps() }
             // ACTION_START, always-on VPN (SERVICE_INTERFACE) and a restart by the system.
             else -> start()
         }
@@ -209,6 +211,9 @@ class SquadVpnService : VpnService() {
             )
         // The app (and the Xray core inside it) stays outside the tunnel.
         builder.addDisallowedApplication(packageName)
+        // Banks, Госуслуги and the like go straight to the internet. An app
+        // that was removed from the phone is skipped.
+        for (pkg in DirectApps.selected) runCatching { builder.addDisallowedApplication(pkg) }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) builder.setMetered(false)
         return builder.establish()
     }
@@ -341,6 +346,21 @@ class SquadVpnService : VpnService() {
         Unit
     }
 
+    /** The list of apps without VPN changed: a new VPN interface, same node. */
+    private suspend fun reloadApps(): Unit = lock.withLock {
+        if (Vpn.status.value != Status.Connected) return@withLock
+        val node = Vpn.current.value ?: return@withLock
+        val old = tun
+        // The new interface replaces the old one right away; the core moves over to it.
+        val pfd = establish() ?: return@withLock
+        tun = pfd
+        runCatching { startCore(node) }
+            .onSuccess { Vpn.event("Список приложений без VPN обновлён") }
+            .onFailure { shutdown(Status.Failed, it.message ?: "Ядро не перезапустилось") }
+        old?.close()
+        Unit
+    }
+
     private suspend fun switchTo(key: String?, reason: String): Unit = lock.withLock {
         if (Vpn.status.value != Status.Connected) return@withLock
         val nodes = Vpn.nodes.value
@@ -446,6 +466,7 @@ class SquadVpnService : VpnService() {
         const val ACTION_STOP = "com.squad.vpn.STOP"
         const val ACTION_SWITCH = "com.squad.vpn.SWITCH"
         const val ACTION_FAILOVER = "com.squad.vpn.FAILOVER"
+        const val ACTION_RELOAD_APPS = "com.squad.vpn.RELOAD_APPS"
 
         /** False when Android refused to start the service from the background. */
         fun send(context: Context, action: String): Boolean {

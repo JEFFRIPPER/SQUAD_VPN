@@ -164,6 +164,8 @@ class MainActivity : ComponentActivity() {
         var refreshing by remember { mutableStateOf(false) }
         var refreshNote by remember { mutableStateOf<String?>(null) }
         var showEvents by rememberSaveable { mutableStateOf(false) }
+        var showApps by rememberSaveable { mutableStateOf(false) }
+        var appsChanged by remember { mutableStateOf(false) }
         val status by Vpn.status.collectAsStateWithLifecycle()
         val update by Updater.state.collectAsStateWithLifecycle()
         val events by Vpn.events.collectAsStateWithLifecycle()
@@ -318,6 +320,7 @@ class MainActivity : ComponentActivity() {
                                 refreshing = refreshing,
                                 refreshNote = refreshNote,
                                 onRefresh = { refresh(profile) },
+                                onOpenApps = { showApps = true },
                                 contentPadding = contentPadding,
                                 modifier = Modifier.fillMaxSize(),
                             )
@@ -376,6 +379,21 @@ class MainActivity : ComponentActivity() {
                         .align(Alignment.BottomCenter)
                         .padding(bottom = contentPadding.calculateBottomPadding()),
                 )
+
+                GlassSheet(
+                    visible = showApps,
+                    onDismiss = {
+                        showApps = false
+                        // A running VPN picks up the new list at once.
+                        if (appsChanged && status == Status.Connected) {
+                            SquadVpnService.send(this@MainActivity, SquadVpnService.ACTION_RELOAD_APPS)
+                        }
+                        appsChanged = false
+                    },
+                    title = "Приложения без VPN",
+                ) {
+                    DirectAppsList(onChange = { appsChanged = true })
+                }
 
                 GlassSheet(visible = showEvents, onDismiss = { showEvents = false }, title = "События") {
                     LazyColumn(Modifier.heightIn(max = 420.dp)) {
