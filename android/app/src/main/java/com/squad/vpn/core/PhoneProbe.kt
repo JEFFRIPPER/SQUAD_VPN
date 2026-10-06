@@ -53,7 +53,7 @@ object PhoneProbe {
         if (!lock.tryLock()) return
         _running.value = true
         try {
-            note(run(context))
+            note(run(context, force))
         } catch (e: Exception) {
             note("Ошибка: ${e.message}")
         } finally {
@@ -68,9 +68,12 @@ object PhoneProbe {
         _note.value = stamped
     }
 
-    private suspend fun run(context: Context): String {
-        if (!onMobile(context)) return "не мобильный интернет, проверка не нужна"
-        if (!whiteListsOn()) return "белые списки сейчас не включены, проверка не нужна"
+    private suspend fun run(context: Context, force: Boolean): String {
+        // From the button: say at once whether the token works, so a bad one
+        // does not wait unnoticed for the next time white lists come.
+        fun idle(text: String) = if (force) "$text. ${tokenStatus()}" else text
+        if (!onMobile(context)) return idle("не мобильный интернет, проверка не нужна")
+        if (!whiteListsOn()) return idle("белые списки сейчас не включены, проверка не нужна")
         // In white-list mode GitHub opens only through the VPN.
         if (!Vpn.isConnected) return "белые списки включены, но для отправки отчёта включи VPN"
 
@@ -111,6 +114,26 @@ object PhoneProbe {
         return "белые списки включены, отвечают $alive из ${checked.size}, отчёт отправлен"
     }
 
+    private fun tokenStatus(): String =
+        try {
+            val (code, text) = Http.call("GET", API, null, headers())
+            when {
+                code == 401 -> "GitHub не принял токен, создай новый"
+                code !in 200..299 -> "токен проверить не удалось: GitHub ответил $code"
+                JSONObject(text).optJSONObject("permissions")?.optBoolean("push") == true ->
+                    "Токен в порядке, проверка запустится сама"
+                else -> "у токена нет права писать в репозиторий, создай новый с галочкой public_repo"
+            }
+        } catch (e: Exception) {
+            "токен проверить не удалось: ${e.message}"
+        }
+
+    private fun headers() = mapOf(
+        "Authorization" to "Bearer ${Prefs.probeToken}",
+        "Accept" to "application/vnd.github+json",
+        "X-GitHub-Api-Version" to "2022-11-28",
+    )
+
     private fun onMobile(context: Context): Boolean {
         val cm = context.getSystemService(ConnectivityManager::class.java)
         // The app is outside its own VPN, so this is the real network.
@@ -139,11 +162,7 @@ object PhoneProbe {
      * previous one: history does not grow (the same as force-pushing).
      */
     private fun publish(report: String) {
-        val headers = mapOf(
-            "Authorization" to "Bearer ${Prefs.probeToken}",
-            "Accept" to "application/vnd.github+json",
-            "X-GitHub-Api-Version" to "2022-11-28",
-        )
+        val headers = headers()
         fun call(method: String, path: String, body: JSONObject?): JSONObject {
             val (code, text) = Http.call(method, "$API$path", body?.toString(), headers)
             if (code == 401) throw IllegalStateException("GitHub не принял токен")
