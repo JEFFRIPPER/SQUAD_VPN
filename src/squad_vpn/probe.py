@@ -69,10 +69,14 @@ def load_identity(
     region: str | None = None,
     kind: str = "local",
 ) -> ProbeIdentity:
-    """Stable identity of this probe, created once and kept in ``data/probe.json``.
+    """Identity of this probe, kept in ``data/probe.json``.
 
     The id is random (``<region>-<6 hex>``): it identifies the installation,
-    not the person.
+    not the person. Without a region from the settings the country is
+    detected on every run: one detected while another VPN was on must not
+    stick (a computer in Russia reported as NL for good). When the country
+    changes, the probe gets a new id, so its old reports are not mixed up
+    with the new ones and simply expire.
     """
     stored: dict[str, str] = {}
     try:
@@ -82,10 +86,16 @@ def load_identity(
     stored_region = str(stored.get("region") or "").upper()
     if stored_region == "??":
         stored_region = ""  # detection failed last time: try again
-    region = (region or stored_region).upper() or detect_region()
+    if not region:
+        detected = detect_region()
+        region = detected if detected != "??" else stored_region
+    region = region.upper() or "??"
+    stored_id = stored.get("probe_id")
+    if stored_region and region != "??" and region != stored_region:
+        stored_id = None
     probe_id = (
         probe_id
-        or stored.get("probe_id")
+        or stored_id
         or f"{region.lower().replace('??', 'xx')}-{secrets.token_hex(3)}"
     ).lower()
     if not _PROBE_ID.fullmatch(probe_id):

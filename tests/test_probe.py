@@ -195,6 +195,25 @@ def test_identity_is_stable_and_retries_unknown_region(tmp_path, monkeypatch):
         load_identity(tmp_path / "x.json", probe_id="Bad Id", region="US")
 
 
+def test_region_is_detected_again_and_a_new_country_gets_a_new_id(tmp_path, monkeypatch):
+    from squad_vpn import probe
+
+    path = tmp_path / "probe.json"
+    # First run with another VPN on: the computer looked like it was in NL.
+    monkeypatch.setattr(probe, "detect_region", lambda: "NL")
+    first = load_identity(path)
+    assert first.probe_id.startswith("nl-")
+    monkeypatch.setattr(probe, "detect_region", lambda: "RU")
+    second = load_identity(path)
+    assert second.region == "RU" and second.probe_id.startswith("ru-")
+    # A failed detection keeps the last known country and id.
+    monkeypatch.setattr(probe, "detect_region", lambda: "??")
+    assert load_identity(path) == second
+    # The same country keeps the id.
+    monkeypatch.setattr(probe, "detect_region", lambda: "RU")
+    assert load_identity(path) == second
+
+
 def test_new_probe_is_seeded_from_existing_checks(tmp_path):
     store = NodeStore(tmp_path / "seed.sqlite3")
     try:
