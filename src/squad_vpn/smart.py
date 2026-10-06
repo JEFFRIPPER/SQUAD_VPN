@@ -5,6 +5,7 @@ import json
 import math
 import re
 from dataclasses import asdict, dataclass, field, fields, replace
+from hashlib import sha256
 from pathlib import Path
 
 import yaml
@@ -16,6 +17,7 @@ from .store import NodeStore
 
 
 DEFAULT_PROFILES_PATH = Path("config/profiles.yaml")
+FINGERPRINTS_FILE = "fingerprints.json"
 
 
 @dataclass(slots=True, frozen=True)
@@ -349,9 +351,11 @@ def select_profile(store: NodeStore, profile: SmartProfile) -> list[RankedNode]:
         tagged = sources_with_tags(profile.prefer_tags) if profile.prefer_tags else set()
 
         def preference(item: RankedNode) -> tuple[int, int, int]:
-            confirmed = any(item.region_status(region) == "ok" for region in preferred)
+            statuses = {item.region_status(region) for region in preferred}
+            # Checked there and failed: last, after the ones nobody checked yet.
+            place = 0 if "ok" in statuses else 2 if statuses & {"down", "blocked"} else 1
             return (
-                0 if confirmed else 1,
+                place,
                 0 if item.node.source in tagged else 1,
                 1 if _asn_number(item.asn) in avoided else 0,
             )
@@ -418,8 +422,13 @@ def _export_pair(
     branding: Branding,
     name: str,
     description: str = "",
+    fingerprints: dict[str, str] | None = None,
 ) -> dict[str, object]:
     rendered = render_subscription(records, branding, name, description)
+    if fingerprints is not None:
+        for node in branding.apply(records):
+            if node.raw_uri:
+                fingerprints[link_key(node.raw_uri)] = node.fingerprint
     base.parent.mkdir(parents=True, exist_ok=True)
     base.write_text(rendered.plain, encoding="utf-8")
     Path(str(base) + ".b64").write_text(rendered.base64, encoding="utf-8")
@@ -447,14 +456,18 @@ def export_smart_catalog(
     profiles = DEFAULT_PROFILES if profiles is None else profiles
     index: dict[str, object] = {"profiles": {}, "aliases": {}, "countries": {}, "protocols": {}}
 
+    fingerprints: dict[str, str] = {}
     for profile in profiles:
         records = select_profile(store, profile)
-        meta = _export_pair(records, root / profile.name, branding, profile.name, profile.description)
+        meta = _export_pair(
+            records, root / profile.name, branding, profile.name, profile.description, fingerprints
+        )
         meta["criteria"] = asdict(profile)
         index["profiles"][profile.name] = meta  # type: ignore[index]
         for alias in profile.aliases:
             _export_pair(records, root / alias, branding, profile.name, profile.description)
             index["aliases"][alias] = profile.name  # type: ignore[index]
+    _write_fingerprints(root, fingerprints)
 
     if not groups:
         for folder in (root / "country", root / "protocol"):
@@ -494,6 +507,22 @@ def export_smart_catalog(
             keep.update({name, name + ".yaml", name + ".b64"})
         remove_stale_files(folder, keep)
     return _write_index(root, index)
+
+
+def link_key(link: str) -> str:
+    """Short key of one subscription line, as SQUAD-VPN.apk computes it.
+
+    The display name (#fragment) is left out: it carries a running number
+    that changes between publishes, while the phone may hold an older copy.
+    """
+    return sha256(link.strip().split("#", 1)[0].encode("utf-8")).hexdigest()[:16]
+
+
+def _write_fingerprints(root: Path, fingerprints: dict[str, str]) -> None:
+    """Line key -> node fingerprint, so the apk can report its checks (probe.py)."""
+    (root / FINGERPRINTS_FILE).write_text(
+        json.dumps(fingerprints, separators=(",", ":"), sort_keys=True), encoding="utf-8"
+    )
 
 
 def _write_index(root: Path, index: dict[str, object]) -> dict[str, object]:

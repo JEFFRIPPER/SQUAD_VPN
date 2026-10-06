@@ -184,6 +184,19 @@ class LinksTest {
     }
 
     @Test
+    fun linkKeyMatchesTheServer() {
+        // link_key() in src/squad_vpn/smart.py gives the same for this line.
+        assertEquals("4c7553334c67f95e", Links.linkKey("trojan://p@a.example.com:443?sni=a.example.com#Имя 1"))
+        assertEquals("4c7553334c67f95e", Links.linkKey("  trojan://p@a.example.com:443?sni=a.example.com "))
+    }
+
+    @Test
+    fun nodesKeepTheirLine() {
+        val line = "trojan://p@a.example.com:443#x"
+        assertEquals(line, Links.parseSubscription(line).single().link)
+    }
+
+    @Test
     fun keyIsStableAndDependsOnSettings() {
         val a = parse("trojan://p@example.com:443#a")
         assertEquals(a.key, parse("trojan://p@example.com:443#other name").key)

@@ -130,6 +130,12 @@ CREATE TABLE IF NOT EXISTS sources (
 
 
 RECENT_WINDOW = 10
+
+# A phone that checks servers while its mobile internet is cut down to the
+# white lists (SQUAD-VPN.apk). Its results say nothing about the normal
+# internet there, so they get a region of their own: "RU" + "-WL" = "RU-WL".
+MOBILE_WHITELIST_KIND = "mobile-whitelist"
+WHITELIST_REGION_SUFFIX = "-WL"
 # Bump when scoring changes: stored scores are recomputed on next open.
 SCORING_VERSION = 2
 HISTORY_KEEP = 50
@@ -602,14 +608,17 @@ class NodeStore:
             marks = ",".join("?" for _ in chunk)
             rows = self.connection.execute(
                 f"""
-                SELECT s.fingerprint, COALESCE(p.region, '??') AS region, s.alive,
+                SELECT s.fingerprint,
+                       CASE WHEN p.kind = ? THEN p.region || ?
+                            ELSE COALESCE(p.region, '??') END AS region,
+                       s.alive,
                        s.latency_ms, s.checked_at
                 FROM node_probe_status s
                 LEFT JOIN probes p ON p.probe_id = s.probe_id
                 WHERE s.fingerprint IN ({marks})
                   AND s.checked_at >= datetime('now', ?)
                 """,
-                [*chunk, f"-{int(within_hours)} hours"],
+                [MOBILE_WHITELIST_KIND, WHITELIST_REGION_SUFFIX, *chunk, f"-{int(within_hours)} hours"],
             ).fetchall()
             for row in rows:
                 regions = result.setdefault(row["fingerprint"], {})

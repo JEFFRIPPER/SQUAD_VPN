@@ -41,6 +41,33 @@ object Prefs {
         get() = sp.getStringSet("direct_apps", null)?.toSet()
         set(value) = sp.edit().putStringSet("direct_apps", value).apply()
 
+    /** GitHub token the phone probe publishes its checks with; empty = off. */
+    var probeToken: String
+        get() = sp.getString("probe_token", "") ?: ""
+        set(value) = sp.edit().putString("probe_token", value.trim()).apply()
+
+    var probeEnabled: Boolean
+        get() = sp.getBoolean("probe_enabled", false)
+        set(value) = sp.edit().putBoolean("probe_enabled", value).apply()
+
+    /** Random probe id of this phone, "mobile-<6 hex>"; it names its branch probe-<id>. */
+    val probeId: String
+        get() = sp.getString("probe_id", null) ?: run {
+            val bytes = ByteArray(3).also { SecureRandom().nextBytes(it) }
+            ("mobile-" + bytes.joinToString("") { "%02x".format(it) }).also {
+                sp.edit().putString("probe_id", it).apply()
+            }
+        }
+
+    /** When the phone probe last published a report (ms), and what happened last time. */
+    var probeLastReport: Long
+        get() = sp.getLong("probe_last_report", 0)
+        set(value) = sp.edit().putLong("probe_last_report", value).apply()
+
+    var probeNote: String
+        get() = sp.getString("probe_note", "") ?: ""
+        set(value) = sp.edit().putString("probe_note", value).apply()
+
     var ruDirect: Boolean
         get() = sp.getBoolean("ru_direct", true)
         set(value) = sp.edit().putBoolean("ru_direct", value).apply()

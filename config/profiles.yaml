@@ -115,3 +115,6 @@ profiles:
     per_host: 3
     per_exit_ip: null
     max_asn_share: null
+    # Проверено телефоном с SQUAD-VPN.apk, когда мобильный интернет был урезан
+    # до белых списков: ответившие первыми, не ответившие в конце.
+    prefer_regions: [RU-WL]

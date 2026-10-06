@@ -143,6 +143,28 @@ def test_profiles_by_region(tmp_path):
         store.close()
 
 
+def test_phone_in_white_list_mode_is_a_region_of_its_own(tmp_path):
+    store, nodes = _store(tmp_path / "a.sqlite3", "us-local", [True, True, True], "US")
+    try:
+        store.import_probe_results(
+            "mobile-abc123", "RU",
+            [
+                {"fp": nodes[0].fingerprint, "alive": False, "checked_at": NOW},
+                {"fp": nodes[2].fingerprint, "alive": True, "latency_ms": 400, "checked_at": NOW},
+            ],
+            kind="mobile-whitelist",
+        )
+        first = store.get_ranked(nodes[0].fingerprint)
+        # Says nothing about the normal internet in Russia.
+        assert first.region_status("RU") == "unknown"
+        assert first.region_status("RU-WL") == "blocked"
+        hosts = [r.node.host for r in select_profile(store, SmartProfile("x", prefer_regions=("RU-WL",)))]
+        # Answered on white lists first, failed there last.
+        assert hosts == ["n2.example", "n1.example", "n0.example"]
+    finally:
+        store.close()
+
+
 def test_remote_alive_nodes_are_checked_first(tmp_path):
     store = NodeStore(tmp_path / "a.sqlite3")
     try:

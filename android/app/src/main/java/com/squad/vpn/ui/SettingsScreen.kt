@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,9 +49,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.squad.vpn.BuildConfig
+import com.squad.vpn.core.PhoneProbe
 import com.squad.vpn.core.Prefs
 import com.squad.vpn.core.Profile
 import com.squad.vpn.core.Subscriptions
@@ -61,6 +64,7 @@ import com.squad.vpn.ui.glass.GlassColors
 import com.squad.vpn.ui.glass.GlassRadius
 import com.squad.vpn.ui.glass.GlassSpacing
 import com.squad.vpn.ui.glass.LocalBackdrop
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import libv2ray.Libv2ray
 
@@ -81,6 +85,10 @@ fun SettingsScreen(
     var customUrl by remember { mutableStateOf(Prefs.customUrl) }
     var ruDirect by remember { mutableStateOf(Prefs.ruDirect) }
     var autoConnect by remember { mutableStateOf(Prefs.autoConnect) }
+    var probeEnabled by remember { mutableStateOf(Prefs.probeEnabled) }
+    var probeToken by remember { mutableStateOf(Prefs.probeToken) }
+    val probeRunning by PhoneProbe.running.collectAsStateWithLifecycle()
+    val probeNote by PhoneProbe.note.collectAsStateWithLifecycle()
     val coreVersion = remember { runCatching { Libv2ray.checkVersionX() }.getOrDefault("") }
     val scroll = rememberScrollState()
     val backdrop = LocalBackdrop.current
@@ -190,7 +198,68 @@ fun SettingsScreen(
             }
         }
 
-        StatCard("Обновления", Modifier.fillMaxWidth(), index = 2) {
+        StatCard("Проверка белых списков", Modifier.fillMaxWidth(), index = 2) {
+            Text(
+                "Когда мобильный интернет урезают до белых списков, телефон проверяет серверы «Белых списков» " +
+                    "и отправляет результат на GitHub. Подписка ставит ответившие у тебя серверы первыми. " +
+                    "В отчёте только результаты проверки, без номера, IP и оператора.",
+                style = MaterialTheme.typography.bodySmall,
+                color = GlassColors.onGlassVariant,
+            )
+            SwitchRow(
+                "Проверять белые списки",
+                "Не чаще раза в час, только на мобильном интернете с включённым VPN",
+                probeEnabled,
+            ) {
+                probeEnabled = it
+                Prefs.probeEnabled = it
+            }
+            OutlinedTextField(
+                value = probeToken,
+                onValueChange = {
+                    probeToken = it
+                    Prefs.probeToken = it
+                },
+                label = { Text("Токен GitHub") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                shape = RoundedCornerShape(GlassRadius.md),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = GlassColors.focusRing,
+                    unfocusedBorderColor = GlassColors.onGlassVariant.copy(alpha = 0.4f),
+                    focusedLabelColor = GlassColors.focusRing,
+                    cursorColor = GlassColors.focusRing,
+                ),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(
+                Modifier
+                    .padding(top = GlassSpacing.sm)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(GlassSpacing.xs),
+            ) {
+                GlassButton(
+                    text = "Создать токен",
+                    onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(PROBE_TOKEN_URL))) },
+                )
+                GlassButton(
+                    text = "Проверить сейчас",
+                    onClick = { scope.launch(Dispatchers.IO) { PhoneProbe.maybeRun(context.applicationContext, force = true) } },
+                    loading = probeRunning,
+                    enabled = probeEnabled && probeToken.isNotBlank(),
+                )
+            }
+            if (probeNote.isNotEmpty()) {
+                Text(
+                    probeNote,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = GlassColors.onGlassVariant,
+                    modifier = Modifier.padding(top = GlassSpacing.xs),
+                )
+            }
+        }
+
+        StatCard("Обновления", Modifier.fillMaxWidth(), index = 3) {
             Text("Версия ${BuildConfig.VERSION_NAME} (сборка ${BuildConfig.VERSION_CODE})", style = MaterialTheme.typography.titleMedium)
             if (coreVersion.isNotEmpty()) {
                 Text(coreVersion, style = MaterialTheme.typography.bodySmall, color = GlassColors.onGlassVariant)
@@ -249,7 +318,7 @@ fun SettingsScreen(
             }
         }
 
-        StatCard("О приложении", Modifier.fillMaxWidth(), index = 3) {
+        StatCard("О приложении", Modifier.fillMaxWidth(), index = 4) {
             Text("SQUAD VPN для Android: те же подписки и серверы, что у программы для Windows.")
             GlassButton(
                 text = "Открыть GitHub",
@@ -288,3 +357,7 @@ private fun SwitchRow(title: String, subtitle: String, checked: Boolean, onChang
         )
     }
 }
+
+/** A classic token that can only write to public repositories, this one included. */
+private const val PROBE_TOKEN_URL =
+    "https://github.com/settings/tokens/new?scopes=public_repo&description=SQUAD%20VPN%20phone%20probe"

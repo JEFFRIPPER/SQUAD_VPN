@@ -3,6 +3,7 @@ package com.squad.vpn.core
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URLDecoder
+import java.security.MessageDigest
 import java.util.Base64
 
 /** One server from a subscription, already turned into an Xray outbound (without a tag). */
@@ -12,6 +13,8 @@ data class Node(
     val server: String,
     val port: Int,
     val outbound: JSONObject,
+    /** The subscription line this node came from (for the phone probe). */
+    val link: String = "",
 ) {
     /** Same server and settings => same key, so pings survive a subscription refresh. */
     val key: String get() = "$protocol://$server:$port#${outbound.toString().hashCode()}"
@@ -30,7 +33,7 @@ object Links {
         for (raw in decodeBody(text).lineSequence()) {
             val line = raw.trim()
             if (line.isEmpty() || line.startsWith("#")) continue
-            val node = runCatching { parse(line) }.getOrNull() ?: continue
+            val node = runCatching { parse(line) }.getOrNull()?.copy(link = line) ?: continue
             if (!keys.add(node.key)) continue
             val count = (used[node.name] ?: 0) + 1
             used[node.name] = count
@@ -309,6 +312,12 @@ object Links {
 
     private fun decode(value: String): String =
         runCatching { URLDecoder.decode(value.replace("+", "%2B"), "UTF-8") }.getOrDefault(value)
+
+    /** Key of a subscription line without its display name: link_key() in src/squad_vpn/smart.py. */
+    fun linkKey(link: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(link.trim().substringBefore('#').toByteArray())
+        return digest.joinToString("") { "%02x".format(it) }.take(16)
+    }
 
     fun decodeBase64(value: String): ByteArray {
         val clean = value.trim().replace('-', '+').replace('_', '/').trimEnd('=')

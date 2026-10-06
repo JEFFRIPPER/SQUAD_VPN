@@ -17,6 +17,7 @@ import com.squad.vpn.App
 import com.squad.vpn.R
 import com.squad.vpn.core.DirectApps
 import com.squad.vpn.core.Node
+import com.squad.vpn.core.PhoneProbe
 import com.squad.vpn.core.Pinger
 import com.squad.vpn.core.Prefs
 import com.squad.vpn.core.Profile
@@ -144,8 +145,12 @@ class SquadVpnService : VpnService() {
         Vpn.event("Подключено: ${node.name} (${profile.title})")
         monitor = scope.launch { watch() }
         watchNetwork()
-        // Fill the node list with pings in the background.
-        scope.launch { pingRest(nodes) }
+        // Fill the node list with pings in the background, then let the
+        // phone probe look at the white lists (when the user turned it on).
+        scope.launch {
+            pingRest(nodes)
+            PhoneProbe.maybeRun(this@SquadVpnService)
+        }
     }
 
     /**
@@ -248,6 +253,8 @@ class SquadVpnService : VpnService() {
                 }
             }
             if (++tick % 2 == 0) updateNotification()
+            // Every 30 min; PhoneProbe itself reports at most once an hour.
+            if (tick % 900 == 0) scope.launch { PhoneProbe.maybeRun(this@SquadVpnService) }
             if (tick % 8 != 0) continue
             val ms = lock.withLock { measure() }
             if (ms > 0) {

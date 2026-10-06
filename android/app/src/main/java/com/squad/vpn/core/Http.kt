@@ -44,6 +44,50 @@ object Http {
         throw last
     }
 
+    /**
+     * A JSON API call (GitHub). Returns the status and body; throws only when
+     * no route reached the server at all.
+     */
+    fun call(method: String, url: String, body: String?, headers: Map<String, String>, timeoutMs: Int = 20_000): Pair<Int, String> {
+        var last: Exception = IOException("нет адреса")
+        for (proxy in routes()) {
+            try {
+                val conn = open(url, proxy, timeoutMs)
+                try {
+                    conn.requestMethod = method
+                    headers.forEach { (key, value) -> conn.setRequestProperty(key, value) }
+                    if (body != null) {
+                        conn.doOutput = true
+                        conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                        conn.outputStream.use { it.write(body.toByteArray()) }
+                    }
+                    val code = conn.responseCode
+                    val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+                    return code to (stream?.bufferedReader()?.use { it.readText() } ?: "")
+                } finally {
+                    conn.disconnect()
+                }
+            } catch (e: Exception) {
+                last = e
+            }
+        }
+        throw last
+    }
+
+    /** Does [url] answer straight from this phone's network, never through the VPN? */
+    fun reachableDirect(url: String, timeoutMs: Int = 6_000): Boolean =
+        try {
+            val conn = open(url, Proxy.NO_PROXY, timeoutMs)
+            try {
+                conn.requestMethod = "HEAD"
+                conn.responseCode in 200..399
+            } finally {
+                conn.disconnect()
+            }
+        } catch (e: Exception) {
+            false
+        }
+
     fun download(url: String, target: File, progress: (Long, Long) -> Unit) {
         var last: Exception = IOException("нет адреса")
         for (proxy in routes()) {

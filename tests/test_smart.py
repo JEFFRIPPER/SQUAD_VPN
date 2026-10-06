@@ -1,5 +1,7 @@
 from squad_vpn.models import ProxyNode, ValidationResult
-from squad_vpn.smart import export_smart_catalog
+import json
+
+from squad_vpn.smart import export_smart_catalog, link_key
 from squad_vpn.store import NodeStore
 
 
@@ -23,6 +25,11 @@ def test_smart_catalog_exports_fast_and_balanced(tmp_path):
         assert index["profiles"]["fast"]["count"] == 1
         assert index["countries"]["DE"]["count"] == 1
         assert (tmp_path / "out" / "fast.yaml").exists()
+        # The apk maps its subscription lines to fingerprints with this file.
+        fingerprints = json.loads((tmp_path / "out" / "fingerprints.json").read_text())
+        lines = (tmp_path / "out" / "fast").read_text().splitlines()
+        link = next(line for line in lines if line.startswith("trojan://"))
+        assert fingerprints[link_key(link)] == node.fingerprint
     finally:
         store.close()
 
