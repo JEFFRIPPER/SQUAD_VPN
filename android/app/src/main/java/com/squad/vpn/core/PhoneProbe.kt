@@ -3,8 +3,13 @@ package com.squad.vpn.core
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import com.squad.vpn.App
 import com.squad.vpn.BuildConfig
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +17,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -39,6 +45,22 @@ object PhoneProbe {
     private const val BLOCKED_PROBE_URL = "https://www.gstatic.com/generate_204"
     private const val ALLOWED_PROBE_URL = "https://ya.ru/"
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /**
+     * A report measured while GitHub could not be reached (white lists on and
+     * no server connects): it waits here and goes out on the next run that
+     * gets through, on Wi-Fi or with the VPN.
+     */
+    private val pending: File get() = File(App.context.filesDir, "probe-pending.json")
+    private val fingerprintsCache: File get() = File(App.context.filesDir, "fingerprints.json")
+
+    /** For callers without a scope that outlives them (app start, a failed connect). */
+    fun launch(context: Context) {
+        val app = context.applicationContext
+        scope.launch { maybeRun(app) }
+    }
+
     private val lock = Mutex()
     private val _running = MutableStateFlow(false)
     val running: StateFlow<Boolean> = _running.asStateFlow()
@@ -50,11 +72,13 @@ object PhoneProbe {
     /** Runs a check when it is due; [force] skips the hourly limit (button in Settings). */
     suspend fun maybeRun(context: Context, force: Boolean = false) {
         if (!enabled) return
-        if (!force && System.currentTimeMillis() - Prefs.probeLastReport < REPORT_EVERY_MS) return
+        val due = force || System.currentTimeMillis() - Prefs.probeLastReport >= REPORT_EVERY_MS
+        if (!due && !pending.exists()) return
         if (!lock.tryLock()) return
         _running.value = true
         try {
-            note(run(context, force))
+            val sent = sendPending()
+            note(if (due) run(context, force) else sent ?: return)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -77,9 +101,6 @@ object PhoneProbe {
         fun idle(text: String) = if (force) "$text. ${tokenStatus()}" else text
         if (!onMobile(context)) return idle("не мобильный интернет, проверка не нужна")
         if (!whiteListsOn()) return idle("белые списки сейчас не включены, проверка не нужна")
-        // In white-list mode GitHub opens only through the VPN.
-        if (!Vpn.isConnected) return "белые списки включены, но для отправки отчёта включи VPN"
-
         val nodes = Subscriptions.cached(Profile.WHITELIST)
         if (nodes.isEmpty()) return "нет серверов «Белых списков»"
         val keys = fingerprints()
@@ -111,10 +132,33 @@ object PhoneProbe {
             .put("version", "apk-${BuildConfig.VERSION_NAME}")
             .put("generated_at", now)
             .put("results", results)
-        publish(report.toString())
         Prefs.probeLastReport = System.currentTimeMillis()
         val alive = pings.values.count { it > 0 }
-        return "белые списки включены, отвечают $alive из ${checked.size}, отчёт отправлен"
+        val found = "белые списки включены, отвечают $alive из ${checked.size}"
+        return try {
+            publish(report.toString())
+            pending.delete()
+            "$found, отчёт отправлен"
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // In white-list mode GitHub often opens only through the VPN.
+            pending.writeText(report.toString())
+            "$found, отчёт отправлю, когда появится интернет"
+        }
+    }
+
+    /** Sends a report that waited for the internet. Null when there was none or it still can't go. */
+    private fun sendPending(): String? {
+        val file = pending
+        if (!file.exists()) return null
+        return try {
+            publish(file.readText())
+            file.delete()
+            "отложенный отчёт отправлен"
+        } catch (e: Exception) {
+            null
+        }
     }
 
     private fun tokenStatus(): String =
@@ -150,12 +194,18 @@ object PhoneProbe {
 
     /** Subscription line key -> server fingerprint, published next to the subscriptions. */
     private fun fingerprints(): Map<String, String> {
-        val text = Http.getText(
-            listOf(
-                "https://raw.githubusercontent.com/${BuildConfig.REPO}/subs/fingerprints.json",
-                "https://cdn.jsdelivr.net/gh/$SUBS/fingerprints.json",
-            ),
-        )
+        // Kept on the phone: with white lists on and no VPN, GitHub does not open.
+        val text = try {
+            Http.getText(
+                listOf(
+                    "https://raw.githubusercontent.com/${BuildConfig.REPO}/subs/fingerprints.json",
+                    "https://cdn.jsdelivr.net/gh/$SUBS/fingerprints.json",
+                ),
+            ).also { runCatching { fingerprintsCache.writeText(it) } }
+        } catch (e: Exception) {
+            if (!fingerprintsCache.exists()) throw e
+            fingerprintsCache.readText()
+        }
         val json = JSONObject(text)
         return json.keys().asSequence().associateWith { json.getString(it) }
     }

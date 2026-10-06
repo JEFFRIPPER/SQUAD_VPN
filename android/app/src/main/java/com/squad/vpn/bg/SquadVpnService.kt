@@ -124,6 +124,8 @@ class SquadVpnService : VpnService() {
                     Log.e(TAG, "connect", e)
                     Vpn.event("Ошибка: ${e.message}")
                     shutdown(Status.Failed, e.message ?: "Не удалось подключиться")
+                    // No server got through: maybe white lists. The probe finds out without the VPN.
+                    PhoneProbe.launch(this@SquadVpnService)
                 }
             }
         }

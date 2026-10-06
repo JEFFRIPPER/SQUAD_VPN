@@ -72,6 +72,7 @@ import androidx.lifecycle.lifecycleScope
 import com.squad.vpn.R
 import com.squad.vpn.bg.SquadVpnService
 import com.squad.vpn.bg.UpdateJob
+import com.squad.vpn.core.PhoneProbe
 import com.squad.vpn.core.Prefs
 import com.squad.vpn.core.Profile
 import com.squad.vpn.core.Status
@@ -139,6 +140,8 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         // Every time the app comes to the screen: is there a newer version?
         lifecycleScope.launch { Updater.checkIfDue() }
+        // White-list check (when on and due) and a report that waited for the internet.
+        PhoneProbe.launch(this)
     }
 
     override fun onNewIntent(intent: Intent) {
