@@ -26,6 +26,16 @@ object Prefs {
         get() = sp.getString("selected_node", null)
         set(value) = sp.edit().putString("selected_node", value).apply()
 
+    /** The node the VPN last connected to: tried first next time while it answers. */
+    var lastGood: String?
+        get() = sp.getString("last_good", null)
+        set(value) = sp.edit().putString("last_good", value).apply()
+
+    /** Nodes list: hide nodes that did not answer the last check. */
+    var hideDead: Boolean
+        get() = sp.getBoolean("hide_dead", true)
+        set(value) = sp.edit().putBoolean("hide_dead", value).apply()
+
     var ruDirect: Boolean
         get() = sp.getBoolean("ru_direct", true)
         set(value) = sp.edit().putBoolean("ru_direct", value).apply()

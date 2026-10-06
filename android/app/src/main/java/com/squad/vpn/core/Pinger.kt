@@ -13,6 +13,9 @@ import libv2ray.Libv2ray
 object Pinger {
     const val DEAD = -1L
 
+    /** A result younger than this is not measured again by the background check. */
+    const val FRESH_MS = 30 * 60 * 1000L
+
     suspend fun ping(node: Node): Long = withContext(Dispatchers.IO) {
         try {
             val ms = Libv2ray.measureOutboundDelay(XrayConfig.probe(node), XrayConfig.TEST_URL)

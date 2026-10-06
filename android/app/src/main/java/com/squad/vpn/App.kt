@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import com.squad.vpn.bg.UpdateJob
+import com.squad.vpn.core.PingStore
 import com.squad.vpn.core.Prefs
 import libv2ray.Libv2ray
 
@@ -13,6 +14,7 @@ class App : Application() {
         super.onCreate()
         instance = this
         Prefs.init(this)
+        PingStore.init(this)
         // Xray reads geo files from here (none are used) and keeps its xudp key.
         Libv2ray.initCoreEnv(filesDir.absolutePath, Prefs.deviceKey)
         val notifications = getSystemService(NotificationManager::class.java)

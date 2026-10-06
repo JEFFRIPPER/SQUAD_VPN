@@ -45,6 +45,9 @@ object Vpn {
     private val _pings = MutableStateFlow<Map<String, Long>>(emptyMap())
     val pings: StateFlow<Map<String, Long>> = _pings.asStateFlow()
 
+    /** When each ping in [pings] was measured (ms since epoch), for [PingStore]. */
+    private val pingTimes = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
     private val _pinging = MutableStateFlow(false)
     val pinging: StateFlow<Boolean> = _pinging.asStateFlow()
 
@@ -81,7 +84,32 @@ object Vpn {
     }
 
     fun setPing(key: String, ms: Long) {
+        pingTimes[key] = System.currentTimeMillis()
         _pings.update { it + (key to ms) }
+    }
+
+    /** Results saved by an earlier run: key to (ping, measured at). Newer results win. */
+    fun restorePings(saved: Map<String, Pair<Long, Long>>) {
+        _pings.update { current ->
+            val restored = saved.filterKeys { it !in current }
+            restored.forEach { (key, value) -> pingTimes[key] = value.second }
+            restored.mapValues { it.value.first } + current
+        }
+    }
+
+    /** [key] has a result measured less than [maxAgeMs] ago. */
+    fun isFresh(key: String, maxAgeMs: Long = Pinger.FRESH_MS): Boolean =
+        key in _pings.value && System.currentTimeMillis() - (pingTimes[key] ?: 0L) < maxAgeMs
+
+    fun pingsWithTimes(): Map<String, Pair<Long, Long>> =
+        _pings.value.mapValues { (key, ms) -> ms to (pingTimes[key] ?: 0L) }
+
+    /**
+     * Another network (Wi-Fi vs mobile, another operator) may reach other
+     * nodes: forget which ones looked dead, keep the known-alive ones.
+     */
+    fun forgetDead() {
+        _pings.update { pings -> pings.filterValues { it > 0 } }
     }
 
     fun setPinging(value: Boolean) {

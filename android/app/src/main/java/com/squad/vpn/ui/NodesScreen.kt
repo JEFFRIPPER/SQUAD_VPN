@@ -1,6 +1,7 @@
 package com.squad.vpn.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,10 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Sort
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -37,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.squad.vpn.core.Node
 import com.squad.vpn.core.Pinger
+import com.squad.vpn.core.Prefs
 import com.squad.vpn.core.Profile
 import com.squad.vpn.core.Vpn
 import com.squad.vpn.ui.glass.GlassButton
@@ -62,6 +66,14 @@ fun NodesScreen(
     val pinging by Vpn.pinging.collectAsStateWithLifecycle()
     val current by Vpn.current.collectAsStateWithLifecycle()
     var byPing by rememberSaveable { mutableStateOf(true) }
+    var hideDead by remember { mutableStateOf(Prefs.hideDead) }
+
+    // Few fresh results (first start, another network, a new subscription): check them all.
+    LaunchedEffect(nodes) {
+        if (nodes.isEmpty() || Vpn.pinging.value) return@LaunchedEffect
+        val fresh = nodes.count { Vpn.isFresh(it.key) }
+        if (fresh < nodes.size / 2) onPingAll()
+    }
 
     val list = rememberLazyListState()
     val backdrop = LocalBackdrop.current
@@ -71,11 +83,17 @@ fun NodesScreen(
             .collect { backdrop.scroll = it }
     }
 
-    val shown = remember(nodes, pings, byPing) {
+    // The picked and the running node stay visible even when they did not answer.
+    val visible = remember(nodes, pings, hideDead, selected, current) {
+        if (!hideDead) nodes
+        else nodes.filter { pings[it.key] != Pinger.DEAD || it.key == selected || it.key == current?.key }
+    }
+    val hidden = nodes.size - visible.size
+    val shown = remember(visible, pings, byPing) {
         if (!byPing) {
-            nodes
+            visible
         } else {
-            nodes.sortedWith(
+            visible.sortedWith(
                 compareBy<Node> {
                     when (val p = pings[it.key]) {
                         null -> 1
@@ -108,11 +126,13 @@ fun NodesScreen(
                 Text(profile.title, style = MaterialTheme.typography.headlineMedium)
                 Text(
                     if (nodes.isEmpty()) "Узлы появятся после первой загрузки подписки"
-                    else "${nodes.size} узлов · отвечают $alive",
+                    else "${nodes.size} узлов · отвечают $alive" + if (hidden > 0) " · скрыто $hidden" else "",
                     color = GlassColors.onGlassVariant,
                 )
                 Row(
-                    Modifier.padding(top = GlassSpacing.sm),
+                    Modifier
+                        .padding(top = GlassSpacing.sm)
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(GlassSpacing.xs),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -128,6 +148,15 @@ fun NodesScreen(
                         selected = byPing,
                         onClick = { byPing = !byPing },
                         icon = Icons.Rounded.Sort,
+                    )
+                    GlassChip(
+                        text = "Скрыть неотвечающие",
+                        selected = hideDead,
+                        onClick = {
+                            hideDead = !hideDead
+                            Prefs.hideDead = hideDead
+                        },
+                        icon = Icons.Rounded.VisibilityOff,
                     )
                 }
             }
