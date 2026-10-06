@@ -70,9 +70,10 @@ fun NodesScreen(
     var hideDead by remember { mutableStateOf(Prefs.hideDead) }
 
     // Few fresh results (first start, another network, a new subscription): check them all.
-    // Not after the user stopped a check: it stays stopped until they press Check again.
+    // A check of another profile's list is replaced. Not after the user stopped
+    // a check: it stays stopped until they press Check again.
     LaunchedEffect(nodes) {
-        if (nodes.isEmpty() || Vpn.isPinging || Pinger.stoppedByUser) return@LaunchedEffect
+        if (nodes.isEmpty() || Pinger.isChecking(nodes) || Pinger.stoppedByUser) return@LaunchedEffect
         val fresh = nodes.count { Vpn.isFresh(it.key) }
         if (fresh < nodes.size / 2) Pinger.startCheck(nodes)
     }

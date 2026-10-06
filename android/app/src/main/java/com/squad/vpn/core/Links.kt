@@ -16,8 +16,11 @@ data class Node(
     /** The subscription line this node came from (for the phone probe). */
     val link: String = "",
 ) {
-    /** Same server and settings => same key, so pings survive a subscription refresh. */
-    val key: String get() = "$protocol://$server:$port#${outbound.toString().hashCode()}"
+    /**
+     * Same server and settings => same key, so pings survive a subscription
+     * refresh. Computed once: the list sorts by it on every ping result.
+     */
+    val key: String = "$protocol://$server:$port#${outbound.toString().hashCode()}"
 }
 
 /**

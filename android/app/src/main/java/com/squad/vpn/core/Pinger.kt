@@ -39,6 +39,8 @@ object Pinger {
     private val threads = Executors.newCachedThreadPool { task -> Thread(task, "ping").apply { isDaemon = true } }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var check: Job? = null
+    /** Keys of the nodes the running check measures. */
+    private var checking: Set<String> = emptySet()
 
     /** The user pressed Stop: the screen does not start a check on its own until they press Check again. */
     @Volatile
@@ -87,6 +89,7 @@ object Pinger {
     fun startCheck(nodes: List<Node>, byUser: Boolean = false, timeoutMs: Long = CHECK_TIMEOUT_MS): Job {
         if (byUser) stoppedByUser = false
         check?.cancel()
+        checking = nodes.mapTo(HashSet()) { it.key }
         val done = AtomicInteger()
         Vpn.setPingProgress(PingProgress(0, nodes.size))
         val job = scope.launch(start = CoroutineStart.LAZY) {
@@ -102,6 +105,14 @@ object Pinger {
         check = job
         job.start()
         return job
+    }
+
+    /** A check is running and it measures servers of [nodes] (not of a list shown before). */
+    @Synchronized
+    fun isChecking(nodes: List<Node>): Boolean {
+        if (check == null) return false
+        val keys = nodes.mapTo(HashSet()) { it.key }
+        return checking.all { it in keys }
     }
 
     /** Stop button: the screen shows the results measured so far. */

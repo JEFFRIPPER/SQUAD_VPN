@@ -57,6 +57,8 @@ class SquadVpnService : VpnService() {
     private var tun: ParcelFileDescriptor? = null
     private var monitor: Job? = null
     private var connecting: Job? = null
+    /** A server switch or failover asked from outside: Disconnect cancels it. */
+    private var switching: Job? = null
 
     /** The user wants the VPN on; a stop that is still finishing must not undo a newer start. */
     @Volatile
@@ -79,8 +81,8 @@ class SquadVpnService : VpnService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> stop("Отключено")
-            ACTION_SWITCH -> scope.launch { switchTo(Prefs.selectedNode, "выбран вручную") }
-            ACTION_FAILOVER -> scope.launch { failover("сменить сервер") }
+            ACTION_SWITCH -> switching = scope.launch { switchTo(Prefs.selectedNode, "выбран вручную") }
+            ACTION_FAILOVER -> switching = scope.launch { failover("сменить сервер") }
             ACTION_RELOAD_APPS -> scope.launch { reloadApps() }
             // ACTION_START, always-on VPN (SERVICE_INTERFACE) and a restart by the system.
             else -> start()
@@ -328,7 +330,7 @@ class SquadVpnService : VpnService() {
     }
 
     private suspend fun failover(reason: String): Unit = lock.withLock {
-        if (Vpn.status.value != Status.Connected) return@withLock
+        if (!wanted || Vpn.status.value != Status.Connected) return@withLock
         val current = Vpn.current.value
         current?.let {
             failed += it.key
@@ -337,6 +339,8 @@ class SquadVpnService : VpnService() {
         Vpn.event("Меняю сервер: $reason")
         candidates = ordered(Vpn.nodes.value)
         val next = pickNode(null)
+        // Disconnect pressed during the search: no new node.
+        if (!wanted) return@withLock
         if (next == null) {
             Vpn.event("Других живых серверов нет, остаюсь на текущем")
             failed.clear()
@@ -358,7 +362,12 @@ class SquadVpnService : VpnService() {
         val node = Vpn.current.value ?: return@withLock
         val old = tun
         // The new interface replaces the old one right away; the core moves over to it.
-        val pfd = establish() ?: return@withLock
+        val pfd = try {
+            establish() ?: return@withLock
+        } catch (e: Exception) {
+            shutdown(Status.Failed, e.message ?: "Не удалось пересоздать VPN")
+            return@withLock
+        }
         tun = pfd
         runCatching { startCore(node) }
             .onSuccess { Vpn.event("Список приложений без VPN обновлён") }
@@ -368,7 +377,7 @@ class SquadVpnService : VpnService() {
     }
 
     private suspend fun switchTo(key: String?, reason: String): Unit = lock.withLock {
-        if (Vpn.status.value != Status.Connected) return@withLock
+        if (!wanted || Vpn.status.value != Status.Connected) return@withLock
         val nodes = Vpn.nodes.value
         candidates = ordered(nodes)
         failed.clear()
@@ -378,6 +387,7 @@ class SquadVpnService : VpnService() {
         } else {
             nodes.firstOrNull { it.key == key }
         }
+        if (!wanted) return@withLock
         val node = picked ?: run {
             Vpn.setStatus(Status.Connected)
             return@withLock
@@ -402,8 +412,10 @@ class SquadVpnService : VpnService() {
         wanted = false
         Prefs.wasConnected = false
         Vpn.setStatus(Status.Disconnecting)
-        // A connection still searching for a node is dropped right away.
+        // A connection, switch or failover still searching for a node is dropped right away.
         connecting?.cancel()
+        switching?.cancel()
+        monitor?.cancel()
         scope.launch {
             lock.withLock { shutdown(Status.Disconnected, null) }
             Vpn.event(message)
@@ -420,9 +432,15 @@ class SquadVpnService : VpnService() {
         Vpn.setStatus(status, message)
         if (status == Status.Failed) wanted = false
         // A start that came in while this stop was finishing keeps the service.
+        // Checked again on the main thread, where onStartCommand runs: a start
+        // between this check and stopSelf() would otherwise be killed.
         if (wanted) return
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        ContextCompat.getMainExecutor(this).execute {
+            if (!wanted) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+            }
+        }
     }
 
     private fun foreground(notification: Notification) {

@@ -48,7 +48,7 @@ class QuickTile : TileService() {
             .putExtra(MainActivity.EXTRA_CONNECT, true)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startActivityAndCollapse(
-                PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT),
+                PendingIntent.getActivity(this, TILE_REQUEST, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT),
             )
         } else {
             @Suppress("DEPRECATION")
@@ -75,5 +75,10 @@ class QuickTile : TileService() {
             Status.Disconnected -> "Отключено"
         }
         tile.updateTile()
+    }
+
+    private companion object {
+        /** Not 0: the VPN notification opens the app with request code 0 and no extras. */
+        const val TILE_REQUEST = 4
     }
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.squad.vpn.BuildConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,6 +55,8 @@ object PhoneProbe {
         _running.value = true
         try {
             note(run(context, force))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             note("Ошибка: ${e.message}")
         } finally {

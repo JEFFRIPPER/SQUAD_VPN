@@ -179,7 +179,8 @@ class MainActivity : ComponentActivity() {
                 val result = withContext(Dispatchers.IO) { runCatching { Subscriptions.refresh(p) } }
                 refreshing = false
                 result.onSuccess {
-                    Vpn.setNodes(it)
+                    // The user may have switched profile while this one loaded.
+                    if (p == Profile.current) Vpn.setNodes(it)
                     refreshNote = "загружено ${it.size} серверов"
                 }.onFailure {
                     refreshNote = "не загрузилась"
