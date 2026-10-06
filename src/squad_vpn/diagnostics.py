@@ -58,7 +58,7 @@ def run_checks(
 
     if not Path(binary).exists():
         checks.append(_check("mihomo", "Ядро Mihomo", WARN,
-                             "ещё не скачано — скачается при следующем обновлении узлов"))
+                             "ещё не скачано — скачается при следующем обновлении серверов"))
     else:
         try:
             out = subprocess.run(
@@ -79,11 +79,11 @@ def run_checks(
             connection.close()
         size = Path(database).stat().st_size / 1_000_000
         status = OK if result == "ok" else ERROR
-        detail = f"узлов {nodes}, живых {alive}, {size:.1f} МБ" if status == OK else f"повреждена: {result}"
-        checks.append(_check("database", "База узлов", status, detail,
+        detail = f"серверов {nodes}, живых {alive}, {size:.1f} МБ" if status == OK else f"повреждена: {result}"
+        checks.append(_check("database", "База серверов", status, detail,
                              None if status == OK else "restore_backup"))
     except (sqlite3.Error, OSError) as exc:
-        checks.append(_check("database", "База узлов", ERROR, str(exc), "restore_backup"))
+        checks.append(_check("database", "База серверов", ERROR, str(exc), "restore_backup"))
 
     free = shutil.disk_usage(root).free / 1_000_000
     checks.append(_check(
@@ -94,16 +94,16 @@ def run_checks(
     agent_running = _port_open(8079)
     checks.append(_check(
         "agent", "Фоновая программа", OK if agent_running else WARN,
-        "работает" if agent_running else "не запущена: узлы не обновляются сами. Запусти SQUAD VPN.exe",
+        "работает" if agent_running else "не запущена: серверы не обновляются сами. Запусти SQUAD VPN.exe",
     ))
 
     if last_cycle is not None:
         if not last_cycle:
-            checks.append(_check("cycle", "Обновление узлов", WARN, "ещё не запускалось"))
+            checks.append(_check("cycle", "Обновление серверов", WARN, "ещё не запускалось"))
         else:
             errors = last_cycle.get("errors") or []
             checks.append(_check(
-                "cycle", "Обновление узлов", OK if not errors else WARN,
+                "cycle", "Обновление серверов", OK if not errors else WARN,
                 f"последнее {last_cycle.get('finished_at', '?')}"
                 + (f"; ошибки: {'; '.join(map(str, errors))[:300]}" if errors else ""),
             ))

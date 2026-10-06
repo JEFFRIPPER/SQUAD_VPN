@@ -408,7 +408,7 @@
     <button class="nav-item" data-page="connect" aria-current="page"><span class="pill"><svg class="icon"><use href="#i-power"/></svg></span>VPN</button>
     <button class="nav-item" data-page="home"><span class="pill"><svg class="icon"><use href="#i-home"/></svg></span>Обзор</button>
     <button class="nav-item" data-page="subs"><span class="pill"><svg class="icon"><use href="#i-link"/></svg></span>Подписки</button>
-    <button class="nav-item" data-page="nodes"><span class="pill"><svg class="icon"><use href="#i-dns"/></svg></span>Узлы</button>
+    <button class="nav-item" data-page="nodes"><span class="pill"><svg class="icon"><use href="#i-dns"/></svg></span>Серверы</button>
     <button class="nav-item" data-page="settings"><span class="pill"><svg class="icon"><use href="#i-settings"/></svg></span>Настройки</button>
     <button class="nav-item" data-page="log"><span class="pill"><svg class="icon"><use href="#i-notes"/></svg></span>Журнал</button>
   </nav>
@@ -436,17 +436,17 @@
               </button>
             </div>
             <div class="cx-state" id="cx-state">Не подключено</div>
-            <div class="muted" id="cx-sub">Нажми, чтобы пустить трафик этого компьютера через лучшие узлы</div>
+            <div class="muted" id="cx-sub">Нажми, чтобы пустить трафик этого компьютера через лучшие серверы</div>
             <div class="row" style="justify-content:center;margin-top:16px">
               <select class="select" id="cx-profile" aria-label="Профиль"></select>
-              <select class="select" id="cx-node" aria-label="Узел" disabled><option value="">Узел: авто (лучший)</option></select>
-              <button class="btn tonal" id="cx-failover" disabled><svg class="icon"><use href="#i-swap"/></svg>Сменить узел</button>
+              <select class="select" id="cx-node" aria-label="Сервер" disabled><option value="">Сервер: авто (лучший)</option></select>
+              <button class="btn tonal" id="cx-failover" disabled><svg class="icon"><use href="#i-swap"/></svg>Сменить сервер</button>
             </div>
           </div>
 
           <div class="grid">
             <div class="card">
-              <div class="label">Текущий узел</div>
+              <div class="label">Текущий сервер</div>
               <h3 id="cx-node-name" style="margin-top:8px;overflow-wrap:anywhere">—</h3>
               <div class="muted" id="cx-node-meta">—</div>
             </div>
@@ -497,13 +497,13 @@
               <p id="hero-text">Проверяю, работает ли SQUAD VPN</p>
             </div>
             <div class="row">
-              <button class="btn filled large" id="run-cycle"><svg class="icon"><use href="#i-refresh"/></svg>Обновить узлы</button>
+              <button class="btn filled large" id="run-cycle"><svg class="icon"><use href="#i-refresh"/></svg>Обновить серверы</button>
               <button class="btn tonal large" id="check-update"><svg class="icon"><use href="#i-download"/></svg>Проверить обновления</button>
             </div>
           </div>
 
           <div class="grid">
-            <div class="card"><div class="label">Живых узлов</div><div class="display" id="st-alive">—</div><div class="muted" id="st-total">из —</div></div>
+            <div class="card"><div class="label">Живых серверов</div><div class="display" id="st-alive">—</div><div class="muted" id="st-total">из —</div></div>
             <div class="card"><div class="label">Средний ping</div><div class="display" id="st-ping">—</div><div class="muted" id="st-jitter">jitter —</div></div>
             <div class="card"><div class="label">Последнее обновление</div><div class="display" id="st-cycle" style="font-size:28px;line-height:44px">—</div><div class="muted" id="st-next">—</div></div>
             <div class="card"><div class="label">Пробники</div><div class="row" id="st-probes" style="margin-top:12px"><span class="muted">—</span></div></div>
@@ -542,13 +542,13 @@
         </div>
       </section>
 
-      <!-- Узлы -->
+      <!-- Серверы -->
       <section class="page" id="page-nodes">
         <div class="row" style="margin-bottom:12px">
-          <span class="muted" style="flex:1">Подробная таблица узлов, регионов и источников</span>
+          <span class="muted" style="flex:1">Подробная таблица серверов, регионов и источников</span>
           <button class="btn text" id="open-browser"><svg class="icon"><use href="#i-open"/></svg>Открыть в браузере</button>
         </div>
-        <iframe class="panel" id="panel-frame" title="Узлы" loading="lazy"></iframe>
+        <iframe class="panel" id="panel-frame" title="Серверы" loading="lazy"></iframe>
       </section>
 
       <!-- Настройки -->
@@ -574,7 +574,7 @@
               </select>
             </div>
             <div class="setting">
-              <div class="body"><div class="title">Проверять узлы каждые</div><div class="muted">Как часто собирать и проверять узлы из твоей сети</div></div>
+              <div class="body"><div class="title">Проверять серверы каждые</div><div class="muted">Как часто собирать и проверять серверы из твоей сети</div></div>
               <select class="select" id="set-interval" aria-label="Интервал"></select>
             </div>
           </div>
@@ -672,7 +672,7 @@
 (() => {
   "use strict";
   const $ = (id) => document.getElementById(id);
-  const TITLES = { connect: "SQUAD VPN", home: "Обзор", subs: "Подписки", nodes: "Узлы", settings: "Настройки", log: "Журнал" };
+  const TITLES = { connect: "SQUAD VPN", home: "Обзор", subs: "Подписки", nodes: "Серверы", settings: "Настройки", log: "Журнал" };
   const state = { page: "connect", source: "github", format: "base64", log: "agent", links: null, update: null, build: null, reconnecting: false };
 
   const storage = {
@@ -767,8 +767,8 @@
     $("hero").classList.toggle("stopped", !working);
     $("hero-icon").firstElementChild.setAttribute("href", working ? "#i-shield" : "#i-shield-off");
     if (cycle.running) {
-      $("hero-title").textContent = "Обновляю узлы…";
-      $("hero-text").textContent = "Собираю и проверяю узлы, это займёт пару минут";
+      $("hero-title").textContent = "Обновляю серверы…";
+      $("hero-text").textContent = "Собираю и проверяю серверы, это займёт пару минут";
     } else if (working) {
       $("hero-title").textContent = "SQUAD VPN работает";
       $("hero-text").textContent = agent.running
@@ -776,7 +776,7 @@
         : "Фоновый цикл включён";
     } else {
       $("hero-title").textContent = "Фоновый цикл выключен";
-      $("hero-text").textContent = "Узлы не обновляются сами. Запусти SQUAD VPN.exe или install.cmd";
+      $("hero-text").textContent = "Серверы не обновляются сами. Запусти SQUAD VPN.exe или install.cmd";
     }
     $("run-cycle").disabled = !working || cycle.running;
     $("check-update").disabled = !agent.running;
@@ -846,7 +846,7 @@
       const badge = document.createElement("span");
       badge.className = "badge";
       badge.textContent = profile.count;
-      badge.title = "узлов сейчас";
+      badge.title = "серверов сейчас";
       head.appendChild(badge);
       const support = document.createElement("div");
       support.className = "supporting";
@@ -926,7 +926,7 @@
   $("run-cycle").addEventListener("click", async () => {
     try {
       await api("/api/cycle/run", { method: "POST" });
-      snack("Обновление узлов запущено");
+      snack("Обновление серверов запущено");
       $("run-cycle").disabled = true;
       setTimeout(refresh, 3000);
     } catch (e) { snack(e.message); }
@@ -1207,8 +1207,8 @@
 
   // connection
   const EVENT_TEXT = {
-    connect: "Подключено", disconnect: "Отключено", switch: "Переключение на", degraded: "Узел деградировал",
-    reload: "Список узлов обновлён", recovered: "Узел снова в норме", error: "Ошибка", crash: "Ядро упало, перезапуск", pin: "Закреплён узел", auto: "Автовыбор узла",
+    connect: "Подключено", disconnect: "Отключено", switch: "Переключение на", degraded: "Сервер деградировал",
+    reload: "Список серверов обновлён", recovered: "Сервер снова в норме", error: "Ошибка", crash: "Ядро упало, перезапуск", pin: "Закреплён сервер", auto: "Автовыбор сервера",
   };
   const speedHistory = [];
   let profilesForClient = false;
@@ -1267,7 +1267,7 @@
     select.replaceChildren();
     const auto = document.createElement("option");
     auto.value = "";
-    auto.textContent = "Узел: авто (лучший)";
+    auto.textContent = "Сервер: авто (лучший)";
     select.appendChild(auto);
     for (const node of nodes) {
       const option = document.createElement("option");
@@ -1295,19 +1295,19 @@
     if (connected) {
       $("cx-state").textContent = "Подключено";
       $("cx-sub").textContent = (c.proxy_set ? "Трафик Windows идёт через SQUAD VPN" : `Прокси: 127.0.0.1:${c.port} (настрой вручную)`)
-        + ` · профиль ${c.profile_label || c.profile} · узлов ${c.nodes}`;
+        + ` · профиль ${c.profile_label || c.profile} · серверов ${c.nodes}`;
       await loadClientNodes(c.since);
       $("cx-node").value = c.pinned || "";
     } else if (c.state === "connecting") {
       $("cx-state").textContent = "Подключаюсь…";
-      $("cx-sub").textContent = "Запускаю ядро и выбираю лучший узел";
+      $("cx-sub").textContent = "Запускаю ядро и выбираю лучший сервер";
     } else if (c.state === "error") {
       $("cx-state").textContent = "Не удалось подключиться";
       $("cx-sub").textContent = c.error || "";
     } else {
       $("cx-state").textContent = "Не подключено";
       $("cx-sub").textContent = c.proxy_supported
-        ? "Нажми, чтобы пустить трафик этого компьютера через лучшие узлы"
+        ? "Нажми, чтобы пустить трафик этого компьютера через лучшие серверы"
         : `Системный прокси доступен только в Windows; ядро будет слушать 127.0.0.1:${c.port}`;
       nodesLoadedFor = "";
     }
@@ -1318,7 +1318,7 @@
       : "—";
     $("cx-ping").textContent = connected && c.delay_ms != null ? `${Math.round(c.delay_ms)} ms` : "—";
     $("cx-ping-note").textContent = connected && c.delay_ms == null && c.node
-      ? "узел не ответил — ищу замену" : "проверка каждые 15 с";
+      ? "сервер не ответил — ищу замену" : "проверка каждые 15 с";
     $("cx-down").textContent = connected ? `${bytes(c.speed_down)}/с` : "—";
     $("cx-up").textContent = connected ? `${bytes(c.speed_up)}/с` : "—";
     if (connected) {
@@ -1381,14 +1381,14 @@
   $("cx-failover").addEventListener("click", async () => {
     try {
       await api("/api/client/failover", { method: "POST" });
-      snack("Ищу узел лучше…");
+      snack("Ищу сервер лучше…");
       loadConnect().catch(() => {});
     } catch (e) { snack(e.message); }
   });
   $("cx-node").addEventListener("change", async (e) => {
     try {
       await api("/api/client/choose", { method: "POST", body: JSON.stringify({ node: e.target.value || null }) });
-      snack(e.target.value ? "Узел закреплён" : "Снова автовыбор лучшего узла");
+      snack(e.target.value ? "Сервер закреплён" : "Снова автовыбор лучшего сервера");
       loadConnect().catch(() => {});
     } catch (err) { snack(err.message); }
   });

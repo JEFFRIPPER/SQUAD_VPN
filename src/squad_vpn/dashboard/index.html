@@ -102,7 +102,7 @@
   <section>
     <h2>Сводка</h2>
     <div class="cards">
-      <div class="card"><div class="label">Всего узлов</div><div class="value" id="s-total">—</div></div>
+      <div class="card"><div class="label">Всего серверов</div><div class="value" id="s-total">—</div></div>
       <div class="card"><div class="label">Живых</div><div class="value ok" id="s-alive">—</div></div>
       <div class="card"><div class="label">Мёртвых</div><div class="value bad" id="s-dead">—</div></div>
       <div class="card"><div class="label">Не проверено</div><div class="value muted" id="s-unchecked">—</div></div>
@@ -152,7 +152,7 @@
 
   <div class="grid2">
     <section>
-      <h2>Узлы</h2>
+      <h2>Серверы</h2>
       <div class="row" style="margin-bottom:10px">
         <label class="ctl">Страна <select id="f-country"><option value="">все</option></select></label>
         <label class="ctl">Протокол <select id="f-protocol"><option value="">все</option></select></label>
@@ -173,7 +173,7 @@
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th>Узел</th><th>Протокол</th><th>Страна</th><th>Ping</th><th>Jitter</th>
+            <th>Сервер</th><th>Протокол</th><th>Страна</th><th>Ping</th><th>Jitter</th>
             <th>Score</th><th>Stability</th><th>Успех</th><th>Регионы</th><th>Проверен</th>
           </tr></thead>
           <tbody id="nodes"></tbody>
@@ -187,8 +187,8 @@
     </section>
 
     <section id="detail">
-      <h2>Узел</h2>
-      <div class="muted" id="detail-empty">Выбери узел в таблице, чтобы увидеть историю проверок.</div>
+      <h2>Сервер</h2>
+      <div class="muted" id="detail-empty">Выбери сервер в таблице, чтобы увидеть историю проверок.</div>
       <div id="detail-body" hidden>
         <div style="font-weight:600;margin-bottom:6px;overflow-wrap:anywhere" id="d-name"></div>
         <svg class="spark" id="d-spark" viewBox="0 0 300 120" preserveAspectRatio="none" role="img" aria-label="История ping"></svg>
@@ -201,7 +201,7 @@
   <section>
     <h2>Пробники</h2>
     <div class="muted" style="font-size:12px;margin-bottom:8px">
-      Точки, из которых проверяются узлы. ✓ — работает из этой страны,
+      Точки, из которых проверяются серверы. ✓ — работает из этой страны,
       ⛔ — заблокирован (из других стран работает), ✗ — не работает нигде.
     </div>
     <div class="table-wrap">
@@ -219,7 +219,7 @@
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th>Источник</th><th>Успешных</th><th>Узлов</th><th>Время</th><th>Последний OK</th><th>Ошибка</th>
+          <th>Источник</th><th>Успешных</th><th>Серверов</th><th>Время</th><th>Последний OK</th><th>Ошибка</th>
         </tr></thead>
         <tbody id="sources"></tbody>
       </table>
@@ -380,7 +380,7 @@
     body.replaceChildren();
     if (!data.items.length) {
       const tr = document.createElement("tr");
-      const td = cell("Нет узлов под эти фильтры", "muted");
+      const td = cell("Нет серверов под эти фильтры", "muted");
       td.colSpan = 10;
       tr.appendChild(td);
       body.appendChild(tr);
@@ -563,7 +563,7 @@
       try {
         const response = await api(url.replace(location.origin, ""));
         const count = response.headers.get("x-squad-nodes");
-        $("sub-count").textContent = count == null ? "" : `Сейчас в подписке узлов: ${count}`;
+        $("sub-count").textContent = count == null ? "" : `Сейчас в подписке серверов: ${count}`;
       } catch (e) {
         $("sub-count").textContent = e.message;
       }

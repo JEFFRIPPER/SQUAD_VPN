@@ -730,7 +730,7 @@ def create_app(
     ) -> dict[str, object]:
         record = store.get_ranked(fingerprint)
         if record is None:
-            raise HTTPException(status_code=404, detail="Узел не найден")
+            raise HTTPException(status_code=404, detail="Сервер не найден")
         payload = ranked_to_dict(record)
         payload["history"] = store.node_history(fingerprint, limit=history)
         return payload

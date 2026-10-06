@@ -51,7 +51,7 @@ def _import_file(args: argparse.Namespace) -> int:
     text = args.path.read_text(encoding="utf-8-sig")
     nodes = deduplicate(parse_subscription(text, source=str(args.path)))
     saved = _store_nodes(nodes, args.database)
-    print(f"Импортировано уникальных узлов: {saved}")
+    print(f"Импортировано уникальных серверов: {saved}")
     return 0
 
 
@@ -104,7 +104,7 @@ def _export(args: argparse.Namespace) -> int:
     finally:
         store.close()
     alive = sum(item.alive is True for item in records)
-    print(f"Экспортировано узлов: {len(records)}; живых: {alive} -> {args.output}")
+    print(f"Экспортировано серверов: {len(records)}; живых: {alive} -> {args.output}")
     return 0
 
 
@@ -125,7 +125,7 @@ def _smart(args: argparse.Namespace) -> int:
         )
     finally:
         store.close()
-    print(f"Smart-подписка: {len(records)} узлов -> {args.output}")
+    print(f"Smart-подписка: {len(records)} серверов -> {args.output}")
     return 0
 
 
@@ -302,7 +302,7 @@ def _publish(args: argparse.Namespace) -> int:
         print(f"Публикация не удалась: {exc}")
         return 1
     for name, count in result["profiles"].items():  # type: ignore[union-attr]
-        print(f"  {name}: {count} узлов -> {result['raw_base']}{name}.b64")
+        print(f"  {name}: {count} серверов -> {result['raw_base']}{name}.b64")
     return 0
 
 
@@ -412,7 +412,7 @@ def _add_validation_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--timeout-ms", type=int, default=5000)
     parser.add_argument(
         "--download-bytes", type=int, default=DEFAULT_DOWNLOAD_BYTES,
-        help="Сколько байт скачать через каждый живой узел (0 — только пинг)",
+        help="Сколько байт скачать через каждый живой сервер (0 — только пинг)",
     )
     parser.add_argument("--validation-concurrency", type=int, default=16)
     parser.add_argument("--geo-limit", type=int, default=10)
@@ -453,7 +453,7 @@ def _add_cycle_args(parser: argparse.ArgumentParser, *, with_database: bool = Tr
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--source-concurrency", type=int, default=12)
     _add_validation_args(parser)
-    parser.add_argument("--no-cleanup", action="store_true", help="Не удалять старые узлы")
+    parser.add_argument("--no-cleanup", action="store_true", help="Не удалять старые серверы")
     parser.add_argument("--unseen-days", type=int, default=3)
     parser.add_argument(
         "--publish", action="store_true", help="Публиковать подписки в git-ветку"
@@ -487,14 +487,14 @@ def build_parser() -> argparse.ArgumentParser:
     setup = sub.add_parser("setup-mihomo", help="Скачать официальный Mihomo")
     setup.add_argument("--target", type=Path, default=DEFAULT_BINARY)
 
-    validate = sub.add_parser("validate", help="Проверить просроченные узлы через Mihomo")
+    validate = sub.add_parser("validate", help="Проверить просроченные серверы через Mihomo")
     validate.add_argument("--database", type=Path, default=DEFAULT_DB)
     validate.add_argument("--binary", type=Path, default=DEFAULT_BINARY)
     validate.add_argument("--test-url", default=DEFAULT_TEST_URL)
     validate.add_argument("--timeout-ms", type=int, default=5000)
     validate.add_argument(
         "--download-bytes", type=int, default=DEFAULT_DOWNLOAD_BYTES,
-        help="Сколько байт скачать через каждый живой узел (0 — только пинг)",
+        help="Сколько байт скачать через каждый живой сервер (0 — только пинг)",
     )
     validate.add_argument("--concurrency", type=int, default=16)
     validate.add_argument("--geo-limit", type=int, default=10)
@@ -567,7 +567,7 @@ def build_parser() -> argparse.ArgumentParser:
     probes = sub.add_parser("probes", help="Показать пробники и их отчёты")
     probes.add_argument("--database", type=Path, default=DEFAULT_DB)
 
-    clean = sub.add_parser("cleanup", help="Удалить узлы, пропавшие из источников")
+    clean = sub.add_parser("cleanup", help="Удалить серверы, пропавшие из источников")
     clean.add_argument("--database", type=Path, default=DEFAULT_DB)
     clean.add_argument("--unseen-days", type=int, default=3)
 

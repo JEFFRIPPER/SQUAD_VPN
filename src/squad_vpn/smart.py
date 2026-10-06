@@ -86,7 +86,7 @@ DEFAULT_PROFILES = (
         min_score=65, min_stability=75, max_latency=800,
     ),
     SmartProfile(
-        "all", "Все живые узлы",
+        "all", "Все живые серверы",
         limit=500, per_host=None, per_exit_ip=None, max_asn_share=None,
     ),
 )

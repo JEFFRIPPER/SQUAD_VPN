@@ -118,13 +118,13 @@ async def collect_step(
 
     ok = sum(report.ok for report in reports)
     log(f"Источников: {len(reports)}; успешно: {ok}; ошибок: {len(reports) - ok}")
-    log(f"Собрано уникальных узлов: {len(nodes)}")
+    log(f"Собрано уникальных серверов: {len(nodes)}")
     log(f"Записано в базу: {saved}")
     for report in reports:
         state = "OK" if report.ok else "ERR"
         log(
             f"  [{state}] {report.source.name}: "
-            f"{report.nodes_selected}/{report.nodes_found} узлов, "
+            f"{report.nodes_selected}/{report.nodes_found} серверов, "
             f"{report.duration_ms:.0f} ms"
         )
         if report.error:
@@ -158,7 +158,7 @@ async def validate_step(
             recheck_after_minutes=recheck_minutes, limit=limit
         )
         if not nodes:
-            log("Нет узлов, которым сейчас нужна проверка")
+            log("Нет серверов, которым сейчас нужна проверка")
             return {"checked": 0, "alive": 0}
         validator = MihomoValidator(
             binary, test_url=test_url, timeout_ms=timeout_ms, download_bytes=download_bytes
@@ -227,7 +227,7 @@ def export_step(
     finally:
         store.close()
     alive = sum(item.alive is True for item in records)
-    log(f"Экспортировано узлов: {len(records)}; живых: {alive} -> {output}")
+    log(f"Экспортировано серверов: {len(records)}; живых: {alive} -> {output}")
     return {
         "nodes": len(records),
         "alive": alive,
@@ -277,7 +277,7 @@ def probe_publish_step(
         result = publish_report(store, identity, repo)
     finally:
         store.close()
-    log(f"Отчёт пробника {identity.probe_id} ({identity.region}) опубликован: {result['results']} узлов")
+    log(f"Отчёт пробника {identity.probe_id} ({identity.region}) опубликован: {result['results']} серверов")
     return result
 
 

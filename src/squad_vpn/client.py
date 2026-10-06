@@ -279,10 +279,10 @@ class VpnClient:
             self.status = {"state": "connecting", "profile": profile, "since": _now()}
             try:
                 if not self.binary.exists():
-                    raise FileNotFoundError("Mihomo ещё не скачан — дождись первого обновления узлов")
+                    raise FileNotFoundError("Mihomo ещё не скачан — дождись первого обновления серверов")
                 label, nodes = await asyncio.to_thread(self._select, profile)
                 if not nodes:
-                    raise RuntimeError("Нет живых узлов: дождись проверки или нажми «Обновить узлы»")
+                    raise RuntimeError("Нет живых серверов: дождись проверки или нажми «Обновить серверы»")
                 self._secret = secrets.token_hex(16)
                 config_path = self._write_config(nodes)
                 self._process = self._spawn(
@@ -323,7 +323,7 @@ class VpnClient:
                 "port": self.mixed_port, "node": None, "delay_ms": None,
                 "speed_up": 0, "speed_down": 0,
             }
-            self._event("connect", None, f"профиль {label}, узлов {len(self._names)}")
+            self._event("connect", None, f"профиль {label}, серверов {len(self._names)}")
             self._monitor = asyncio.create_task(self._run_monitor())
             return self.snapshot()
 
@@ -363,7 +363,7 @@ class VpnClient:
             raise RuntimeError("Не подключено")
         target = node or "AUTO"
         if node is not None and node not in self._names:
-            raise ValueError("Такого узла нет в текущем подключении")
+            raise ValueError("Такого сервера нет в текущем подключении")
         async with self._api() as api:
             response = await api.put("/proxies/SQUAD", json={"name": target})
             response.raise_for_status()
@@ -512,7 +512,7 @@ class VpnClient:
                 self._degraded_since is None or now - self._degraded_since >= DEGRADED_COOLDOWN
             ):
                 self._degraded_since = now
-                self._event("degraded", node, "закреплённый узел не отвечает")
+                self._event("degraded", node, "закреплённый сервер не отвечает")
             return
         if self._fails >= 2 or force:
             reason = "не отвечает" if delay is None else f"ping {int(delay)} ms"
@@ -558,7 +558,7 @@ class VpnClient:
             )
             response.raise_for_status()
         self.status["nodes"] = len(self._names)
-        self._event("reload", None, f"узлов {len(self._names)}, изменилось {int(changed * 100)}%")
+        self._event("reload", None, f"серверов {len(self._names)}, изменилось {int(changed * 100)}%")
 
     def _save_session(self, *, ended: bool = False, reason: str | None = None) -> None:
         if self._session is None:

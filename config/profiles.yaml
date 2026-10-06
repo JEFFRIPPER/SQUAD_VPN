@@ -82,7 +82,7 @@ profiles:
   # от одного провайдера. Заменяет прежние balanced, fast, stable, europe,
   # russia и all: их ссылки отдают эти же узлы.
   - name: best
-    description: 300 лучших узлов
+    description: 300 лучших серверов
     min_score: 70
     min_stability: 60
     min_checks: 3

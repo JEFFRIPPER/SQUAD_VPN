@@ -103,7 +103,7 @@ def _links_table(target: PublishTarget, index: dict[str, object]) -> list[str]:
     raw = target.raw_base() or ""
     cdn = target.cdn_base()
     lines = [
-        "| Подписка | Узлов | base64 (v2rayNG, Hiddify, INCY…) | Clash / Mihomo | plain |",
+        "| Подписка | Серверов | base64 (v2rayNG, Hiddify, INCY…) | Clash / Mihomo | plain |",
         "| --- | --- | --- | --- | --- |",
     ]
 
@@ -151,12 +151,12 @@ def build_site(store: NodeStore, directory: Path, target: PublishTarget) -> dict
     readme = [
         "# SQUAD VPN — подписки",
         "",
-        f"Обновлено: **{updated}** · живых узлов: **{stats['alive']}**"
+        f"Обновлено: **{updated}** · живых серверов: **{stats['alive']}**"
         f" из {stats['total']} · средний ping: {stats['average_latency_ms'] or '—'} ms",
         "",
         "Ветка генерируется автоматически и перезаписывается при каждом обновлении.",
         "Clash/Mihomo-конфиги содержат автопереключение: группа AUTO выбирает",
-        "самый быстрый узел, FAILOVER переключается, если текущий перестал отвечать.",
+        "самый быстрый сервер, FAILOVER переключается, если текущий перестал отвечать.",
         "Скопируй ссылку из нужной строки и добавь её в VPN-клиент как подписку.",
         "",
         *_links_table(target, index),
