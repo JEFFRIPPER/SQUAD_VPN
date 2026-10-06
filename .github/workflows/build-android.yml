@@ -103,7 +103,7 @@ jobs:
           apksigner=$(find "$sdk/build-tools" -maxdepth 2 \( -name apksigner -o -name apksigner.bat \) | sort -V | tail -1)
           [ -f "$apksigner" ] || { echo "::error::apksigner не найден"; exit 1; }
           "$apksigner" verify --print-certs dist/SQUAD-VPN.apk | tee signers.txt
-          grep -Eq 'Signer #1 certificate SHA-256 digest: [0-9a-f]{64}' signers.txt \
+          grep -Eq 'certificate SHA-256 digest: [0-9a-f]{64}' signers.txt \
             || { echo "::error::apksigner не показал подпись apk"; exit 1; }
           # The old key was public in this repo (up to android 1.4); it must never sign again.
           if grep -qi "a24613f6a964171d60f6411a0ba6824e739282067e4774df963a4ab1363b2f0b" signers.txt; then
