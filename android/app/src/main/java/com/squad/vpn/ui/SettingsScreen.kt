@@ -250,7 +250,7 @@ fun SettingsScreen(
         }
 
         StatCard("О приложении", Modifier.fillMaxWidth(), index = 3) {
-            Text("SQUAD VPN для Android: те же подписки и узлы, что у программы для Windows.")
+            Text("SQUAD VPN для Android: те же подписки и серверы, что у программы для Windows.")
             GlassButton(
                 text = "Открыть GitHub",
                 onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/${BuildConfig.REPO}"))) },

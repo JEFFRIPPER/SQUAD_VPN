@@ -80,7 +80,7 @@ class SquadVpnService : VpnService() {
         when (intent?.action) {
             ACTION_STOP -> stop("Отключено")
             ACTION_SWITCH -> scope.launch { switchTo(Prefs.selectedNode, "выбран вручную") }
-            ACTION_FAILOVER -> scope.launch { failover("сменить узел") }
+            ACTION_FAILOVER -> scope.launch { failover("сменить сервер") }
             ACTION_RELOAD_APPS -> scope.launch { reloadApps() }
             // ACTION_START, always-on VPN (SERVICE_INTERFACE) and a restart by the system.
             else -> start()
@@ -108,11 +108,11 @@ class SquadVpnService : VpnService() {
         foreground(notification(Vpn.current.value?.name ?: "Подключение…", null))
         wanted = true
         if (running) return
-        Vpn.setStatus(Status.Connecting, "Загружаю узлы…")
+        Vpn.setStatus(Status.Connecting, "Загружаю серверы…")
         connecting = scope.launch {
             lock.withLock {
                 if (!wanted) return@withLock
-                Vpn.setStatus(Status.Connecting, "Загружаю узлы…")
+                Vpn.setStatus(Status.Connecting, "Загружаю серверы…")
                 try {
                     connect()
                 } catch (e: CancellationException) {
@@ -133,7 +133,7 @@ class SquadVpnService : VpnService() {
         failed.clear()
         candidates = ordered(nodes)
 
-        val node = pickNode(Prefs.selectedNode) ?: throw IllegalStateException("Ни один узел не ответил. Обнови подписку или выбери другую")
+        val node = pickNode(Prefs.selectedNode) ?: throw IllegalStateException("Ни один сервер не ответил. Обнови подписку или выбери другую")
 
         Vpn.setStatus(Status.Connecting, "Подключаюсь к ${node.name}…")
         val pfd = establish() ?: throw IllegalStateException("Нет разрешения на VPN")
@@ -176,11 +176,11 @@ class SquadVpnService : VpnService() {
             Vpn.setPing(node.key, ms)
             if (ms > 0) return node
             failed += node.key
-            Vpn.event("Выбранный узел ${node.name} не отвечает, ищу другой")
+            Vpn.event("Выбранный сервер ${node.name} не отвечает, ищу другой")
         }
         val pool = candidates.filter { it.key !in failed }
         for (batch in pool.chunked(8).take(5)) {
-            Vpn.setStatus(Status.Connecting, "Ищу лучший узел…")
+            Vpn.setStatus(Status.Connecting, "Ищу лучший сервер…")
             val results = kotlinx.coroutines.coroutineScope {
                 batch.map { node -> async { node to Pinger.ping(node).also { Vpn.setPing(node.key, it) } } }
                     .map { it.await() }
@@ -256,7 +256,7 @@ class SquadVpnService : VpnService() {
                 Vpn.current.value?.let { Vpn.setPing(it.key, ms) }
             } else if (++misses >= 2) {
                 misses = 0
-                failover("узел перестал отвечать")
+                failover("сервер перестал отвечать")
             }
         }
     }
@@ -328,11 +328,11 @@ class SquadVpnService : VpnService() {
             failed += it.key
             Vpn.setPing(it.key, Pinger.DEAD)
         }
-        Vpn.event("Меняю узел: $reason")
+        Vpn.event("Меняю сервер: $reason")
         candidates = ordered(Vpn.nodes.value)
         val next = pickNode(null)
         if (next == null) {
-            Vpn.event("Других живых узлов нет, остаюсь на текущем")
+            Vpn.event("Других живых серверов нет, остаюсь на текущем")
             failed.clear()
             Vpn.setStatus(Status.Connected)
             return@withLock
@@ -340,7 +340,7 @@ class SquadVpnService : VpnService() {
         runCatching { startCore(next) }
             .onSuccess {
                 Vpn.setStatus(Status.Connected)
-                Vpn.event("Новый узел: ${next.name}")
+                Vpn.event("Новый сервер: ${next.name}")
             }
             .onFailure { shutdown(Status.Failed, it.message ?: "Ядро не перезапустилось") }
         Unit
@@ -367,7 +367,7 @@ class SquadVpnService : VpnService() {
         candidates = ordered(nodes)
         failed.clear()
         val picked = if (key == null) {
-            Vpn.setStatus(Status.Connecting, "Ищу лучший узел…")
+            Vpn.setStatus(Status.Connecting, "Ищу лучший сервер…")
             pickNode(null)
         } else {
             nodes.firstOrNull { it.key == key }
@@ -379,7 +379,7 @@ class SquadVpnService : VpnService() {
         runCatching { startCore(node) }
             .onSuccess {
                 Vpn.setStatus(Status.Connected)
-                Vpn.event("Узел ${node.name}: $reason")
+                Vpn.event("Сервер ${node.name}: $reason")
             }
             .onFailure { shutdown(Status.Failed, it.message ?: "Ядро не перезапустилось") }
         Unit

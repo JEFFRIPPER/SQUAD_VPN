@@ -118,7 +118,7 @@ fun ConnectScreen(
         val sub = when (status) {
             Status.Connected -> node?.name ?: ""
             Status.Connecting, Status.Failed -> message ?: ""
-            else -> "Нажми, чтобы пустить трафик телефона через лучшие узлы"
+            else -> "Нажми, чтобы пустить трафик телефона через лучшие серверы"
         }
         AnimatedContent(
             targetState = sub,
@@ -160,7 +160,7 @@ fun ConnectScreen(
             exit = fadeOut(tween(GlassDuration.short)) + scaleOut(tween(GlassDuration.short), targetScale = GlassScale.enter),
         ) {
             GlassButton(
-                text = "Сменить узел",
+                text = "Сменить сервер",
                 onClick = onFailover,
                 icon = Icons.Rounded.SwapHoriz,
                 modifier = Modifier.padding(top = GlassSpacing.sm),

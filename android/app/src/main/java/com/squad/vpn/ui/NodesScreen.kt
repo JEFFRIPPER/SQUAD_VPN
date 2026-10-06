@@ -125,8 +125,8 @@ fun NodesScreen(
             Column(Modifier.padding(bottom = GlassSpacing.xs)) {
                 Text(profile.title, style = MaterialTheme.typography.headlineMedium)
                 Text(
-                    if (nodes.isEmpty()) "Узлы появятся после первой загрузки подписки"
-                    else "${nodes.size} узлов · отвечают $alive" + if (hidden > 0) " · скрыто $hidden" else "",
+                    if (nodes.isEmpty()) "Серверы появятся после первой загрузки подписки"
+                    else "${nodes.size} серверов · отвечают $alive" + if (hidden > 0) " · скрыто $hidden" else "",
                     color = GlassColors.onGlassVariant,
                 )
                 Row(
@@ -163,8 +163,8 @@ fun NodesScreen(
         }
         item(key = "auto") {
             NodeRow(
-                title = "Авто — лучший узел",
-                subtitle = "Выбирает самый быстрый и сам меняет, если узел отвалится",
+                title = "Авто — лучший сервер",
+                subtitle = "Выбирает самый быстрый и сам меняет, если сервер отвалится",
                 ping = null,
                 selected = selected == null,
                 active = selected == null && current != null,

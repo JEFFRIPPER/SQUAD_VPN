@@ -181,7 +181,7 @@ class MainActivity : ComponentActivity() {
                 refreshing = false
                 result.onSuccess {
                     Vpn.setNodes(it)
-                    refreshNote = "загружено ${it.size} узлов"
+                    refreshNote = "загружено ${it.size} серверов"
                 }.onFailure {
                     refreshNote = "не загрузилась"
                     if (!quiet) snackbar.showSnackbar("Подписка не загрузилась: ${it.message}")
@@ -358,7 +358,7 @@ class MainActivity : ComponentActivity() {
                 GlassNavBar(
                     items = listOf(
                         GlassNavItem("VPN", Icons.Rounded.PowerSettingsNew),
-                        GlassNavItem("Узлы", Icons.Rounded.Dns),
+                        GlassNavItem("Серверы", Icons.Rounded.Dns),
                         GlassNavItem(
                             "Настройки",
                             Icons.Rounded.Settings,

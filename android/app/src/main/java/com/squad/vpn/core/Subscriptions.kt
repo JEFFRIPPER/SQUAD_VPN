@@ -32,7 +32,7 @@ object Subscriptions {
         if (urls.isEmpty()) throw IllegalStateException("Укажи ссылку на подписку в настройках")
         val text = Http.getText(urls)
         val nodes = Links.parseSubscription(text)
-        if (nodes.isEmpty()) throw IllegalStateException("В подписке нет подходящих узлов")
+        if (nodes.isEmpty()) throw IllegalStateException("В подписке нет подходящих серверов")
         file(profile).apply {
             parentFile?.mkdirs()
             writeText(text)
