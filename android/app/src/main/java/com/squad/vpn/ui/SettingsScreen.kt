@@ -51,8 +51,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.squad.vpn.BuildConfig
+import com.squad.vpn.bg.StatusBar
 import com.squad.vpn.core.PhoneProbe
 import com.squad.vpn.core.Prefs
 import com.squad.vpn.core.Profile
@@ -86,6 +88,13 @@ fun SettingsScreen(
     var ruDirect by remember { mutableStateOf(Prefs.ruDirect) }
     var autoConnect by remember { mutableStateOf(Prefs.autoConnect) }
     var probeEnabled by remember { mutableStateOf(Prefs.probeEnabled) }
+    var tileNote by remember { mutableStateOf<String?>(null) }
+    var liveAllowed by remember { mutableStateOf(StatusBar.liveUpdatesAllowed(context)) }
+    // Back from Android's settings page: show what the user chose there.
+    LifecycleResumeEffect(Unit) {
+        liveAllowed = StatusBar.liveUpdatesAllowed(context)
+        onPauseOrDispose { }
+    }
     var probeToken by remember { mutableStateOf(Prefs.probeToken) }
     val probeRunning by PhoneProbe.running.collectAsStateWithLifecycle()
     val probeNote by PhoneProbe.note.collectAsStateWithLifecycle()
@@ -187,6 +196,19 @@ fun SettingsScreen(
                     )
                 }
                 Icon(Icons.Rounded.ChevronRight, null, tint = GlassColors.onGlassVariant)
+            }
+            NavRow("Кнопка в шторке", tileNote ?: "SQUAD VPN в быстрых настройках, рядом с Wi-Fi и Bluetooth") {
+                StatusBar.requestTile(context) { tileNote = it }
+            }
+            liveAllowed?.let { allowed ->
+                NavRow(
+                    "Значок в строке состояния",
+                    if (allowed) {
+                        "Включён: пока VPN подключён, наверху экрана горит щит SQUAD VPN"
+                    } else {
+                        "Выключен в настройках Android. Нажми и разреши обновления в реальном времени"
+                    },
+                ) { StatusBar.openLiveUpdateSettings(context) }
             }
             SwitchRow(
                 "Подключаться автоматически",
@@ -327,6 +349,23 @@ fun SettingsScreen(
             )
         }
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun NavRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = GlassColors.onGlassVariant)
+        }
+        Icon(Icons.Rounded.ChevronRight, null, tint = GlassColors.onGlassVariant)
     }
 }
 

@@ -462,6 +462,7 @@ class SquadVpnService : VpnService() {
             .setShowWhen(false)
             .setContentIntent(open)
             .addAction(0, "Отключить", stop)
+            .also { StatusBar.promote(it, "VPN") }
             .build()
     }
 

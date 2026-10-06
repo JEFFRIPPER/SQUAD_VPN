@@ -256,7 +256,13 @@ tun-инбаундом, поэтому работают все транспор�
   `gradle -p android testReleaseUnitTest`.
 - Российские сайты (.ru, .su, .рф) по желанию идут напрямую, кроме режима
   белых списков.
-- Плитка в шторке, автоподключение после перезагрузки, системный Always-on VPN.
+- Плитка в шторке (с 1.9 её можно добавить кнопкой из настроек через
+  `StatusBarManager.requestAddTileService`), автоподключение после
+  перезагрузки, системный Always-on VPN. На Android 16 уведомление VPN
+  просит повышения до Live Update (`bg/StatusBar.kt`; API Android 16
+  вызываются по имени, приложение собирается под Android 15). Суперостров
+  HyperOS (`miui.focus.param`) не используется: Xiaomi показывает его только
+  приложениям из своего белого списка.
 - Сборка: `.github/workflows/build-android.yml` при правке `android/**`.
   APK и манифест уходят в релиз `android-latest` (с 1.5 приложение читает
   `android-manifest-v2.json`, а `android-manifest.json` для 1.4 и старше
