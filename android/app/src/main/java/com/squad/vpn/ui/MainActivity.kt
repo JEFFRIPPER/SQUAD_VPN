@@ -72,7 +72,6 @@ import androidx.lifecycle.lifecycleScope
 import com.squad.vpn.R
 import com.squad.vpn.bg.SquadVpnService
 import com.squad.vpn.bg.UpdateJob
-import com.squad.vpn.core.Pinger
 import com.squad.vpn.core.Prefs
 import com.squad.vpn.core.Profile
 import com.squad.vpn.core.Status
@@ -299,16 +298,6 @@ class MainActivity : ComponentActivity() {
                                     Prefs.selectedNode = key
                                     if (status == Status.Connected) {
                                         SquadVpnService.send(this@MainActivity, SquadVpnService.ACTION_SWITCH)
-                                    }
-                                },
-                                onPingAll = {
-                                    if (!Vpn.pinging.value) scope.launch(Dispatchers.IO) {
-                                        Vpn.setPinging(true)
-                                        try {
-                                            Pinger.pingAll(Vpn.nodes.value)
-                                        } finally {
-                                            Vpn.setPinging(false)
-                                        }
                                     }
                                 },
                                 contentPadding = contentPadding,

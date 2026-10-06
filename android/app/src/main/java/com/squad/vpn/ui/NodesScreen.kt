@@ -18,8 +18,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Sort
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
@@ -57,22 +59,22 @@ fun NodesScreen(
     profile: Profile,
     selected: String?,
     onSelect: (String?) -> Unit,
-    onPingAll: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
     val nodes by Vpn.nodes.collectAsStateWithLifecycle()
     val pings by Vpn.pings.collectAsStateWithLifecycle()
-    val pinging by Vpn.pinging.collectAsStateWithLifecycle()
+    val check by Vpn.pingProgress.collectAsStateWithLifecycle()
     val current by Vpn.current.collectAsStateWithLifecycle()
     var byPing by rememberSaveable { mutableStateOf(true) }
     var hideDead by remember { mutableStateOf(Prefs.hideDead) }
 
     // Few fresh results (first start, another network, a new subscription): check them all.
+    // Not after the user stopped a check: it stays stopped until they press Check again.
     LaunchedEffect(nodes) {
-        if (nodes.isEmpty() || Vpn.pinging.value) return@LaunchedEffect
+        if (nodes.isEmpty() || Vpn.isPinging || Pinger.stoppedByUser) return@LaunchedEffect
         val fresh = nodes.count { Vpn.isFresh(it.key) }
-        if (fresh < nodes.size / 2) onPingAll()
+        if (fresh < nodes.size / 2) Pinger.startCheck(nodes)
     }
 
     val list = rememberLazyListState()
@@ -136,12 +138,14 @@ fun NodesScreen(
                     horizontalArrangement = Arrangement.spacedBy(GlassSpacing.xs),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    val running = check
                     GlassButton(
-                        text = if (pinging) "Проверяю…" else "Проверить пинг",
-                        onClick = onPingAll,
-                        icon = Icons.Rounded.Speed,
-                        enabled = nodes.isNotEmpty(),
-                        loading = pinging,
+                        text = if (running == null) "Проверить пинг" else "Остановить ${running.done}/${running.total}",
+                        onClick = {
+                            if (Vpn.isPinging) Pinger.stopCheck() else Pinger.startCheck(Vpn.nodes.value, byUser = true)
+                        },
+                        icon = if (running == null) Icons.Rounded.Speed else Icons.Rounded.Stop,
+                        enabled = nodes.isNotEmpty() || running != null,
                     )
                     GlassChip(
                         text = "По пингу",
@@ -157,6 +161,16 @@ fun NodesScreen(
                             Prefs.hideDead = hideDead
                         },
                         icon = Icons.Rounded.VisibilityOff,
+                    )
+                }
+                check?.let { running ->
+                    LinearProgressIndicator(
+                        progress = { if (running.total > 0) running.done / running.total.toFloat() else 0f },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = GlassSpacing.sm),
+                        color = GlassColors.red,
+                        trackColor = GlassColors.onGlass.copy(alpha = 0.12f),
                     )
                 }
             }

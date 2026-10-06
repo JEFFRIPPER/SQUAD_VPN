@@ -19,6 +19,9 @@ data class Traffic(
     val history: List<Long> = emptyList(),
 )
 
+/** A check of the server list: [done] of [total] measured. */
+data class PingProgress(val done: Int, val total: Int)
+
 /** Process-wide VPN state shared by the service and the UI. */
 object Vpn {
     private val _status = MutableStateFlow(Status.Disconnected)
@@ -48,8 +51,10 @@ object Vpn {
     /** When each ping in [pings] was measured (ms since epoch), for [PingStore]. */
     private val pingTimes = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
-    private val _pinging = MutableStateFlow(false)
-    val pinging: StateFlow<Boolean> = _pinging.asStateFlow()
+    private val _pingProgress = MutableStateFlow<PingProgress?>(null)
+    /** The check of the server list running now ([Pinger.startCheck]), null when none. */
+    val pingProgress: StateFlow<PingProgress?> = _pingProgress.asStateFlow()
+    val isPinging: Boolean get() = _pingProgress.value != null
 
     private val _events = MutableStateFlow<List<String>>(emptyList())
     val events: StateFlow<List<String>> = _events.asStateFlow()
@@ -112,8 +117,8 @@ object Vpn {
         _pings.update { pings -> pings.filterValues { it > 0 } }
     }
 
-    fun setPinging(value: Boolean) {
-        _pinging.value = value
+    fun setPingProgress(progress: PingProgress?) {
+        _pingProgress.value = progress
     }
 
     fun addTraffic(down: Long, up: Long, seconds: Double) {

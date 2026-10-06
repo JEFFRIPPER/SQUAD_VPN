@@ -39,7 +39,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeoutOrNull
 import libv2ray.CoreCallbackHandler
 import libv2ray.CoreController
 import libv2ray.Libv2ray
@@ -392,14 +391,11 @@ class SquadVpnService : VpnService() {
         Unit
     }
 
+    /** The same check as the Servers screen button, so Stop there stops it too. */
     private suspend fun pingRest(nodes: List<Node>) {
-        if (Vpn.pinging.value) return
-        Vpn.setPinging(true)
-        try {
-            withTimeoutOrNull(300_000) { Pinger.pingAll(nodes.filter { !Vpn.isFresh(it.key) }) }
-        } finally {
-            Vpn.setPinging(false)
-        }
+        val stale = nodes.filter { !Vpn.isFresh(it.key) }
+        if (stale.isEmpty() || Vpn.isPinging) return
+        Pinger.startCheck(stale).join()
     }
 
     private fun stop(message: String) {
