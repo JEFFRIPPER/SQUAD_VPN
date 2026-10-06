@@ -14,6 +14,17 @@ object XrayConfig {
     const val TUN_DNS = "1.1.1.1"
     private const val RU_DNS = "77.88.8.8"
 
+    /**
+     * Every app on the phone can reach 127.0.0.1, and an open SOCKS port
+     * gives away the VPN and the server's address. The port asks for a
+     * password made anew on every app start; only this app knows it ([Http]).
+     */
+    val socksUser: String = randomHex(8)
+    val socksPass: String = randomHex(16)
+
+    private fun randomHex(bytes: Int): String =
+        ByteArray(bytes).also { java.security.SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }
+
     // Russian sites go around the VPN when asked: banks and state services
     // often refuse foreign addresses. Never in the white-list profile, where
     // only the white-listed server reaches the internet.
@@ -46,7 +57,14 @@ object XrayConfig {
                     .put("listen", "127.0.0.1")
                     .put("port", SOCKS_PORT)
                     .put("protocol", "socks")
-                    .put("settings", JSONObject().put("auth", "noauth").put("udp", true).put("userLevel", 8))
+                    .put(
+                        "settings",
+                        JSONObject()
+                            .put("auth", "password")
+                            .put("accounts", JSONArray().put(JSONObject().put("user", socksUser).put("pass", socksPass)))
+                            .put("udp", true)
+                            .put("userLevel", 8),
+                    )
                     .put("sniffing", sniffing),
             )
 

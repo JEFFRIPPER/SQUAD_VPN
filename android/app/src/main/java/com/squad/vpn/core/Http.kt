@@ -2,8 +2,10 @@ package com.squad.vpn.core
 
 import java.io.File
 import java.io.IOException
+import java.net.Authenticator
 import java.net.HttpURLConnection
 import java.net.InetSocketAddress
+import java.net.PasswordAuthentication
 import java.net.Proxy
 import java.net.URL
 
@@ -14,6 +16,32 @@ import java.net.URL
  */
 object Http {
     private val socks = Proxy(Proxy.Type.SOCKS, InetSocketAddress("127.0.0.1", XrayConfig.SOCKS_PORT))
+
+    init {
+        // Java's SOCKS client takes the password of the core's port from here.
+        Authenticator.setDefault(object : Authenticator() {
+            override fun getPasswordAuthentication(): PasswordAuthentication? =
+                if (requestingProtocol == "SOCKS5" && requestingPort == XrayConfig.SOCKS_PORT) {
+                    PasswordAuthentication(XrayConfig.socksUser, XrayConfig.socksPass.toCharArray())
+                } else {
+                    null
+                }
+        })
+    }
+
+    /** Null when the core's SOCKS port lets this app through, else why not. */
+    fun socksProblem(url: String = XrayConfig.TEST_URL): String? =
+        try {
+            val conn = open(url, socks, 10_000)
+            try {
+                conn.responseCode
+                null
+            } finally {
+                conn.disconnect()
+            }
+        } catch (e: Exception) {
+            e.message ?: e.javaClass.simpleName
+        }
 
     private fun routes(): List<Proxy> =
         if (Vpn.isConnected) listOf(socks, Proxy.NO_PROXY) else listOf(Proxy.NO_PROXY)

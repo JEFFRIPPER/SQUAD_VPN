@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import com.squad.vpn.App
 import com.squad.vpn.R
 import com.squad.vpn.core.DirectApps
+import com.squad.vpn.core.Http
 import com.squad.vpn.core.Node
 import com.squad.vpn.core.PhoneProbe
 import com.squad.vpn.core.Pinger
@@ -149,6 +150,8 @@ class SquadVpnService : VpnService() {
         // Fill the node list with pings in the background, then let the
         // phone probe look at the white lists (when the user turned it on).
         scope.launch {
+            // The app's own way out in white-list mode (updates, the probe): say if it is shut.
+            Http.socksProblem()?.let { Vpn.event("Внутренний прокси не отвечает: $it") }
             pingRest(nodes)
             PhoneProbe.maybeRun(this@SquadVpnService)
         }
