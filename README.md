@@ -4,7 +4,7 @@
 Shadowsocks, Hysteria2) из открытых источников, проверяет их и раздаёт
 в программе для ПК, в приложении для Android или подпиской.
 
-**Версия 1.5.5.** Что нового — в [CHANGELOG.md](CHANGELOG.md).
+**Версия 2.0.0.** Что нового — в [CHANGELOG.md](CHANGELOG.md).
 
 **Скачать:** [SQUAD-VPN.exe для Windows](https://github.com/JEFFRIPPER/SQUAD_VPN/releases/latest/download/SQUAD-VPN.exe)
 и [SQUAD-VPN.apk для Android](https://github.com/JEFFRIPPER/SQUAD_VPN/releases/latest/download/SQUAD-VPN.apk),
