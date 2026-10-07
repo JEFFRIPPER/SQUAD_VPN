@@ -113,6 +113,11 @@ object Prefs {
         get() = sp.getBoolean("anti_dpi", false)
         set(value) = sp.edit().putBoolean("anti_dpi", value).apply()
 
+    /** Kill switch: when the connection breaks, apps get no internet past the VPN until it is back or turned off. */
+    var killSwitch: Boolean
+        get() = sp.getBoolean("kill_switch", false)
+        set(value) = sp.edit().putBoolean("kill_switch", value).apply()
+
     var autoConnect: Boolean
         get() = sp.getBoolean("auto_connect", false)
         set(value) = sp.edit().putBoolean("auto_connect", value).apply()

@@ -59,7 +59,15 @@ object Vpn {
     private val _events = MutableStateFlow<List<String>>(emptyList())
     val events: StateFlow<List<String>> = _events.asStateFlow()
 
+    private val _blocked = MutableStateFlow(false)
+    /** The kill switch holds the internet closed: the connection broke and the VPN interface stays. */
+    val blocked: StateFlow<Boolean> = _blocked.asStateFlow()
+
     val isConnected: Boolean get() = _status.value == Status.Connected
+
+    fun setBlocked(value: Boolean) {
+        _blocked.value = value
+    }
 
     fun setStatus(status: Status, message: String? = null) {
         _status.value = status

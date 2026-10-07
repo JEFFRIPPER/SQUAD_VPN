@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material.icons.rounded.SwapHoriz
@@ -49,9 +50,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.squad.vpn.bg.SquadVpnService
 import com.squad.vpn.core.Profile
 import com.squad.vpn.core.SpeedState
 import com.squad.vpn.core.SpeedTest
@@ -85,6 +88,8 @@ fun ConnectScreen(
     val traffic by Vpn.traffic.collectAsStateWithLifecycle()
     val since by Vpn.since.collectAsStateWithLifecycle()
     val events by Vpn.events.collectAsStateWithLifecycle()
+    val blocked by Vpn.blocked.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     val scroll = rememberScrollState()
     val backdrop = LocalBackdrop.current
@@ -167,6 +172,19 @@ fun ConnectScreen(
                 text = "Сменить сервер",
                 onClick = onFailover,
                 icon = Icons.Rounded.SwapHoriz,
+                modifier = Modifier.padding(top = GlassSpacing.sm),
+            )
+        }
+        // Kill switch holds the internet closed: the power button reconnects, this one gives up.
+        AnimatedVisibility(
+            visible = blocked && status == Status.Failed,
+            enter = fadeIn(tween(GlassDuration.medium)) + scaleIn(GlassSpring.bouncy(), initialScale = GlassScale.enter),
+            exit = fadeOut(tween(GlassDuration.short)) + scaleOut(tween(GlassDuration.short), targetScale = GlassScale.enter),
+        ) {
+            GlassButton(
+                text = "Открыть интернет без VPN",
+                onClick = { SquadVpnService.send(context, SquadVpnService.ACTION_STOP) },
+                icon = Icons.Rounded.LockOpen,
                 modifier = Modifier.padding(top = GlassSpacing.sm),
             )
         }

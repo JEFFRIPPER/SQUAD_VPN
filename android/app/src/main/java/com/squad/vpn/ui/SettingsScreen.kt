@@ -1,6 +1,7 @@
 package com.squad.vpn.ui
 
 import android.content.Intent
+import android.provider.Settings
 import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -94,6 +95,7 @@ fun SettingsScreen(
     var ruDirect by remember { mutableStateOf(Prefs.ruDirect) }
     var autoConnect by remember { mutableStateOf(Prefs.autoConnect) }
     var antiDpi by remember { mutableStateOf(Prefs.antiDpi) }
+    var killSwitch by remember { mutableStateOf(Prefs.killSwitch) }
     var probeEnabled by remember { mutableStateOf(Prefs.probeEnabled) }
     var tileNote by remember { mutableStateOf<String?>(null) }
     var liveAllowed by remember { mutableStateOf(StatusBar.liveUpdatesAllowed(context)) }
@@ -221,6 +223,23 @@ fun SettingsScreen(
                 Vpn.forgetDead()
                 // A running VPN picks it up at once: same server, new connection.
                 if (Vpn.isConnected) SquadVpnService.send(context, SquadVpnService.ACTION_RELOAD_APPS)
+            }
+            SwitchRow(
+                "Kill switch",
+                "Если VPN оборвался и не смог переключиться, интернет закрывается, чтобы ничего не ушло мимо VPN. " +
+                    "Вернуть его: переподключиться или «Открыть интернет» на главном экране",
+                killSwitch,
+            ) {
+                killSwitch = it
+                Prefs.killSwitch = it
+            }
+            NavRow(
+                "Блокировка без VPN в Android",
+                "Постоянная VPN и «Блокировать соединения без VPN» для SQUAD VPN: интернет закрыт, даже когда приложение " +
+                    "не запущено. Приложения из списка «Мимо VPN» при этом могут остаться без сети",
+            ) {
+                runCatching { context.startActivity(Intent(Settings.ACTION_VPN_SETTINGS)) }
+                    .onFailure { context.startActivity(Intent(Settings.ACTION_WIRELESS_SETTINGS)) }
             }
             Row(
                 Modifier

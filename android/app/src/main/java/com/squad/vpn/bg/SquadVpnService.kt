@@ -124,6 +124,7 @@ class SquadVpnService : VpnService() {
         runCatching { core.stopLoop() }
         tun?.close()
         tun = null
+        Vpn.setBlocked(false)
         if (Vpn.status.value != Status.Failed) Vpn.setStatus(Status.Disconnected)
         super.onDestroy()
     }
@@ -166,9 +167,13 @@ class SquadVpnService : VpnService() {
 
         Vpn.setStatus(Status.Connecting, "Подключаюсь к ${node.name}…")
         val pfd = establish() ?: throw IllegalStateException("Нет разрешения на VPN")
+        // The kill switch's interface (if any) blocked until this moment; the new one replaces it.
+        val old = tun
         tun = pfd
+        old?.close()
         startCore(node)
         Prefs.wasConnected = true
+        Vpn.setBlocked(false)
         Vpn.setStatus(Status.Connected)
         Vpn.event("Подключено: ${node.name} (${profile.title})")
         monitor = scope.launch { watch() }
@@ -472,8 +477,20 @@ class SquadVpnService : VpnService() {
         monitor = null
         unwatchNetwork()
         runCatching { if (core.isRunning) core.stopLoop() }
+        // Kill switch: the connection broke (not Disconnect). The interface
+        // stays with no core behind it, so apps get no internet past the VPN
+        // until it reconnects or the user opens the internet.
+        if (status == Status.Failed && Prefs.killSwitch && tun != null) {
+            wanted = false
+            Vpn.setBlocked(true)
+            Vpn.setStatus(status, "Интернет закрыт, пока VPN не заработает. ${message ?: ""}".trim())
+            Vpn.event("Kill switch: интернет закрыт")
+            foreground(notification("Интернет закрыт", "VPN не работает: ${message ?: "соединение оборвалось"}", blocked = true))
+            return
+        }
         tun?.close()
         tun = null
+        Vpn.setBlocked(false)
         Vpn.setStatus(status, message)
         if (status == Status.Failed) wanted = false
         // A start that came in while this stop was finishing keeps the service.
@@ -504,7 +521,7 @@ class SquadVpnService : VpnService() {
             .notify(NOTIFICATION_ID, notification(node.name, text))
     }
 
-    private fun notification(title: String, text: String?): Notification {
+    private fun notification(title: String, text: String?, blocked: Boolean = false): Notification {
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
         )
@@ -520,8 +537,20 @@ class SquadVpnService : VpnService() {
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .setContentIntent(open)
-            .addAction(0, "Отключить", stop)
-            .also { StatusBar.promote(it, "VPN") }
+            .apply {
+                if (blocked) {
+                    val again = PendingIntent.getForegroundService(
+                        this@SquadVpnService, 2,
+                        Intent(this@SquadVpnService, SquadVpnService::class.java).setAction(ACTION_START),
+                        PendingIntent.FLAG_IMMUTABLE,
+                    )
+                    addAction(0, "Переподключить", again)
+                    addAction(0, "Открыть интернет", stop)
+                } else {
+                    addAction(0, "Отключить", stop)
+                    StatusBar.promote(this, "VPN")
+                }
+            }
             .build()
     }
 
