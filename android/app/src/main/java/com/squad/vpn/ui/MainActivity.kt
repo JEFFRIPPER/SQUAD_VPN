@@ -106,6 +106,13 @@ class MainActivity : ComponentActivity() {
 
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
+    /** The VPN permission alone, from the permission list: no connection after it. */
+    private val vpnGrant = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
+
+    fun askVpn() {
+        VpnService.prepare(this)?.let { vpnGrant.launch(it) }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // The app is always dark: light system bar icons on a transparent bar.
@@ -168,6 +175,7 @@ class MainActivity : ComponentActivity() {
         var showEvents by rememberSaveable { mutableStateOf(false) }
         var showApps by rememberSaveable { mutableStateOf(false) }
         var appsChanged by remember { mutableStateOf(false) }
+        var onboarding by rememberSaveable { mutableStateOf(!Prefs.onboarded) }
         val status by Vpn.status.collectAsStateWithLifecycle()
         val update by Updater.state.collectAsStateWithLifecycle()
         val events by Vpn.events.collectAsStateWithLifecycle()
@@ -314,6 +322,7 @@ class MainActivity : ComponentActivity() {
                                 refreshNote = refreshNote,
                                 onRefresh = { refresh(profile) },
                                 onOpenApps = { showApps = true },
+                                onAskVpn = ::askVpn,
                                 contentPadding = contentPadding,
                                 modifier = Modifier.fillMaxSize(),
                             )
@@ -386,6 +395,23 @@ class MainActivity : ComponentActivity() {
                     title = "Приложения и VPN",
                 ) {
                     DirectAppsList(onChange = { appsChanged = true })
+                }
+
+                GlassSheet(
+                    visible = onboarding,
+                    onDismiss = {
+                        onboarding = false
+                        Prefs.onboarded = true
+                    },
+                    title = "Добро пожаловать",
+                ) {
+                    Onboarding(
+                        onAskVpn = ::askVpn,
+                        onDone = {
+                            onboarding = false
+                            Prefs.onboarded = true
+                        },
+                    )
                 }
 
                 GlassSheet(visible = showEvents, onDismiss = { showEvents = false }, title = "События") {

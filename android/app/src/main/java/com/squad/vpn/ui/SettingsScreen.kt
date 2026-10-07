@@ -83,6 +83,7 @@ fun SettingsScreen(
     refreshNote: String?,
     onRefresh: () -> Unit,
     onOpenApps: () -> Unit,
+    onAskVpn: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
 ) {
@@ -279,6 +280,10 @@ fun SettingsScreen(
                 autoConnect = it
                 Prefs.autoConnect = it
             }
+        }
+
+        StatCard("Разрешения", Modifier.fillMaxWidth(), index = 2) {
+            PermissionsList(onAskVpn = onAskVpn)
         }
 
         TrafficCard(index = 2)

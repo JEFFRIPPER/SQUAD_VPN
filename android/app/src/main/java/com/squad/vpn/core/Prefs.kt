@@ -123,6 +123,11 @@ object Prefs {
         set(value) = sp.edit().putBoolean("auto_connect", value).apply()
 
     /** The VPN was on when the phone switched off / the app was updated. */
+    /** The first-start sheet was shown and closed. */
+    var onboarded: Boolean
+        get() = sp.getBoolean("onboarded", false)
+        set(value) = sp.edit().putBoolean("onboarded", value).apply()
+
     var wasConnected: Boolean
         get() = sp.getBoolean("was_connected", false)
         set(value) = sp.edit().putBoolean("was_connected", value).apply()
