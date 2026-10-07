@@ -23,10 +23,9 @@ sealed interface SpeedState {
 
 /** Download speed through the connected server: one file over the core's SOCKS port. */
 object SpeedTest {
-    private const val URL = "https://speed.cloudflare.com/__down?bytes=$MAX_BYTES"
-
     /** Caps the traffic one test costs on mobile data. */
     const val MAX_BYTES = 40_000_000L
+    private const val URL = "https://speed.cloudflare.com/__down?bytes=$MAX_BYTES"
     private const val LIMIT_MS = 8_000L
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
