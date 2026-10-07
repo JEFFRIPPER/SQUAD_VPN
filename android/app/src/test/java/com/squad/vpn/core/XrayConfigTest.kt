@@ -63,4 +63,27 @@ class XrayConfigTest {
         assertFalse(node.outbound.has("tag"))
         assertEquals(before, node.key)
     }
+
+    @Test
+    fun antiDpiFragment() {
+        val config = JSONObject(XrayConfig.vpn(node, ruDirect = false, fragment = true))
+        val outbounds = config.getJSONArray("outbounds").objects()
+        val fragment = outbounds.single { it.getString("tag") == "fragment" }
+        assertEquals("freedom", fragment.getString("protocol"))
+        assertEquals("tlshello", fragment.getJSONObject("settings").getJSONObject("fragment").getString("packets"))
+        val sockopt = outbounds[0].getJSONObject("streamSettings").getJSONObject("sockopt")
+        assertEquals("fragment", sockopt.getString("dialerProxy"))
+        // The node itself is not changed.
+        assertFalse(node.outbound.toString().contains("dialerProxy"))
+        // The ping config gets the same chain.
+        val probe = JSONObject(XrayConfig.probe(node, fragment = true)).getJSONArray("outbounds").objects()
+        assertEquals(listOf("proxy", "fragment"), probe.map { it.getString("tag") })
+    }
+
+    @Test
+    fun noFragmentForHysteria() {
+        val hy = Links.parse("hysteria2://pass@1.2.3.4:443?sni=a.com#h")!!
+        val outbounds = JSONObject(XrayConfig.vpn(hy, ruDirect = false, fragment = true)).getJSONArray("outbounds").objects()
+        assertFalse(outbounds.any { it.getString("tag") == "fragment" })
+    }
 }

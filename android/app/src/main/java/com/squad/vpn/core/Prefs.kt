@@ -98,6 +98,11 @@ object Prefs {
         get() = sp.getBoolean("ru_direct", true)
         set(value) = sp.edit().putBoolean("ru_direct", value).apply()
 
+    /** Cut the TLS handshake into pieces on the way to the server (XrayConfig fragment). */
+    var antiDpi: Boolean
+        get() = sp.getBoolean("anti_dpi", false)
+        set(value) = sp.edit().putBoolean("anti_dpi", value).apply()
+
     var autoConnect: Boolean
         get() = sp.getBoolean("auto_connect", false)
         set(value) = sp.edit().putBoolean("auto_connect", value).apply()

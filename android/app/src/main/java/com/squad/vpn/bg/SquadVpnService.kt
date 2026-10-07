@@ -259,7 +259,7 @@ class SquadVpnService : VpnService() {
         val fd = tun?.fd ?: throw IllegalStateException("VPN-интерфейс закрыт")
         if (core.isRunning) core.stopLoop()
         val ruDirect = Prefs.ruDirect && Profile.current != Profile.WHITELIST
-        core.startLoop(XrayConfig.vpn(node, ruDirect), fd)
+        core.startLoop(XrayConfig.vpn(node, ruDirect, fragment = Prefs.antiDpi), fd)
         if (!core.isRunning) throw IllegalStateException("Ядро Xray не запустилось")
         Vpn.setCurrent(node)
         Prefs.setLastGoodOn(netId, node.key)
@@ -403,7 +403,7 @@ class SquadVpnService : VpnService() {
         }
         tun = pfd
         runCatching { startCore(node) }
-            .onSuccess { Vpn.event("Список приложений без VPN обновлён") }
+            .onSuccess { Vpn.event("Подключение обновлено") }
             .onFailure { shutdown(Status.Failed, it.message ?: "Ядро не перезапустилось") }
         old?.close()
         Unit

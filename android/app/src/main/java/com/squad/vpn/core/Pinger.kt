@@ -52,7 +52,7 @@ object Pinger {
         threads.execute {
             result.complete(
                 try {
-                    val ms = Libv2ray.measureOutboundDelay(XrayConfig.probe(node), XrayConfig.TEST_URL)
+                    val ms = Libv2ray.measureOutboundDelay(XrayConfig.probe(node, Prefs.antiDpi), XrayConfig.TEST_URL)
                     if (ms > 0) ms else DEAD
                 } catch (e: Throwable) {
                     DEAD

@@ -35,7 +35,31 @@ object XrayConfig {
         "192.168.0.0/16", "224.0.0.0/4", "fc00::/7", "fe80::/10",
     )
 
-    fun vpn(node: Node, ruDirect: Boolean, logLevel: String = "warning"): String {
+    private const val TAG_FRAGMENT = "fragment"
+
+    /**
+     * Anti-DPI: the connection to the server goes out through a freedom
+     * outbound that cuts the TLS ClientHello into small pieces, so a DPI box
+     * that reads the server name from one packet does not see it. Only for
+     * TCP transports; hysteria2 runs over UDP.
+     */
+    private fun fragmentOutbound(): JSONObject =
+        JSONObject()
+            .put("tag", TAG_FRAGMENT)
+            .put("protocol", "freedom")
+            .put(
+                "settings",
+                JSONObject()
+                    .put("domainStrategy", "AsIs")
+                    .put("fragment", JSONObject().put("packets", "tlshello").put("length", "100-200").put("interval", "10-20")),
+            )
+            .put("streamSettings", JSONObject().put("sockopt", JSONObject().put("tcpNoDelay", true)))
+
+    private fun fragmentable(node: Node): Boolean =
+        node.outbound.optJSONObject("streamSettings")?.optString("network") !in setOf("hysteria", "kcp", "quic")
+
+    fun vpn(node: Node, ruDirect: Boolean, logLevel: String = "warning", fragment: Boolean = false): String {
+        val useFragment = fragment && fragmentable(node)
         val sniffing = JSONObject()
             .put("enabled", true)
             .put("destOverride", JSONArray(listOf("http", "tls", "quic")))
@@ -69,7 +93,7 @@ object XrayConfig {
             )
 
         val outbounds = JSONArray()
-            .put(proxyOutbound(node))
+            .put(proxyOutbound(node, useFragment))
             .put(
                 JSONObject()
                     .put("tag", "direct")
@@ -78,6 +102,7 @@ object XrayConfig {
             )
             .put(JSONObject().put("tag", "block").put("protocol", "blackhole"))
             .put(JSONObject().put("tag", "dns-out").put("protocol", "dns"))
+        if (useFragment) outbounds.put(fragmentOutbound())
 
         val rules = JSONArray()
             .put(JSONObject().put("inboundTag", JSONArray().put("tun")).put("port", "53").put("outboundTag", "dns-out"))
@@ -129,12 +154,23 @@ object XrayConfig {
     }
 
     /** Minimal config for Libv2ray.measureOutboundDelay: the node is the first outbound. */
-    fun probe(node: Node): String =
-        JSONObject()
+    fun probe(node: Node, fragment: Boolean = false): String {
+        val useFragment = fragment && fragmentable(node)
+        val outbounds = JSONArray().put(proxyOutbound(node, useFragment))
+        if (useFragment) outbounds.put(fragmentOutbound())
+        return JSONObject()
             .put("log", JSONObject().put("loglevel", "none"))
-            .put("outbounds", JSONArray().put(proxyOutbound(node)))
+            .put("outbounds", outbounds)
             .toString()
+    }
 
-    private fun proxyOutbound(node: Node): JSONObject =
-        JSONObject(node.outbound.toString()).put("tag", TAG_PROXY)
+    private fun proxyOutbound(node: Node, fragment: Boolean = false): JSONObject {
+        val outbound = JSONObject(node.outbound.toString()).put("tag", TAG_PROXY)
+        if (fragment) {
+            val stream = outbound.optJSONObject("streamSettings") ?: JSONObject().also { outbound.put("streamSettings", it) }
+            val sockopt = stream.optJSONObject("sockopt") ?: JSONObject().also { stream.put("sockopt", it) }
+            sockopt.put("dialerProxy", TAG_FRAGMENT)
+        }
+        return outbound
+    }
 }

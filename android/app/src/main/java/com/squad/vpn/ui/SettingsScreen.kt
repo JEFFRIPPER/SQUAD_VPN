@@ -56,12 +56,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.squad.vpn.BuildConfig
+import com.squad.vpn.bg.SquadVpnService
 import com.squad.vpn.bg.StatusBar
 import com.squad.vpn.core.PhoneProbe
 import com.squad.vpn.core.Prefs
 import com.squad.vpn.core.Profile
 import com.squad.vpn.core.Subscriptions
 import com.squad.vpn.core.Updater
+import com.squad.vpn.core.Vpn
 import com.squad.vpn.ui.glass.GlassButton
 import com.squad.vpn.ui.glass.GlassButtonStyle
 import com.squad.vpn.ui.glass.GlassColors
@@ -91,6 +93,7 @@ fun SettingsScreen(
     val clipboard = LocalClipboardManager.current
     var ruDirect by remember { mutableStateOf(Prefs.ruDirect) }
     var autoConnect by remember { mutableStateOf(Prefs.autoConnect) }
+    var antiDpi by remember { mutableStateOf(Prefs.antiDpi) }
     var probeEnabled by remember { mutableStateOf(Prefs.probeEnabled) }
     var tileNote by remember { mutableStateOf<String?>(null) }
     var liveAllowed by remember { mutableStateOf(StatusBar.liveUpdatesAllowed(context)) }
@@ -205,6 +208,19 @@ fun SettingsScreen(
             ) {
                 ruDirect = it
                 Prefs.ruDirect = it
+            }
+            SwitchRow(
+                "Обход DPI",
+                "Дробит начало защищённого соединения с сервером на мелкие части, чтобы оператор не узнал сервер. " +
+                    "Включи, если серверы не подключаются или быстро отваливаются",
+                antiDpi,
+            ) {
+                antiDpi = it
+                Prefs.antiDpi = it
+                // Servers that looked dead may answer now (or the other way round).
+                Vpn.forgetDead()
+                // A running VPN picks it up at once: same server, new connection.
+                if (Vpn.isConnected) SquadVpnService.send(context, SquadVpnService.ACTION_RELOAD_APPS)
             }
             Row(
                 Modifier
