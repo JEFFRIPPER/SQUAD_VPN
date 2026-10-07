@@ -33,29 +33,37 @@ object Prefs {
 
     /** The node that worked on [network] ([NetworkId]); on a network seen first, the last one anywhere. */
     fun lastGoodOn(network: String): String? =
-        goodByNetwork()[network] ?: lastGood
+        goodOn(network).firstOrNull() ?: lastGood
+
+    /** Servers that worked on [network], the latest first: a connection there tries them before the rest. */
+    fun goodOn(network: String): List<String> = goodByNetwork()[network].orEmpty()
 
     fun setLastGoodOn(network: String, key: String) {
         lastGood = key
         if (network.isEmpty()) return
         // Insertion order: the oldest networks drop out first.
         val map = LinkedHashMap(goodByNetwork())
-        map.remove(network)
-        map[network] = key
+        val keys = (listOf(key) + map.remove(network).orEmpty().filter { it != key }).take(GOOD_PER_NETWORK)
+        map[network] = keys
         while (map.size > MAX_NETWORKS) map.remove(map.keys.first())
         val json = org.json.JSONObject()
-        map.forEach { (net, node) -> json.put(net, node) }
+        map.forEach { (net, nodes) -> json.put(net, org.json.JSONArray(nodes)) }
         sp.edit().putString("last_good_by_network", json.toString()).apply()
     }
 
-    private fun goodByNetwork(): Map<String, String> = runCatching {
+    /** Before 3.0 a network kept one server as a string, read as a list of one. */
+    private fun goodByNetwork(): Map<String, List<String>> = runCatching {
         val json = org.json.JSONObject(sp.getString("last_good_by_network", null) ?: return emptyMap())
-        val map = LinkedHashMap<String, String>()
-        for (net in json.keys()) map[net] = json.getString(net)
+        val map = LinkedHashMap<String, List<String>>()
+        for (net in json.keys()) {
+            val array = json.optJSONArray(net)
+            map[net] = if (array != null) List(array.length()) { array.getString(it) } else listOf(json.getString(net))
+        }
         map
     }.getOrDefault(emptyMap())
 
     private const val MAX_NETWORKS = 20
+    private const val GOOD_PER_NETWORK = 5
 
     /** Nodes list: hide nodes that did not answer the last check. */
     var hideDead: Boolean

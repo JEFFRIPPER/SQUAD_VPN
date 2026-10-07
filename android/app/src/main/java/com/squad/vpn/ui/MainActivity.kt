@@ -290,6 +290,7 @@ class MainActivity : ComponentActivity() {
                         when (page) {
                             0 -> ConnectScreen(
                                 profile = profile,
+                                selected = selected,
                                 onProfile = ::changeProfile,
                                 onPower = {
                                     when (status) {
@@ -298,6 +299,10 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 onFailover = { SquadVpnService.send(this@MainActivity, SquadVpnService.ACTION_FAILOVER) },
+                                onOpenServers = {
+                                    backdrop.scroll = 0f
+                                    tab = 1
+                                },
                                 onOpenEvents = { showEvents = true },
                                 contentPadding = contentPadding,
                                 modifier = Modifier.fillMaxSize(),

@@ -57,14 +57,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.squad.vpn.BuildConfig
-import com.squad.vpn.bg.SquadVpnService
 import com.squad.vpn.bg.StatusBar
 import com.squad.vpn.core.PhoneProbe
 import com.squad.vpn.core.Prefs
 import com.squad.vpn.core.Profile
 import com.squad.vpn.core.Subscriptions
 import com.squad.vpn.core.Updater
-import com.squad.vpn.core.Vpn
 import com.squad.vpn.ui.glass.GlassButton
 import com.squad.vpn.ui.glass.GlassButtonStyle
 import com.squad.vpn.ui.glass.GlassColors
@@ -219,11 +217,7 @@ fun SettingsScreen(
                 antiDpi,
             ) {
                 antiDpi = it
-                Prefs.antiDpi = it
-                // Servers that looked dead may answer now (or the other way round).
-                Vpn.forgetDead()
-                // A running VPN picks it up at once: same server, new connection.
-                if (Vpn.isConnected) SquadVpnService.send(context, SquadVpnService.ACTION_RELOAD_APPS)
+                applyAntiDpi(context, it)
             }
             SwitchRow(
                 "Kill switch",

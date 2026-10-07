@@ -31,17 +31,21 @@ import com.squad.vpn.core.XrayConfig
 import com.squad.vpn.ui.MainActivity
 import com.squad.vpn.ui.formatSpeed
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
+import java.util.concurrent.ConcurrentHashMap
 import libv2ray.CoreCallbackHandler
 import libv2ray.CoreController
 import libv2ray.Libv2ray
@@ -199,15 +203,15 @@ class SquadVpnService : VpnService() {
         val unknown = nodes.filter { it.key !in pings }
         val dead = nodes.filter { pings[it.key] == Pinger.DEAD }
         val byPing = alive + unknown + dead
-        val good = Prefs.lastGoodOn(netId)
-        val last = byPing.firstOrNull { it.key == good && pings[it.key] != Pinger.DEAD }
-            ?: return byPing
-        return listOf(last) + (byPing - last)
+        // Servers that worked on this network (the operator's white list lets them through) go first.
+        val known = Prefs.goodOn(netId).ifEmpty { listOfNotNull(Prefs.lastGoodOn(netId)) }
+        val first = known.mapNotNull { key -> byPing.firstOrNull { it.key == key && pings[it.key] != Pinger.DEAD } }
+        return first + (byPing - first.toSet())
     }
 
     /**
      * The node to use: the hand-picked one, or the fastest of the first
-     * candidates that answer. Batches of 8 so a dead head of the list does
+     * candidates that answer. Batches of 12 so a dead head of the list does
      * not keep the user waiting.
      */
     private suspend fun pickNode(selectedKey: String?): Node? {
@@ -220,12 +224,9 @@ class SquadVpnService : VpnService() {
             Vpn.event("Выбранный сервер ${node.name} не отвечает, ищу другой")
         }
         val pool = candidates.filter { it.key !in failed }
-        for (batch in pool.chunked(8).take(5)) {
+        for (batch in pool.chunked(12).take(5)) {
             Vpn.setStatus(Status.Connecting, "Ищу лучший сервер…")
-            val results = kotlinx.coroutines.coroutineScope {
-                batch.map { node -> async { node to Pinger.ping(node).also { Vpn.setPing(node.key, it) } } }
-                    .map { it.await() }
-            }
+            val results = pingBatch(batch)
             // The last good node wins its batch while it answers reasonably fast: no needless hop.
             val good = Prefs.lastGoodOn(netId)
             val best = results.firstOrNull { it.first.key == good && it.second in 1..LAST_GOOD_MAX_MS }
@@ -234,6 +235,33 @@ class SquadVpnService : VpnService() {
             results.forEach { failed += it.first.key }
         }
         return null
+    }
+
+    /**
+     * Pings [batch] together. Once one server answers, the rest get
+     * [PICK_GRACE_MS] more to beat it: a slow or dead server does not hold
+     * up the connection. Unfinished ones are left out of the result.
+     */
+    private suspend fun pingBatch(batch: List<Node>): List<Pair<Node, Long>> = coroutineScope {
+        val results = ConcurrentHashMap<String, Long>()
+        val settled = CompletableDeferred<Unit>()
+        val jobs = batch.map { node ->
+            launch {
+                val ms = Pinger.ping(node)
+                Vpn.setPing(node.key, ms)
+                results[node.key] = ms
+                if (ms > 0) settled.complete(Unit)
+            }
+        }
+        val all = launch {
+            jobs.joinAll()
+            settled.complete(Unit)
+        }
+        settled.await()
+        withTimeoutOrNull(PICK_GRACE_MS) { all.join() }
+        all.cancel()
+        jobs.forEach { it.cancel() }
+        batch.mapNotNull { node -> results[node.key]?.let { node to it } }
     }
 
     private fun establish(): ParcelFileDescriptor? {
@@ -309,12 +337,19 @@ class SquadVpnService : VpnService() {
                 misses = 0
                 Vpn.setPingNow(ms)
                 Vpn.current.value?.let { Vpn.setPing(it.key, ms) }
-            } else if (++misses >= 2) {
+            } else if (++misses >= missesToSwitch()) {
                 misses = 0
                 failover("сервер перестал отвечать")
             }
         }
     }
+
+    /**
+     * Misses in a row before another server. A mobile network on white lists
+     * drops single checks more often, so there it waits for one more: fewer
+     * needless hops between servers.
+     */
+    private fun missesToSwitch(): Int = if (Profile.current == Profile.WHITELIST) 3 else 2
 
     /**
      * Wi-Fi <-> mobile: connections of the old network are dead, so the core
@@ -558,6 +593,7 @@ class SquadVpnService : VpnService() {
         private const val TAG = "SquadVpn"
         private const val NOTIFICATION_ID = 1
         private const val LAST_GOOD_MAX_MS = 1_500L
+        private const val PICK_GRACE_MS = 1_500L
         const val ACTION_START = "com.squad.vpn.START"
         const val ACTION_STOP = "com.squad.vpn.STOP"
         const val ACTION_SWITCH = "com.squad.vpn.SWITCH"

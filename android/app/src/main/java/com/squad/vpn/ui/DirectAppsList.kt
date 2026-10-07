@@ -24,6 +24,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AllInclusive
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -35,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.squad.vpn.core.DirectApps
 import com.squad.vpn.core.Prefs
+import com.squad.vpn.ui.glass.GlassButton
 import com.squad.vpn.ui.glass.GlassChip
 import com.squad.vpn.ui.glass.GlassColors
 import com.squad.vpn.ui.glass.GlassRadius
@@ -51,6 +54,7 @@ fun DirectAppsList(onChange: () -> Unit, modifier: Modifier = Modifier) {
     var apps by remember { mutableStateOf<List<DirectApps.App>?>(null) }
     var ticked by remember(only) { mutableStateOf(DirectApps.ticked(only)) }
     var query by remember { mutableStateOf("") }
+    var unlimitedNote by remember { mutableStateOf<String?>(null) }
     // Ticked apps first: reload the order when the mode changes.
     LaunchedEffect(only) {
         apps = withContext(Dispatchers.IO) { DirectApps.installed(context, iconPx, DirectApps.ticked(only)) }
@@ -91,6 +95,29 @@ fun DirectAppsList(onChange: () -> Unit, modifier: Modifier = Modifier) {
             color = GlassColors.onGlassVariant,
             modifier = Modifier.padding(top = GlassSpacing.xs),
         )
+        if (!only) {
+            // Unlimited options of the tariff only count traffic the operator can see.
+            GlassButton(
+                text = "Безлимитные приложения мимо VPN",
+                onClick = {
+                    val installed = apps.orEmpty().mapTo(HashSet()) { it.pkg }
+                    val added = DirectApps.UNLIMITED.filter { it in installed && it !in ticked }
+                    ticked = ticked + added
+                    DirectApps.setTicked(false, ticked)
+                    if (added.isNotEmpty()) onChange()
+                    unlimitedNote = if (added.isEmpty()) {
+                        "Нечего добавить: такие приложения уже отмечены или не установлены"
+                    } else {
+                        "Отмечено ${added.size}: соцсети, музыка и видео пойдут напрямую и не съедят пакет, если они безлимитные в тарифе"
+                    }
+                },
+                icon = Icons.Rounded.AllInclusive,
+                modifier = Modifier.padding(top = GlassSpacing.xs),
+            )
+            unlimitedNote?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = GlassColors.onGlassVariant, modifier = Modifier.padding(top = GlassSpacing.xxs))
+            }
+        }
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },

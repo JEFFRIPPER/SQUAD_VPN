@@ -52,9 +52,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.squad.vpn.bg.SquadVpnService
+import com.squad.vpn.core.Node
 import com.squad.vpn.core.Profile
 import com.squad.vpn.core.SpeedState
 import com.squad.vpn.core.SpeedTest
@@ -74,9 +76,11 @@ import kotlinx.coroutines.delay
 @Composable
 fun ConnectScreen(
     profile: Profile,
+    selected: String?,
     onProfile: (Profile) -> Unit,
     onPower: () -> Unit,
     onFailover: () -> Unit,
+    onOpenServers: () -> Unit,
     onOpenEvents: () -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
@@ -125,7 +129,7 @@ fun ConnectScreen(
             )
         }
         val sub = when (status) {
-            Status.Connected -> node?.name ?: ""
+            Status.Connected -> "Подписка «${profile.title}»"
             Status.Connecting, Status.Failed -> message ?: ""
             else -> "Нажми, чтобы пустить трафик телефона через лучшие серверы"
         }
@@ -144,6 +148,9 @@ fun ConnectScreen(
         }
 
         Spacer(Modifier.height(GlassSpacing.lg))
+        ServerCard(status, node, selected, onOpenServers, onFailover)
+
+        Spacer(Modifier.height(GlassSpacing.md))
         val choices = listOf(Profile.TOP, Profile.BEST, Profile.WHITELIST)
         GlassSegmented(
             options = choices.map { it.title },
@@ -163,18 +170,7 @@ fun ConnectScreen(
             )
         }
 
-        AnimatedVisibility(
-            visible = status == Status.Connected,
-            enter = fadeIn(tween(GlassDuration.medium)) + scaleIn(GlassSpring.bouncy(), initialScale = GlassScale.enter),
-            exit = fadeOut(tween(GlassDuration.short)) + scaleOut(tween(GlassDuration.short), targetScale = GlassScale.enter),
-        ) {
-            GlassButton(
-                text = "Сменить сервер",
-                onClick = onFailover,
-                icon = Icons.Rounded.SwapHoriz,
-                modifier = Modifier.padding(top = GlassSpacing.sm),
-            )
-        }
+        QuickToggles(Modifier.padding(top = GlassSpacing.sm))
         // Kill switch holds the internet closed: the power button reconnects, this one gives up.
         AnimatedVisibility(
             visible = blocked && status == Status.Failed,
@@ -191,11 +187,11 @@ fun ConnectScreen(
 
         Spacer(Modifier.height(GlassSpacing.md))
         Row(horizontalArrangement = Arrangement.spacedBy(GlassSpacing.sm)) {
-            StatCard("Пинг сейчас", Modifier.weight(1f), index = 0) {
+            StatCard("Пинг сейчас", Modifier.weight(1f), index = 1) {
                 Text(ping?.let { "$it мс" } ?: "—", style = numberStyle)
                 Text("проверка каждые 16 с", style = MaterialTheme.typography.bodySmall, color = GlassColors.onGlassVariant)
             }
-            StatCard("Эта сессия", Modifier.weight(1f), index = 1) {
+            StatCard("Эта сессия", Modifier.weight(1f), index = 2) {
                 var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
                 LaunchedEffect(since) {
                     while (since > 0) {
@@ -212,7 +208,7 @@ fun ConnectScreen(
             }
         }
         Spacer(Modifier.height(GlassSpacing.sm))
-        StatCard("Скорость", Modifier.fillMaxWidth(), index = 2) {
+        StatCard("Скорость", Modifier.fillMaxWidth(), index = 3) {
             Row(horizontalArrangement = Arrangement.spacedBy(GlassSpacing.lg), verticalAlignment = Alignment.CenterVertically) {
                 Speed(Icons.Rounded.ArrowDownward, formatSpeed(traffic.downBps))
                 Speed(Icons.Rounded.ArrowUpward, formatSpeed(traffic.upBps))
@@ -227,7 +223,7 @@ fun ConnectScreen(
             SpeedTestRow(connected = status == Status.Connected)
         }
         Spacer(Modifier.height(GlassSpacing.sm))
-        StatCard("События", Modifier.fillMaxWidth(), index = 3, onClick = if (events.isEmpty()) null else onOpenEvents) {
+        StatCard("События", Modifier.fillMaxWidth(), index = 4, onClick = if (events.isEmpty()) null else onOpenEvents) {
             if (events.isEmpty()) {
                 Text("пока пусто", color = GlassColors.onGlassVariant)
             } else {
@@ -246,6 +242,50 @@ fun ConnectScreen(
             }
         }
         Spacer(Modifier.height(GlassSpacing.lg))
+    }
+}
+
+/**
+ * The server in use, or the one the next connection starts with. A tap
+ * opens the list; while connected the button moves to another server.
+ */
+@Composable
+private fun ServerCard(status: Status, current: Node?, selected: String?, onOpen: () -> Unit, onSwitch: () -> Unit) {
+    val nodes by Vpn.nodes.collectAsStateWithLifecycle()
+    val pings by Vpn.pings.collectAsStateWithLifecycle()
+    val node = current ?: selected?.let { key -> nodes.firstOrNull { it.key == key } }
+    val connected = status == Status.Connected
+    StatCard(if (connected) "Сервер" else "Следующий сервер", Modifier.fillMaxWidth(), index = 0, onClick = onOpen) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                AnimatedContent(
+                    targetState = node?.name ?: "Самый быстрый",
+                    transitionSpec = { fadeIn(tween(GlassDuration.medium)) togetherWith fadeOut(tween(GlassDuration.short)) },
+                    label = "server",
+                ) {
+                    Text(it, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                val note = if (node == null) {
+                    val alive = nodes.count { (pings[it.key] ?: 0L) > 0 }
+                    if (nodes.isEmpty()) "список серверов загружается" else "выберется сам: отвечают $alive из ${nodes.size}"
+                } else {
+                    val ping = pings[node.key]
+                    val pingText = when {
+                        ping == null -> "пинг не проверен"
+                        ping > 0 -> "$ping мс"
+                        else -> "не отвечает"
+                    }
+                    "${node.protocol.uppercase()} · $pingText"
+                }
+                Text(note, style = MaterialTheme.typography.bodySmall, color = GlassColors.onGlassVariant, maxLines = 1)
+            }
+            if (connected) {
+                Spacer(Modifier.width(GlassSpacing.xs))
+                GlassButton(text = "Сменить", onClick = onSwitch, icon = Icons.Rounded.SwapHoriz)
+            } else {
+                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = GlassColors.onGlassVariant)
+            }
+        }
     }
 }
 

@@ -55,6 +55,15 @@ object XrayConfig {
             )
             .put("streamSettings", JSONObject().put("sockopt", JSONObject().put("tcpNoDelay", true)))
 
+    /** Carried over TCP: a plain connect to the server already shows whether it is there at all. */
+    fun overTcp(node: Node): Boolean {
+        val stream = node.outbound.optJSONObject("streamSettings") ?: return true
+        if (stream.optString("network") in setOf("hysteria", "kcp", "quic")) return false
+        // xhttp over HTTP/3 is QUIC, that is UDP.
+        val alpn = stream.optJSONObject("tlsSettings")?.optJSONArray("alpn")?.toString().orEmpty()
+        return "h3" !in alpn
+    }
+
     private fun fragmentable(node: Node): Boolean =
         node.outbound.optJSONObject("streamSettings")?.optString("network") !in setOf("hysteria", "kcp", "quic")
 

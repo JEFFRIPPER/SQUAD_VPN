@@ -86,4 +86,10 @@ class XrayConfigTest {
         val outbounds = JSONObject(XrayConfig.vpn(hy, ruDirect = false, fragment = true)).getJSONArray("outbounds").objects()
         assertFalse(outbounds.any { it.getString("tag") == "fragment" })
     }
+
+    @Test
+    fun tcpPrecheckOnlyForTcp() {
+        assertFalse(XrayConfig.overTcp(Links.parse("hysteria2://pass@1.2.3.4:443?sni=a.com#h")!!))
+        assertTrue(XrayConfig.overTcp(Links.parse("trojan://pass@1.2.3.4:443?sni=a.com#t")!!))
+    }
 }

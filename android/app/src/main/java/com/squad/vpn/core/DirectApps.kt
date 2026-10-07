@@ -28,6 +28,23 @@ object DirectApps {
         "com.wildberries.ru", // Wildberries
     )
 
+    /**
+     * Russian social networks, messengers, music and video: they work
+     * without a VPN, and operators often count them as unlimited options.
+     * Through the VPN the operator cannot tell them apart, so their traffic
+     * eats the main package; straight out it stays free.
+     */
+    val UNLIMITED: Set<String> = setOf(
+        "ru.oneme.app", // MAX
+        "com.vkontakte.android", // ВКонтакте
+        "ru.ok.android", // Одноклассники
+        "com.vk.vkvideo", // VK Видео
+        "com.uma.musicvk", // VK Музыка
+        "ru.yandex.music", // Яндекс Музыка
+        "ru.rutube.app", // Rutube
+        "ru.kinopoisk", // Кинопоиск
+    )
+
     class App(val pkg: String, val label: String, val icon: Bitmap?)
 
     /** The packages that bypass the VPN now. */

@@ -15,6 +15,8 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withTimeoutOrNull
 import libv2ray.Libv2ray
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -26,7 +28,14 @@ object Pinger {
     const val FRESH_MS = 30 * 60 * 1000L
 
     /** One node never takes longer than this, even when the core hangs. */
-    private const val PING_TIMEOUT_MS = 15_000L
+    private const val PING_TIMEOUT_MS = 10_000L
+
+    /**
+     * A TCP server that does not accept a connection in this time is dead,
+     * no core is started for it. Most dead servers (and on white lists, all
+     * servers outside them) are found here in a few seconds.
+     */
+    private const val CONNECT_TIMEOUT_MS = 3_000
 
     /** A check of the whole list stops after this; unmeasured nodes keep their old result. */
     const val CHECK_TIMEOUT_MS = 180_000L
@@ -52,8 +61,12 @@ object Pinger {
         threads.execute {
             result.complete(
                 try {
-                    val ms = Libv2ray.measureOutboundDelay(XrayConfig.probe(node, Prefs.antiDpi), XrayConfig.TEST_URL)
-                    if (ms > 0) ms else DEAD
+                    if (XrayConfig.overTcp(node) && !accepts(node)) {
+                        DEAD
+                    } else {
+                        val ms = Libv2ray.measureOutboundDelay(XrayConfig.probe(node, Prefs.antiDpi), XrayConfig.TEST_URL)
+                        if (ms > 0) ms else DEAD
+                    }
                 } catch (e: Throwable) {
                     DEAD
                 },
@@ -62,10 +75,19 @@ object Pinger {
         return withTimeoutOrNull(PING_TIMEOUT_MS) { result.await() } ?: DEAD
     }
 
+    /** The app is outside its own VPN, so this goes straight from the phone, like the core's own test. */
+    private fun accepts(node: Node): Boolean =
+        try {
+            Socket().use { it.connect(InetSocketAddress(node.server, node.port), CONNECT_TIMEOUT_MS) }
+            true
+        } catch (e: Exception) {
+            false
+        }
+
     /** Pings [nodes] with limited parallelism, publishing each result as it arrives. */
     suspend fun pingAll(
         nodes: List<Node>,
-        parallel: Int = 12,
+        parallel: Int = 24,
         onEach: () -> Unit = {},
     ): Map<String, Long> = coroutineScope {
         val gate = Semaphore(parallel)
