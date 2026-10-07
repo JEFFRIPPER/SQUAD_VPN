@@ -28,6 +28,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +53,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.squad.vpn.core.Profile
+import com.squad.vpn.core.SpeedState
+import com.squad.vpn.core.SpeedTest
 import com.squad.vpn.core.Status
 import com.squad.vpn.core.Vpn
 import com.squad.vpn.ui.glass.GlassButton
@@ -202,6 +206,7 @@ fun ConnectScreen(
                     .height(40.dp)
                     .padding(top = GlassSpacing.xs),
             )
+            SpeedTestRow(connected = status == Status.Connected)
         }
         Spacer(Modifier.height(GlassSpacing.sm))
         StatCard("События", Modifier.fillMaxWidth(), index = 3, onClick = if (events.isEmpty()) null else onOpenEvents) {
@@ -225,6 +230,43 @@ fun ConnectScreen(
         Spacer(Modifier.height(GlassSpacing.lg))
     }
 }
+
+/** The test button and its result under the live speed. */
+@Composable
+private fun SpeedTestRow(connected: Boolean) {
+    val test by SpeedTest.state.collectAsStateWithLifecycle()
+    val running = test is SpeedState.Running
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(top = GlassSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            val (value, note) = when (val t = test) {
+                is SpeedState.Running -> formatMbps(t.mbps) to "замер…"
+                is SpeedState.Done -> formatMbps(t.mbps) to t.server
+                is SpeedState.Error -> "—" to t.message
+                SpeedState.Idle -> "—" to "до ${SpeedTest.MAX_BYTES / 1_000_000} МБ трафика"
+            }
+            AnimatedContent(
+                targetState = value,
+                transitionSpec = { fadeIn(tween(GlassDuration.short)) togetherWith fadeOut(tween(GlassDuration.short)) },
+                label = "mbps",
+            ) { Text(it, style = MaterialTheme.typography.titleLarge) }
+            Text(note, style = MaterialTheme.typography.bodySmall, color = GlassColors.onGlassVariant, maxLines = 1)
+        }
+        GlassButton(
+            text = if (running) "Стоп" else "Тест скорости",
+            onClick = { if (running) SpeedTest.stop() else SpeedTest.start() },
+            icon = if (running) Icons.Rounded.Stop else Icons.Rounded.Speed,
+            enabled = connected || running,
+        )
+    }
+}
+
+private fun formatMbps(mbps: Double): String =
+    if (mbps < 10) String.format(java.util.Locale.ROOT, "%.1f Мбит/с", mbps) else "${mbps.toInt()} Мбит/с"
 
 @Composable
 private fun Speed(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {

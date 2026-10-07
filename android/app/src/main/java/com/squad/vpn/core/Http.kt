@@ -43,6 +43,9 @@ object Http {
             e.message ?: e.javaClass.simpleName
         }
 
+    /** [url] through the connected server only (the speed test). */
+    fun openViaVpn(url: String, timeoutMs: Int = 10_000): HttpURLConnection = open(url, socks, timeoutMs)
+
     private fun routes(): List<Proxy> =
         if (Vpn.isConnected) listOf(socks, Proxy.NO_PROXY) else listOf(Proxy.NO_PROXY)
 
