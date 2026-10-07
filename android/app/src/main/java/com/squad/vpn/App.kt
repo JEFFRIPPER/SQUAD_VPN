@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import com.squad.vpn.core.PingStore
 import com.squad.vpn.core.Prefs
+import com.squad.vpn.core.TrafficStore
 import libv2ray.Libv2ray
 
 class App : Application() {
@@ -23,6 +24,7 @@ class App : Application() {
         instance = this
         Prefs.init(this)
         PingStore.init(this)
+        TrafficStore.init(this)
         // Xray reads geo files from here (none are used) and keeps its xudp key.
         Libv2ray.initCoreEnv(filesDir.absolutePath, Prefs.deviceKey)
         val notifications = getSystemService(NotificationManager::class.java)

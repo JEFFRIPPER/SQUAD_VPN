@@ -246,6 +246,8 @@ fun SettingsScreen(
             }
         }
 
+        TrafficCard(index = 2)
+
         StatCard("Проверка белых списков", Modifier.fillMaxWidth(), index = 2) {
             Text(
                 "Когда мобильный интернет урезают до белых списков, телефон проверяет серверы «Белых списков» " +

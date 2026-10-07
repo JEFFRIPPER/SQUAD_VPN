@@ -25,6 +25,7 @@ import com.squad.vpn.core.Prefs
 import com.squad.vpn.core.Profile
 import com.squad.vpn.core.Status
 import com.squad.vpn.core.Subscriptions
+import com.squad.vpn.core.TrafficStore
 import com.squad.vpn.core.Vpn
 import com.squad.vpn.core.XrayConfig
 import com.squad.vpn.ui.MainActivity
@@ -358,6 +359,7 @@ class SquadVpnService : VpnService() {
             if (parts[1] == "downlink") down += value else up += value
         }
         Vpn.addTraffic(down, up, seconds)
+        TrafficStore.add(down, up)
     }
 
     private suspend fun failover(reason: String): Unit = lock.withLock {
@@ -454,6 +456,7 @@ class SquadVpnService : VpnService() {
     }
 
     private fun shutdown(status: Status, message: String?) {
+        TrafficStore.flush()
         monitor?.cancel()
         monitor = null
         unwatchNetwork()
