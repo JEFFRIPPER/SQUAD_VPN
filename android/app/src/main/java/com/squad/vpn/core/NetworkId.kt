@@ -3,7 +3,9 @@ package com.squad.vpn.core
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
+import java.net.Inet4Address
 
 /**
  * Which network the phone is on, so each one keeps the server that worked
@@ -19,14 +21,21 @@ object NetworkId {
         val caps = cm.getNetworkCapabilities(network) ?: return ""
         when {
             caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
-                val operator = context.getSystemService(TelephonyManager::class.java)?.networkOperator.orEmpty()
+                // Two SIMs: the one carrying mobile data, not the default for calls.
+                val phone = context.getSystemService(TelephonyManager::class.java)
+                val data = SubscriptionManager.getDefaultDataSubscriptionId()
+                val operator = (if (data != SubscriptionManager.INVALID_SUBSCRIPTION_ID) phone?.createForSubscriptionId(data) else phone)
+                    ?.networkOperator.orEmpty()
                 "mobile:$operator"
             }
             caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> {
+                // The IPv4 router: the IPv6 default route's gateway is a link-local address.
                 val gateway = cm.getLinkProperties(network)?.routes
-                    ?.firstOrNull { it.isDefaultRoute && it.gateway != null }
-                    ?.gateway?.hostAddress.orEmpty()
+                    ?.filter { it.isDefaultRoute }
+                    ?.mapNotNull { it.gateway }
+                    ?.firstOrNull { it is Inet4Address && !it.isAnyLocalAddress }
+                    ?.hostAddress.orEmpty()
                 "wifi:$gateway"
             }
             else -> ""
