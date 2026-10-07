@@ -5,6 +5,14 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import com.squad.vpn.bg.UpdateJob
+import com.squad.vpn.bg.VpnWidget
+import com.squad.vpn.core.Vpn
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import com.squad.vpn.core.PingStore
 import com.squad.vpn.core.Prefs
 import libv2ray.Libv2ray
@@ -27,6 +35,12 @@ class App : Application() {
             NotificationChannel(CHANNEL_UPDATES, "Обновления", NotificationManager.IMPORTANCE_DEFAULT),
         )
         UpdateJob.schedule(this)
+        // The home screen widget follows the VPN: status and server.
+        CoroutineScope(SupervisorJob() + Dispatchers.Main).launch {
+            combine(Vpn.status, Vpn.current) { status, node -> status to node?.name }
+                .distinctUntilChanged()
+                .collect { VpnWidget.updateAll(this@App) }
+        }
     }
 
     companion object {

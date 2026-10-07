@@ -89,10 +89,28 @@ class SquadVpnService : VpnService() {
             ACTION_SWITCH -> switching = scope.launch { switchTo(Prefs.selectedNode, "выбран вручную") }
             ACTION_FAILOVER -> switching = scope.launch { failover("сменить сервер") }
             ACTION_RELOAD_APPS -> scope.launch { reloadApps() }
+            ACTION_TOGGLE -> toggle()
             // ACTION_START, always-on VPN (SERVICE_INTERFACE) and a restart by the system.
             else -> start()
         }
         return START_STICKY
+    }
+
+    /** The widget: on <-> off. It starts us in the foreground, so every path shows the notification first. */
+    private fun toggle() {
+        when (Vpn.status.value) {
+            Status.Connected, Status.Connecting -> {
+                foreground(notification("Отключение…", null))
+                stop("Отключено")
+            }
+            else -> if (prepare(this) == null) {
+                start()
+            } else {
+                // The VPN permission dialog needs the app's screen.
+                foreground(notification("Нужно разрешение на VPN", null))
+                shutdown(Status.Failed, "Открой приложение и разреши VPN")
+            }
+        }
     }
 
     override fun onRevoke() {
@@ -502,6 +520,8 @@ class SquadVpnService : VpnService() {
         const val ACTION_SWITCH = "com.squad.vpn.SWITCH"
         const val ACTION_FAILOVER = "com.squad.vpn.FAILOVER"
         const val ACTION_RELOAD_APPS = "com.squad.vpn.RELOAD_APPS"
+        /** From the widget, sent with startForegroundService. */
+        const val ACTION_TOGGLE = "com.squad.vpn.TOGGLE"
 
         /** False when Android refused to start the service from the background. */
         fun send(context: Context, action: String): Boolean {
