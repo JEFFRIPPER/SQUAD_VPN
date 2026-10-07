@@ -31,6 +31,32 @@ object Prefs {
         get() = sp.getString("last_good", null)
         set(value) = sp.edit().putString("last_good", value).apply()
 
+    /** The node that worked on [network] ([NetworkId]); on a network seen first, the last one anywhere. */
+    fun lastGoodOn(network: String): String? =
+        goodByNetwork()[network] ?: lastGood
+
+    fun setLastGoodOn(network: String, key: String) {
+        lastGood = key
+        if (network.isEmpty()) return
+        // Insertion order: the oldest networks drop out first.
+        val map = LinkedHashMap(goodByNetwork())
+        map.remove(network)
+        map[network] = key
+        while (map.size > MAX_NETWORKS) map.remove(map.keys.first())
+        val json = org.json.JSONObject()
+        map.forEach { (net, node) -> json.put(net, node) }
+        sp.edit().putString("last_good_by_network", json.toString()).apply()
+    }
+
+    private fun goodByNetwork(): Map<String, String> = runCatching {
+        val json = org.json.JSONObject(sp.getString("last_good_by_network", null) ?: return emptyMap())
+        val map = LinkedHashMap<String, String>()
+        for (net in json.keys()) map[net] = json.getString(net)
+        map
+    }.getOrDefault(emptyMap())
+
+    private const val MAX_NETWORKS = 20
+
     /** Nodes list: hide nodes that did not answer the last check. */
     var hideDead: Boolean
         get() = sp.getBoolean("hide_dead", true)

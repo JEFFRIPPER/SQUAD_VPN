@@ -17,6 +17,7 @@ import com.squad.vpn.App
 import com.squad.vpn.R
 import com.squad.vpn.core.DirectApps
 import com.squad.vpn.core.Http
+import com.squad.vpn.core.NetworkId
 import com.squad.vpn.core.Node
 import com.squad.vpn.core.PhoneProbe
 import com.squad.vpn.core.Pinger
@@ -66,6 +67,9 @@ class SquadVpnService : VpnService() {
     private var wanted = false
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private var candidates: List<Node> = emptyList()
+    /** [NetworkId] of the network the VPN runs over now. */
+    @Volatile
+    private var netId = ""
     private val failed = mutableSetOf<String>()
 
     private val core: CoreController by lazy {
@@ -136,6 +140,7 @@ class SquadVpnService : VpnService() {
         val nodes = Subscriptions.load(profile)
         Vpn.setNodes(nodes)
         failed.clear()
+        netId = NetworkId.current(this)
         candidates = ordered(nodes)
 
         val node = pickNode(Prefs.selectedNode) ?: throw IllegalStateException("Ни один сервер не ответил. Обнови подписку или выбери другую")
@@ -170,7 +175,8 @@ class SquadVpnService : VpnService() {
         val unknown = nodes.filter { it.key !in pings }
         val dead = nodes.filter { pings[it.key] == Pinger.DEAD }
         val byPing = alive + unknown + dead
-        val last = byPing.firstOrNull { it.key == Prefs.lastGood && pings[it.key] != Pinger.DEAD }
+        val good = Prefs.lastGoodOn(netId)
+        val last = byPing.firstOrNull { it.key == good && pings[it.key] != Pinger.DEAD }
             ?: return byPing
         return listOf(last) + (byPing - last)
     }
@@ -197,7 +203,8 @@ class SquadVpnService : VpnService() {
                     .map { it.await() }
             }
             // The last good node wins its batch while it answers reasonably fast: no needless hop.
-            val best = results.firstOrNull { it.first.key == Prefs.lastGood && it.second in 1..LAST_GOOD_MAX_MS }
+            val good = Prefs.lastGoodOn(netId)
+            val best = results.firstOrNull { it.first.key == good && it.second in 1..LAST_GOOD_MAX_MS }
                 ?: results.filter { it.second > 0 }.minByOrNull { it.second }
             if (best != null) return best.first
             results.forEach { failed += it.first.key }
@@ -236,7 +243,7 @@ class SquadVpnService : VpnService() {
         core.startLoop(XrayConfig.vpn(node, ruDirect), fd)
         if (!core.isRunning) throw IllegalStateException("Ядро Xray не запустилось")
         Vpn.setCurrent(node)
-        Prefs.lastGood = node.key
+        Prefs.setLastGoodOn(netId, node.key)
         Vpn.setPingNow(Vpn.pings.value[node.key]?.takeIf { it > 0 })
         updateNotification()
     }
@@ -293,6 +300,7 @@ class SquadVpnService : VpnService() {
                     lock.withLock {
                         // Nodes that failed on the old network get another chance.
                         failed.clear()
+                        netId = NetworkId.current(this@SquadVpnService)
                         val node = Vpn.current.value ?: return@withLock
                         if (Vpn.status.value != Status.Connected) return@withLock
                         runCatching { startCore(node) }
