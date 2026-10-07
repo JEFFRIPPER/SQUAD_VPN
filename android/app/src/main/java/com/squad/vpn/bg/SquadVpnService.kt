@@ -246,11 +246,22 @@ class SquadVpnService : VpnService() {
                     this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE,
                 ),
             )
-        // The app (and the Xray core inside it) stays outside the tunnel.
-        builder.addDisallowedApplication(packageName)
-        // Banks, Госуслуги and the like go straight to the internet. An app
-        // that was removed from the phone is skipped.
-        for (pkg in DirectApps.selected) runCatching { builder.addDisallowedApplication(pkg) }
+        // Only the chosen apps enter the tunnel; this app is not one of them,
+        // so the core stays outside. Android does not allow mixing allowed and
+        // disallowed lists. A removed app is skipped; if none is left, the
+        // usual mode below keeps the core out of its own tunnel.
+        val allowed = if (DirectApps.onlyMode) {
+            (Prefs.vpnApps - packageName).count { pkg -> runCatching { builder.addAllowedApplication(pkg) }.isSuccess }
+        } else {
+            0
+        }
+        if (allowed == 0) {
+            // The app (and the Xray core inside it) stays outside the tunnel.
+            builder.addDisallowedApplication(packageName)
+            // Banks, Госуслуги and the like go straight to the internet. An app
+            // that was removed from the phone is skipped.
+            for (pkg in DirectApps.selected) runCatching { builder.addDisallowedApplication(pkg) }
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) builder.setMetered(false)
         return builder.establish()
     }

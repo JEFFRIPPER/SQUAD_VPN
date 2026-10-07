@@ -230,9 +230,9 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Приложения без VPN", style = MaterialTheme.typography.titleMedium)
+                    Text("Приложения и VPN", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Банки, Госуслуги и другие отмеченные приложения ходят напрямую",
+                        "Какие приложения идут мимо VPN, или только какие идут через него",
                         style = MaterialTheme.typography.bodySmall,
                         color = GlassColors.onGlassVariant,
                     )

@@ -2,6 +2,7 @@ package com.squad.vpn.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.squad.vpn.core.DirectApps
 import com.squad.vpn.core.Prefs
+import com.squad.vpn.ui.glass.GlassChip
 import com.squad.vpn.ui.glass.GlassColors
 import com.squad.vpn.ui.glass.GlassRadius
 import com.squad.vpn.ui.glass.GlassSpacing
@@ -45,18 +47,49 @@ import kotlinx.coroutines.withContext
 fun DirectAppsList(onChange: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val iconPx = with(LocalDensity.current) { 36.dp.roundToPx() }
+    var only by remember { mutableStateOf(Prefs.onlyApps) }
     var apps by remember { mutableStateOf<List<DirectApps.App>?>(null) }
-    var ticked by remember { mutableStateOf(DirectApps.selected) }
+    var ticked by remember(only) { mutableStateOf(DirectApps.ticked(only)) }
     var query by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) {
-        apps = withContext(Dispatchers.IO) { DirectApps.installed(context, iconPx) }
+    // Ticked apps first: reload the order when the mode changes.
+    LaunchedEffect(only) {
+        apps = withContext(Dispatchers.IO) { DirectApps.installed(context, iconPx, DirectApps.ticked(only)) }
     }
 
     Column(modifier) {
+        Row(horizontalArrangement = Arrangement.spacedBy(GlassSpacing.xs)) {
+            GlassChip(
+                text = "Мимо VPN",
+                selected = !only,
+                onClick = {
+                    if (only) {
+                        only = false
+                        Prefs.onlyApps = false
+                        onChange()
+                    }
+                },
+            )
+            GlassChip(
+                text = "Только эти через VPN",
+                selected = only,
+                onClick = {
+                    if (!only) {
+                        only = true
+                        Prefs.onlyApps = true
+                        onChange()
+                    }
+                },
+            )
+        }
         Text(
-            "Отмеченные приложения ходят в интернет напрямую, мимо VPN. Банки и Госуслуги отмечены заранее",
+            if (only) {
+                "Через VPN идут только отмеченные приложения, остальные напрямую. Пока ничего не отмечено, через VPN идёт всё"
+            } else {
+                "Отмеченные приложения ходят в интернет напрямую, мимо VPN. Банки и Госуслуги отмечены заранее"
+            },
             style = MaterialTheme.typography.bodySmall,
             color = GlassColors.onGlassVariant,
+            modifier = Modifier.padding(top = GlassSpacing.xs),
         )
         OutlinedTextField(
             value = query,
@@ -94,7 +127,7 @@ fun DirectAppsList(onChange: () -> Unit, modifier: Modifier = Modifier) {
                 val checked = app.pkg in ticked
                 val toggle = {
                     ticked = if (checked) ticked - app.pkg else ticked + app.pkg
-                    Prefs.directApps = ticked
+                    DirectApps.setTicked(only, ticked)
                     onChange()
                 }
                 Row(

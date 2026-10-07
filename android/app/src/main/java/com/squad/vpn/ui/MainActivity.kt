@@ -383,7 +383,7 @@ class MainActivity : ComponentActivity() {
                         }
                         appsChanged = false
                     },
-                    title = "Приложения без VPN",
+                    title = "Приложения и VPN",
                 ) {
                     DirectAppsList(onChange = { appsChanged = true })
                 }

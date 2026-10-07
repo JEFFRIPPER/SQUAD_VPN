@@ -62,6 +62,16 @@ object Prefs {
         get() = sp.getBoolean("hide_dead", true)
         set(value) = sp.edit().putBoolean("hide_dead", value).apply()
 
+    /** "Только эти через VPN": [vpnApps] go through the VPN, everything else goes straight. */
+    var onlyApps: Boolean
+        get() = sp.getBoolean("only_apps", false)
+        set(value) = sp.edit().putBoolean("only_apps", value).apply()
+
+    /** The apps of the [onlyApps] mode. */
+    var vpnApps: Set<String>
+        get() = sp.getStringSet("vpn_apps", null)?.toSet() ?: emptySet()
+        set(value) = sp.edit().putStringSet("vpn_apps", value).apply()
+
     /** Apps that bypass the VPN; null = [DirectApps.PRESET] (the user never changed the list). */
     var directApps: Set<String>?
         get() = sp.getStringSet("direct_apps", null)?.toSet()
