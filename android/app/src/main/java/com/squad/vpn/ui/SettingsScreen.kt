@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material3.Icon
@@ -48,6 +49,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -85,6 +87,8 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val update by Updater.state.collectAsStateWithLifecycle()
     var customUrl by remember { mutableStateOf(Prefs.customUrl) }
+    var pasteNote by remember { mutableStateOf<String?>(null) }
+    val clipboard = LocalClipboardManager.current
     var ruDirect by remember { mutableStateOf(Prefs.ruDirect) }
     var autoConnect by remember { mutableStateOf(Prefs.autoConnect) }
     var probeEnabled by remember { mutableStateOf(Prefs.probeEnabled) }
@@ -140,8 +144,8 @@ fun SettingsScreen(
                         customUrl = it
                         Prefs.customUrl = it
                     },
-                    label = { Text("Ссылка на подписку") },
-                    singleLine = true,
+                    label = { Text("Ссылка на подписку или ключи") },
+                    maxLines = 4,
                     shape = RoundedCornerShape(GlassRadius.md),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = GlassColors.focusRing,
@@ -153,6 +157,28 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .padding(top = 8.dp),
                 )
+            }
+            // A link copied from a channel or a friend: one tap, no typing.
+            GlassButton(
+                text = "Вставить из буфера",
+                onClick = {
+                    val text = clipboard.getText()?.text?.trim().orEmpty()
+                    if (!text.contains("://")) {
+                        pasteNote = "В буфере нет ссылки: скопируй подписку или ключ vless://…"
+                    } else {
+                        pasteNote = null
+                        customUrl = text
+                        Prefs.customUrl = text
+                        // The old copy goes: switching to "Своя ссылка" then loads the new one.
+                        Subscriptions.forget(Profile.CUSTOM)
+                        if (profile == Profile.CUSTOM) onRefresh() else onProfile(Profile.CUSTOM)
+                    }
+                },
+                icon = Icons.Rounded.ContentPaste,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            pasteNote?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = GlassColors.onGlassVariant, modifier = Modifier.padding(top = 4.dp))
             }
             Spacer(Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {

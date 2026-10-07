@@ -9,6 +9,11 @@ object Subscriptions {
 
     private fun file(profile: Profile) = File(App.context.filesDir, "subs/${profile.id}.txt")
 
+    /** Drops the saved copy: the next load downloads (or, for inline keys, parses) afresh. */
+    fun forget(profile: Profile) {
+        file(profile).delete()
+    }
+
     fun updatedAt(profile: Profile): Long = file(profile).takeIf { it.exists() }?.lastModified() ?: 0
 
     /**
@@ -29,8 +34,10 @@ object Subscriptions {
     /** Fresh copy from the network; throws when nothing usable came back. */
     fun refresh(profile: Profile): List<Node> {
         val urls = profile.urls
-        if (urls.isEmpty()) throw IllegalStateException("Укажи ссылку на подписку в настройках")
-        val text = Http.getText(urls)
+        // "Своя ссылка" may hold the keys themselves (vless://… one per line): nothing to download.
+        val inline = profile == Profile.CUSTOM && urls.isEmpty() && Prefs.customUrl.contains("://")
+        if (urls.isEmpty() && !inline) throw IllegalStateException("Укажи ссылку на подписку в настройках")
+        val text = if (inline) Prefs.customUrl else Http.getText(urls)
         val nodes = Links.parseSubscription(text)
         if (nodes.isEmpty()) throw IllegalStateException("В подписке нет подходящих серверов")
         file(profile).apply {
