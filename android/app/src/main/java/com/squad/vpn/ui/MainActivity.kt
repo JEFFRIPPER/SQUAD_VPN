@@ -191,7 +191,8 @@ class MainActivity : ComponentActivity() {
                 refreshing = false
                 result.onSuccess {
                     // The user may have switched profile while this one loaded.
-                    if (p == Profile.current) Vpn.setNodes(it)
+                    // While the VPN runs on "Белые списки" by itself, its list stays on screen.
+                    if (p == Profile.current && !Vpn.autoWhitelist.value) Vpn.setNodes(it)
                     refreshNote = "загружено ${it.size} серверов"
                 }.onFailure {
                     refreshNote = "не загрузилась"

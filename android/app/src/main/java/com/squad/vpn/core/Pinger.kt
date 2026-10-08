@@ -1,5 +1,6 @@
 package com.squad.vpn.core
 
+import com.squad.vpn.App
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -56,7 +57,10 @@ object Pinger {
     var stoppedByUser = false
         private set
 
-    suspend fun ping(node: Node): Long {
+    /** Anti-DPI by hand, or on this network because servers answered only with it. */
+    fun autoFragment(): Boolean = Prefs.antiDpi || Prefs.dpiOn(NetworkId.current(App.context))
+
+    suspend fun ping(node: Node, fragment: Boolean = autoFragment()): Long {
         val result = CompletableDeferred<Long>()
         threads.execute {
             result.complete(
@@ -64,7 +68,7 @@ object Pinger {
                     if (XrayConfig.overTcp(node) && !accepts(node)) {
                         DEAD
                     } else {
-                        val ms = Libv2ray.measureOutboundDelay(XrayConfig.probe(node, Prefs.antiDpi), XrayConfig.TEST_URL)
+                        val ms = Libv2ray.measureOutboundDelay(XrayConfig.probe(node, fragment), XrayConfig.TEST_URL)
                         if (ms > 0) ms else DEAD
                     }
                 } catch (e: Throwable) {
@@ -91,10 +95,11 @@ object Pinger {
         onEach: () -> Unit = {},
     ): Map<String, Long> = coroutineScope {
         val gate = Semaphore(parallel)
+        val fragment = autoFragment()
         nodes.map { node ->
             async {
                 gate.withPermit {
-                    val ms = ping(node)
+                    val ms = ping(node, fragment)
                     Vpn.setPing(node.key, ms)
                     onEach()
                     node.key to ms

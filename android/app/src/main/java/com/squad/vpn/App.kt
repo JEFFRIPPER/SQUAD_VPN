@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import com.squad.vpn.bg.RefreshJob
 import com.squad.vpn.bg.UpdateJob
 import com.squad.vpn.bg.VpnWidget
 import com.squad.vpn.core.Vpn
@@ -37,6 +38,7 @@ class App : Application() {
             NotificationChannel(CHANNEL_UPDATES, "Обновления", NotificationManager.IMPORTANCE_DEFAULT),
         )
         UpdateJob.schedule(this)
+        RefreshJob.schedule(this)
         // The home screen widget follows the VPN: status and server.
         CoroutineScope(SupervisorJob() + Dispatchers.Main).launch {
             combine(Vpn.status, Vpn.current) { status, node -> status to node?.name }

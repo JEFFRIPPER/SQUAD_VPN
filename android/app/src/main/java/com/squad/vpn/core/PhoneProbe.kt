@@ -1,8 +1,6 @@
 package com.squad.vpn.core
 
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import com.squad.vpn.App
 import com.squad.vpn.BuildConfig
 import kotlinx.coroutines.CancellationException
@@ -40,10 +38,6 @@ object PhoneProbe {
     private const val REPORT_EVERY_MS = 60 * 60 * 1000L
     private const val API = "https://api.github.com/repos/${BuildConfig.REPO}"
     private const val SUBS = "${BuildConfig.REPO}@subs"
-
-    // A site that white lists never let through, and one they always do.
-    private const val BLOCKED_PROBE_URL = "https://www.gstatic.com/generate_204"
-    private const val ALLOWED_PROBE_URL = "https://ya.ru/"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -99,8 +93,8 @@ object PhoneProbe {
         // From the button: say at once whether the token works, so a bad one
         // does not wait unnoticed for the next time white lists come.
         fun idle(text: String) = if (force) "$text. ${tokenStatus()}" else text
-        if (!onMobile(context)) return idle("не мобильный интернет, проверка не нужна")
-        if (!whiteListsOn()) return idle("белые списки сейчас не включены, проверка не нужна")
+        if (!WhiteLists.onMobile(context)) return idle("не мобильный интернет, проверка не нужна")
+        if (!WhiteLists.on()) return idle("белые списки сейчас не включены, проверка не нужна")
         val nodes = Subscriptions.cached(Profile.WHITELIST)
         if (nodes.isEmpty()) return "нет серверов «Белых списков»"
         val keys = fingerprints()
@@ -180,17 +174,6 @@ object PhoneProbe {
         "Accept" to "application/vnd.github+json",
         "X-GitHub-Api-Version" to "2022-11-28",
     )
-
-    private fun onMobile(context: Context): Boolean {
-        val cm = context.getSystemService(ConnectivityManager::class.java)
-        // The app is outside its own VPN, so this is the real network.
-        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
-        return caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-    }
-
-    /** Approved sites open, everything else does not. */
-    private fun whiteListsOn(): Boolean =
-        !Http.reachableDirect(BLOCKED_PROBE_URL) && Http.reachableDirect(ALLOWED_PROBE_URL)
 
     /** Subscription line key -> server fingerprint, published next to the subscriptions. */
     private fun fingerprints(): Map<String, String> {

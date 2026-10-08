@@ -116,10 +116,24 @@ object Prefs {
         get() = sp.getBoolean("ru_direct", true)
         set(value) = sp.edit().putBoolean("ru_direct", value).apply()
 
-    /** Cut the TLS handshake into pieces on the way to the server (XrayConfig fragment). */
+    /** Cut the TLS handshake into pieces on the way to the server (XrayConfig fragment): always, by hand. */
     var antiDpi: Boolean
         get() = sp.getBoolean("anti_dpi", false)
         set(value) = sp.edit().putBoolean("anti_dpi", value).apply()
+
+    /** Networks ([NetworkId]) where servers answered only with anti-DPI: it stays on there by itself. */
+    fun dpiOn(network: String): Boolean = network.isNotEmpty() && network in dpiNetworks()
+
+    fun setDpiOn(network: String, on: Boolean) {
+        if (network.isEmpty() || dpiOn(network) == on) return
+        val list = dpiNetworks().filter { it != network } + listOfNotNull(network.takeIf { on })
+        sp.edit().putString("dpi_networks", org.json.JSONArray(list.takeLast(MAX_NETWORKS)).toString()).apply()
+    }
+
+    private fun dpiNetworks(): List<String> = runCatching {
+        val array = org.json.JSONArray(sp.getString("dpi_networks", null) ?: return emptyList())
+        List(array.length()) { array.getString(it) }
+    }.getOrDefault(emptyList())
 
     /** Kill switch: when the connection breaks, apps get no internet past the VPN until it is back or turned off. */
     var killSwitch: Boolean

@@ -93,6 +93,7 @@ fun ConnectScreen(
     val since by Vpn.since.collectAsStateWithLifecycle()
     val events by Vpn.events.collectAsStateWithLifecycle()
     val blocked by Vpn.blocked.collectAsStateWithLifecycle()
+    val autoWhitelist by Vpn.autoWhitelist.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val scroll = rememberScrollState()
@@ -129,7 +130,7 @@ fun ConnectScreen(
             )
         }
         val sub = when (status) {
-            Status.Connected -> "Подписка «${profile.title}»"
+            Status.Connected -> if (autoWhitelist) "Оператор включил белые списки: подписка «Белые списки»" else "Подписка «${profile.title}»"
             Status.Connecting, Status.Failed -> message ?: ""
             else -> "Нажми, чтобы пустить трафик телефона через лучшие серверы"
         }

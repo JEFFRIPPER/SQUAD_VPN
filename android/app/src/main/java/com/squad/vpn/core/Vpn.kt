@@ -63,10 +63,18 @@ object Vpn {
     /** The kill switch holds the internet closed: the connection broke and the VPN interface stays. */
     val blocked: StateFlow<Boolean> = _blocked.asStateFlow()
 
+    private val _autoWhitelist = MutableStateFlow(false)
+    /** The operator turned on white lists and the VPN took the "Белые списки" subscription by itself. */
+    val autoWhitelist: StateFlow<Boolean> = _autoWhitelist.asStateFlow()
+
     val isConnected: Boolean get() = _status.value == Status.Connected
 
     fun setBlocked(value: Boolean) {
         _blocked.value = value
+    }
+
+    fun setAutoWhitelist(value: Boolean) {
+        _autoWhitelist.value = value
     }
 
     fun setStatus(status: Status, message: String? = null) {
@@ -79,6 +87,7 @@ object Vpn {
                 _ping.value = null
                 _traffic.value = Traffic()
                 _current.value = null
+                _autoWhitelist.value = false
             }
             else -> {}
         }

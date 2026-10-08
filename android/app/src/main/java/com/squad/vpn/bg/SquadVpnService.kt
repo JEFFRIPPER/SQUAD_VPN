@@ -10,6 +10,7 @@ import android.net.Network
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -27,6 +28,7 @@ import com.squad.vpn.core.Status
 import com.squad.vpn.core.Subscriptions
 import com.squad.vpn.core.TrafficStore
 import com.squad.vpn.core.Vpn
+import com.squad.vpn.core.WhiteLists
 import com.squad.vpn.core.XrayConfig
 import com.squad.vpn.ui.MainActivity
 import com.squad.vpn.ui.formatSpeed
@@ -76,6 +78,15 @@ class SquadVpnService : VpnService() {
     @Volatile
     private var netId = ""
     private val failed = mutableSetOf<String>()
+
+    /** The subscription the VPN runs on: the user's, or "Белые списки" while the operator has them on. */
+    @Volatile
+    private var inUse: Profile = Profile.current
+    private var inUseNodes: List<Node> = emptyList()
+
+    /** Anti-DPI for this connection: by hand, remembered for this network, or found needed just now. */
+    @Volatile
+    private var dpi = false
 
     private val core: CoreController by lazy {
         Libv2ray.newCoreController(object : CoreCallbackHandler {
@@ -160,14 +171,19 @@ class SquadVpnService : VpnService() {
     }
 
     private suspend fun connect() {
-        val profile = Profile.current
-        val nodes = Subscriptions.load(profile)
-        Vpn.setNodes(nodes)
         failed.clear()
         netId = NetworkId.current(this)
+        dpi = dpiFor(netId)
+        val profile = chooseProfile()
+        val nodes = Subscriptions.load(profile)
+        setInUse(profile, nodes)
+        if (profile != Profile.current) Vpn.event("Оператор включил белые списки: беру подписку «${profile.title}»")
         candidates = ordered(nodes)
 
-        val node = pickNode(Prefs.selectedNode) ?: throw IllegalStateException("Ни один сервер не ответил. Обнови подписку или выбери другую")
+        // The server that last worked on this network goes up at once and is checked after.
+        val quick = quickPick()
+        val node = quick ?: findNode(Prefs.selectedNode)
+            ?: throw IllegalStateException("Ни один сервер не ответил. Обнови подписку или выбери другую")
 
         Vpn.setStatus(Status.Connecting, "Подключаюсь к ${node.name}…")
         val pfd = establish() ?: throw IllegalStateException("Нет разрешения на VPN")
@@ -182,6 +198,7 @@ class SquadVpnService : VpnService() {
         Vpn.event("Подключено: ${node.name} (${profile.title})")
         monitor = scope.launch { watch() }
         watchNetwork()
+        if (quick != null) switching = scope.launch { verifyQuick(quick) }
         // Fill the node list with pings in the background, then let the
         // phone probe look at the white lists (when the user turned it on).
         scope.launch {
@@ -190,6 +207,113 @@ class SquadVpnService : VpnService() {
             pingRest(nodes)
             PhoneProbe.maybeRun(this@SquadVpnService)
         }
+    }
+
+    /**
+     * The user's subscription, or "Белые списки" while the operator lets
+     * through only approved sites (mobile internet). A subscription picked
+     * by hand ("Белые списки" itself or a custom link) is never swapped.
+     */
+    private fun chooseProfile(): Profile {
+        val own = Profile.current
+        if (own == Profile.WHITELIST || own == Profile.CUSTOM) return own
+        return if (WhiteLists.active(this)) Profile.WHITELIST else own
+    }
+
+    private fun setInUse(profile: Profile, nodes: List<Node>) {
+        inUse = profile
+        inUseNodes = nodes
+        Vpn.setAutoWhitelist(profile != Profile.current)
+        // The Servers screen shows the list the VPN runs on.
+        Vpn.setNodes(nodes)
+    }
+
+    /**
+     * White lists came or went: the VPN moves to the subscription that works
+     * now. True when it moved.
+     */
+    private suspend fun recheckWhiteLists(): Boolean {
+        if (!wanted) return false
+        val want = chooseProfile()
+        if (want == inUse) return false
+        return switchProfile(want)
+    }
+
+    private suspend fun switchProfile(profile: Profile): Boolean = lock.withLock {
+        if (!wanted || Vpn.status.value != Status.Connected) return@withLock false
+        val nodes = runCatching { Subscriptions.cached(profile).ifEmpty { Subscriptions.load(profile) } }
+            .getOrDefault(emptyList())
+        if (nodes.isEmpty()) return@withLock false
+        val was = inUse to inUseNodes
+        setInUse(profile, nodes)
+        candidates = ordered(nodes)
+        failed.clear()
+        Vpn.setStatus(Status.Connecting, "Ищу лучший сервер…")
+        val node = findNode(null)
+        if (!wanted) return@withLock false
+        if (node == null) {
+            setInUse(was.first, was.second)
+            Vpn.setStatus(Status.Connected)
+            return@withLock false
+        }
+        runCatching { startCore(node) }
+            .onSuccess {
+                Vpn.setStatus(Status.Connected)
+                Vpn.event(
+                    if (profile == Profile.WHITELIST) "Оператор включил белые списки: подписка «${profile.title}», ${node.name}"
+                    else "Белые списки сняли: снова «${profile.title}», ${node.name}",
+                )
+            }
+            .onFailure { shutdown(Status.Failed, it.message ?: "Ядро не перезапустилось") }
+            .isSuccess
+    }
+
+    /** No hand-picked server: the last one that worked on this network, unless it is known dead. */
+    private fun quickPick(): Node? {
+        if (Prefs.selectedNode != null || netId.isEmpty()) return null
+        val pings = Vpn.pings.value
+        val good = Prefs.goodOn(netId)
+        return good.firstNotNullOfOrNull { key -> candidates.firstOrNull { it.key == key && pings[it.key] != Pinger.DEAD } }
+    }
+
+    /** A server taken without a ping: if it does not answer through the VPN, the next one. */
+    private suspend fun verifyQuick(node: Node) {
+        delay(1_000)
+        repeat(2) {
+            val ms = lock.withLock {
+                if (Vpn.current.value?.key != node.key || Vpn.status.value != Status.Connected) return
+                measure()
+            }
+            if (ms > 0) {
+                Vpn.setPingNow(ms)
+                Vpn.setPing(node.key, ms)
+                return
+            }
+        }
+        failover("последний рабочий сервер не ответил")
+    }
+
+    private fun dpiFor(network: String): Boolean = Prefs.antiDpi || Prefs.dpiOn(network)
+
+    /**
+     * [pickNode]; when nothing answers, the same once more with anti-DPI
+     * flipped (unless the user forced it on). What works is remembered for
+     * this network.
+     */
+    private suspend fun findNode(selectedKey: String?): Node? {
+        pickNode(selectedKey)?.let { return it }
+        if (Prefs.antiDpi || !wanted) return null
+        dpi = !dpi
+        failed.clear()
+        Vpn.event(if (dpi) "Серверы не отвечают, пробую с обходом DPI" else "Пробую без обхода DPI")
+        val node = pickNode(null, batches = 2)
+        if (node == null) {
+            dpi = !dpi
+            return null
+        }
+        Prefs.setDpiOn(netId, dpi)
+        Vpn.event(if (dpi) "Обход DPI помог: включён для этой сети" else "Без обхода DPI работает: выключен для этой сети")
+        return node
     }
 
     /**
@@ -214,17 +338,17 @@ class SquadVpnService : VpnService() {
      * candidates that answer. Batches of 12 so a dead head of the list does
      * not keep the user waiting.
      */
-    private suspend fun pickNode(selectedKey: String?): Node? {
+    private suspend fun pickNode(selectedKey: String?, batches: Int = 5): Node? {
         candidates.firstOrNull { it.key == selectedKey }?.let { node ->
             Vpn.setStatus(Status.Connecting, "Проверяю ${node.name}…")
-            val ms = Pinger.ping(node)
+            val ms = Pinger.ping(node, dpi)
             Vpn.setPing(node.key, ms)
             if (ms > 0) return node
             failed += node.key
             Vpn.event("Выбранный сервер ${node.name} не отвечает, ищу другой")
         }
         val pool = candidates.filter { it.key !in failed }
-        for (batch in pool.chunked(12).take(5)) {
+        for (batch in pool.chunked(12).take(batches)) {
             Vpn.setStatus(Status.Connecting, "Ищу лучший сервер…")
             val results = pingBatch(batch)
             // The last good node wins its batch while it answers reasonably fast: no needless hop.
@@ -244,10 +368,11 @@ class SquadVpnService : VpnService() {
      */
     private suspend fun pingBatch(batch: List<Node>): List<Pair<Node, Long>> = coroutineScope {
         val results = ConcurrentHashMap<String, Long>()
+        val fragment = dpi
         val settled = CompletableDeferred<Unit>()
         val jobs = batch.map { node ->
             launch {
-                val ms = Pinger.ping(node)
+                val ms = Pinger.ping(node, fragment)
                 Vpn.setPing(node.key, ms)
                 results[node.key] = ms
                 if (ms > 0) settled.complete(Unit)
@@ -302,8 +427,8 @@ class SquadVpnService : VpnService() {
     private fun startCore(node: Node) {
         val fd = tun?.fd ?: throw IllegalStateException("VPN-интерфейс закрыт")
         if (core.isRunning) core.stopLoop()
-        val ruDirect = Prefs.ruDirect && Profile.current != Profile.WHITELIST
-        core.startLoop(XrayConfig.vpn(node, ruDirect, fragment = Prefs.antiDpi), fd)
+        val ruDirect = Prefs.ruDirect && inUse != Profile.WHITELIST
+        core.startLoop(XrayConfig.vpn(node, ruDirect, fragment = dpi), fd)
         if (!core.isRunning) throw IllegalStateException("Ядро Xray не запустилось")
         Vpn.setCurrent(node)
         Prefs.setLastGoodOn(netId, node.key)
@@ -312,8 +437,10 @@ class SquadVpnService : VpnService() {
     }
 
     private suspend fun watch() {
+        val power = getSystemService(PowerManager::class.java)
         var misses = 0
         var tick = 0
+        var sinceCheck = 0
         var last = System.nanoTime()
         while (scope.isActive) {
             delay(2_000)
@@ -328,10 +455,18 @@ class SquadVpnService : VpnService() {
                     lock.unlock()
                 }
             }
-            if (++tick % 2 == 0) updateNotification()
+            tick++
+            // Screen off: nobody looks at the notification, and a check a minute is enough.
+            val awake = power?.isInteractive != false
+            if (awake && tick % 2 == 0) updateNotification()
             // Every 30 min; PhoneProbe itself reports at most once an hour.
             if (tick % 900 == 0) scope.launch { PhoneProbe.maybeRun(this@SquadVpnService) }
-            if (tick % 8 != 0) continue
+            // Every 5 min on mobile internet: did the operator turn white lists on or off?
+            if (tick % 150 == 0 && (inUse != Profile.current || WhiteLists.onMobile(this))) {
+                if (recheckWhiteLists()) misses = 0
+            }
+            if (++sinceCheck < if (awake) 8 else 30) continue
+            sinceCheck = 0
             val ms = lock.withLock { measure() }
             if (ms > 0) {
                 misses = 0
@@ -339,7 +474,8 @@ class SquadVpnService : VpnService() {
                 Vpn.current.value?.let { Vpn.setPing(it.key, ms) }
             } else if (++misses >= missesToSwitch()) {
                 misses = 0
-                failover("сервер перестал отвечать")
+                // White lists just came on: the other subscription, not a hop inside this one.
+                if (!recheckWhiteLists()) failover("сервер перестал отвечать")
             }
         }
     }
@@ -349,7 +485,7 @@ class SquadVpnService : VpnService() {
      * drops single checks more often, so there it waits for one more: fewer
      * needless hops between servers.
      */
-    private fun missesToSwitch(): Int = if (Profile.current == Profile.WHITELIST) 3 else 2
+    private fun missesToSwitch(): Int = if (inUse == Profile.WHITELIST) 3 else 2
 
     /**
      * Wi-Fi <-> mobile: connections of the old network are dead, so the core
@@ -371,12 +507,15 @@ class SquadVpnService : VpnService() {
                         // Nodes that failed on the old network get another chance.
                         failed.clear()
                         netId = NetworkId.current(this@SquadVpnService)
+                        dpi = dpiFor(netId)
                         val node = Vpn.current.value ?: return@withLock
                         if (Vpn.status.value != Status.Connected) return@withLock
                         runCatching { startCore(node) }
                             .onSuccess { Vpn.event("Сеть сменилась, переподключился") }
                             .onFailure { shutdown(Status.Failed, it.message ?: "Ядро не перезапустилось") }
                     }
+                    // Mobile with white lists <-> Wi-Fi: the subscription follows.
+                    recheckWhiteLists()
                 }
             }
         }
@@ -421,8 +560,8 @@ class SquadVpnService : VpnService() {
             Vpn.setPing(it.key, Pinger.DEAD)
         }
         Vpn.event("Меняю сервер: $reason")
-        candidates = ordered(Vpn.nodes.value)
-        val next = pickNode(null)
+        candidates = ordered(inUseNodes)
+        val next = findNode(null)
         // Disconnect pressed during the search: no new node.
         if (!wanted) return@withLock
         if (next == null) {
@@ -444,6 +583,8 @@ class SquadVpnService : VpnService() {
     private suspend fun reloadApps(): Unit = lock.withLock {
         if (Vpn.status.value != Status.Connected) return@withLock
         val node = Vpn.current.value ?: return@withLock
+        // The anti-DPI switch in Settings comes here too.
+        dpi = dpiFor(netId)
         val old = tun
         // The new interface replaces the old one right away; the core moves over to it.
         val pfd = try {
@@ -462,7 +603,7 @@ class SquadVpnService : VpnService() {
 
     private suspend fun switchTo(key: String?, reason: String): Unit = lock.withLock {
         if (!wanted || Vpn.status.value != Status.Connected) return@withLock
-        val nodes = Vpn.nodes.value
+        val nodes = inUseNodes
         candidates = ordered(nodes)
         failed.clear()
         val picked = if (key == null) {
