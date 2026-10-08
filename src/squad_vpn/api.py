@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 import secrets
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
@@ -50,6 +51,8 @@ def _dashboard_html(name: str = "index.html") -> str:
         .read_text(encoding="utf-8")
     )
 
+
+APP_ASSETS = {"connect_button.jpg": "image/jpeg", "connected_loop.mp4": "video/mp4"}
 
 LOOPBACK = {"127.0.0.1", "::1", "localhost", "testclient"}
 # Requests from this very computer: no key needed, no rate limit.
@@ -253,6 +256,7 @@ def create_app(
         task = asyncio.create_task(runner.loop()) if runner is not None else None
         # Reconnect after a restart/update, or at Windows logon if asked to.
         settings = client_settings()
+        vpn.preferred = settings.client_node or None
         resume = vpn.state.load().get("connected")
         if settings.client_autoconnect or resume:
             profile = canonical(str(vpn.state.load().get("profile") or settings.client_profile))
@@ -343,6 +347,14 @@ def create_app(
     @app.get("/app", response_class=HTMLResponse, include_in_schema=False)
     def desktop_app() -> str:
         return _dashboard_html("app.html")
+
+    @app.get("/app/assets/{name}", include_in_schema=False)
+    def desktop_asset(name: str) -> Response:
+        kind = APP_ASSETS.get(name)
+        if kind is None:
+            raise HTTPException(status_code=404)
+        data = resources.files("squad_vpn").joinpath(f"dashboard/assets/{name}").read_bytes()
+        return Response(data, media_type=kind, headers={"Cache-Control": "max-age=86400"})
 
     local_only = [Depends(require_token), Depends(_require_local)]
 
@@ -783,6 +795,7 @@ def create_app(
             "settings": {
                 "profile": settings.client_profile,
                 "autoconnect": settings.client_autoconnect,
+                "node": settings.client_node or None,
             },
             "totals": store.client_totals(),
         }
@@ -820,6 +833,41 @@ def create_app(
             raise HTTPException(status_code=409, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.post("/api/client/server", dependencies=local_only)
+    async def client_server(payload: dict[str, object]) -> dict[str, object]:
+        """Pick a server by key (fingerprint) or go back to auto; remembered."""
+        from .settings import save_settings
+
+        key = str(payload.get("key") or "")
+        if key and not re.fullmatch(r"[0-9a-f]{64}", key):
+            raise HTTPException(status_code=422, detail="Неизвестный сервер")
+        try:
+            result = await vpn.choose_key(key or None)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        settings = client_settings()
+        settings.client_node = key
+        save_settings(settings, root / "data" / "settings.json")
+        return result
+
+    @app.get("/api/client/servers", dependencies=local_only)
+    def client_servers(profile: str | None = None) -> dict[str, object]:
+        name = canonical(profile or client_settings().client_profile)
+        if name not in profiles():
+            raise HTTPException(status_code=422, detail="Неизвестный профиль")
+        return vpn.servers(name)
+
+    @app.post("/api/client/ping", dependencies=local_only)
+    async def client_ping(payload: dict[str, object] | None = None) -> dict[str, object]:
+        payload = payload or {}
+        if payload.get("stop"):
+            vpn.stop_ping()
+            return {"stopped": True}
+        name = canonical(str(payload.get("profile") or client_settings().client_profile))
+        if name not in profiles():
+            raise HTTPException(status_code=422, detail="Неизвестный профиль")
+        return {"progress": vpn.start_ping(name)}
 
     @app.get("/api/client/nodes", dependencies=local_only)
     def client_nodes() -> list[dict[str, object]]:

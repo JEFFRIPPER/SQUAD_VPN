@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "squad-vpn"
-version = "2.0.0"
+version = "2.1.0"
 description = "SQUAD VPN multi-source aggregator, validator, smart subscriptions, API and dashboard"
 readme = "README.md"
 license = { text = "MIT" }
@@ -27,7 +27,7 @@ squad-vpn = "squad_vpn.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-squad_vpn = ["dashboard/*.html"]
+squad_vpn = ["dashboard/*.html", "dashboard/assets/*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

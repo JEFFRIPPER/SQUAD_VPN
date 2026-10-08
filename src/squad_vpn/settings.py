@@ -24,6 +24,8 @@ class Settings:
     # VPN client (v0.8)
     client_profile: str = "top"
     client_autoconnect: bool = False
+    # Server picked in the list (fingerprint); empty = automatic choice.
+    client_node: str = ""
     # Serve subscriptions to phones in the same Wi-Fi (needs an API key).
     lan_access: bool = False
 
@@ -42,6 +44,9 @@ class Settings:
                 raise ValueError("probe_region: auto или код страны из 2 букв")
         if not re.fullmatch(r"[A-Za-z0-9_-]{1,40}", str(self.client_profile)):
             raise ValueError("client_profile: недопустимое имя профиля")
+        self.client_node = str(self.client_node or "")
+        if self.client_node and not re.fullmatch(r"[0-9a-f]{64}", self.client_node):
+            raise ValueError("client_node: недопустимый сервер")
         return self
 
 

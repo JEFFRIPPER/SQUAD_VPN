@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 
 import httpx
 from fastapi.testclient import TestClient
@@ -234,3 +235,43 @@ def test_cleanup_survives_damaged_state(tmp_path):
     state.save({"proxy_set": True, "previous_proxy": {"enabled": True, "server": "corp:3128", "junk": 1}})
     assert cleanup_orphan(tmp_path, backend=backend, controller_port=1)["proxy_restored"]
     assert backend.state.server == "corp:3128"
+
+
+def test_server_picker_before_connect_ping_and_assets(tmp_path, monkeypatch):
+    from squad_vpn.api import create_app
+
+    vpn, fake, _ = _make_client(tmp_path, monkeypatch)
+
+    async def fake_knock(host, port, timeout=3.0):
+        return None if host == "n1.example" else 42.0
+
+    monkeypatch.setattr(client_module, "knock", fake_knock)
+    app = create_app(tmp_path / "db.sqlite3", profiles_path=None, client=vpn, client_root=tmp_path)
+    with TestClient(app, client=("127.0.0.1", 5000)) as http:
+        listing = http.get("/api/client/servers", params={"profile": "all"}).json()
+        assert listing["connected"] is False and len(listing["servers"]) == 3
+        assert not any(item["pinged"] for item in listing["servers"])
+        keys = {item["host"]: item["key"] for item in listing["servers"]}
+        assert http.post("/api/client/ping", json={"profile": "all"}).status_code == 200
+        for _ in range(50):
+            listing = http.get("/api/client/servers", params={"profile": "all"}).json()
+            if listing["progress"] is None and all(i["pinged"] for i in listing["servers"]):
+                break
+            time.sleep(0.05)
+        pings = {item["host"]: item["ping_ms"] for item in listing["servers"]}
+        assert pings == {"n0.example": 42.0, "n1.example": None, "n2.example": 42.0}
+        # Chosen while disconnected: remembered and applied on connect.
+        chosen = keys["n2.example"]
+        assert http.post("/api/client/server", json={"key": "zz"}).status_code == 422
+        http.post("/api/client/server", json={"key": chosen})
+        assert http.get("/api/client").json()["settings"]["node"] == chosen
+        connected = http.post("/api/client/connect", json={"profile": "all"}).json()
+        name = vpn._name_of(chosen)
+        assert connected["pinned"] == name and fake["core"].selected == name
+        assert http.get("/api/client/servers").json()["current"] == chosen
+        auto = http.post("/api/client/server", json={"key": ""}).json()
+        assert auto["pinned"] is None and fake["core"].selected == "AUTO"
+        http.post("/api/client/disconnect")
+        image = http.get("/app/assets/connect_button.jpg")
+        assert image.status_code == 200 and image.headers["content-type"] == "image/jpeg"
+        assert http.get("/app/assets/../api.py").status_code == 404

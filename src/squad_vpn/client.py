@@ -48,11 +48,32 @@ REFRESH_EVERY = 30 * 60.0
 DEGRADED_COOLDOWN = 5 * 60.0
 DEGRADED_MIN_MS = 1500.0
 MAX_NODES = 120
+# Server list ping: like the phone app, a quick TCP knock while disconnected
+# (through the core when connected), many at once.
+PING_TIMEOUT = 3.0
+PING_PARALLEL = 24
+UDP_PROTOCOLS = {"hysteria", "hysteria2", "hy2", "tuic", "wireguard"}
 NO_WINDOW = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
 
 
 def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
+
+
+async def knock(host: str, port: int, timeout: float = PING_TIMEOUT) -> float | None:
+    """Milliseconds to open a TCP connection, or ``None`` when nobody answers."""
+    started = time.perf_counter()
+    try:
+        _, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout)
+    except (OSError, asyncio.TimeoutError, ValueError):
+        return None
+    elapsed = (time.perf_counter() - started) * 1000
+    writer.close()
+    try:
+        await writer.wait_closed()
+    except OSError:
+        pass
+    return round(elapsed, 1)
 
 
 def build_client_config(
@@ -190,6 +211,11 @@ class VpnClient:
         self._names: dict[str, str] = {}
         self._session: int | None = None
         self.status: dict[str, object] = {"state": "disconnected"}
+        # Server chosen in the list (fingerprint), applied on every connect.
+        self.preferred: str | None = None
+        self._pings: dict[str, float | None] = {}
+        self._ping_task: asyncio.Task | None = None
+        self._ping_progress: dict[str, int] | None = None
         self._reset_counters()
 
     # --- helpers ---------------------------------------------------------
@@ -227,6 +253,11 @@ class VpnClient:
             store.close()
 
     def _select(self, profile_name: str) -> tuple[str, list]:
+        profile_name, records = self._ranked(profile_name)
+        self._records = {item.node.fingerprint: item for item in records}
+        return profile_name, [item.node for item in records]
+
+    def _ranked(self, profile_name: str) -> tuple[str, list]:
         profiles = {p.name: p for p in load_profiles(self.profiles_path)}
         store = NodeStore(self.database, init_schema=False)
         try:
@@ -239,8 +270,7 @@ class VpnClient:
                     profile_name = f"{profile_name} → все живые"
         finally:
             store.close()
-        self._records = {item.node.fingerprint: item for item in records}
-        return profile_name, [item.node for item in records]
+        return profile_name, records
 
     def _write_config(self, nodes: list) -> Path:
         config, self._names = build_client_config(
@@ -324,6 +354,7 @@ class VpnClient:
                 "speed_up": 0, "speed_down": 0,
             }
             self._event("connect", None, f"профиль {label}, серверов {len(self._names)}")
+            await self._apply_preferred()
             self._monitor = asyncio.create_task(self._run_monitor())
             return self.snapshot()
 
@@ -371,9 +402,117 @@ class VpnClient:
             self.status["node"] = await self._current(api)
         self._delays.clear()
         self.status["pinned"] = node
+        self.preferred = self._names.get(node) if node else None
         self._event("pin" if node else "auto", node)
         await self._health(force=True)
         return self.snapshot()
+
+    def _name_of(self, fingerprint: str | None) -> str | None:
+        for name, value in self._names.items():
+            if value == fingerprint:
+                return name
+        return None
+
+    async def _apply_preferred(self) -> None:
+        """Select the server chosen in the list, if this connection has it."""
+        name = self._name_of(self.preferred)
+        if name is None:
+            self.status["pinned"] = None
+            return
+        try:
+            async with self._api() as api:
+                response = await api.put("/proxies/SQUAD", json={"name": name})
+                response.raise_for_status()
+                self.status["node"] = await self._current(api)
+        except httpx.HTTPError as exc:
+            self._log(f"[клиент] не удалось выбрать сервер: {exc}")
+            return
+        self.status["pinned"] = name
+
+    async def choose_key(self, key: str | None) -> dict[str, object]:
+        """Choose a server by fingerprint (``None`` = automatic), connected or not."""
+        self.preferred = key or None
+        if self.status.get("state") != "connected":
+            return self.snapshot()
+        name = self._name_of(key) if key else None
+        if key and name is None:
+            raise ValueError("Такого сервера нет в текущем подключении")
+        return await self.choose(name)
+
+    def servers(self, profile: str) -> dict[str, object]:
+        """Servers of a profile for the picker: the live ones when connected."""
+        connected = self.status.get("state") == "connected"
+        if connected:
+            records = getattr(self, "_records", {})
+            ordered = [records[f] for f in self._names.values() if f in records]
+            label = str(self.status.get("profile_label") or profile)
+            current = self._names.get(str(self.status.get("node") or ""))
+        else:
+            label, ordered = self._ranked(profile)
+            current = None
+        items = []
+        for record in ordered:
+            fingerprint = record.node.fingerprint
+            items.append({
+                "key": fingerprint,
+                "name": record.node.display_name(),
+                "protocol": record.node.protocol,
+                "host": record.node.host,
+                "country": record.country,
+                "latency_ms": record.latency_ms,
+                "pinged": fingerprint in self._pings,
+                "ping_ms": self._pings.get(fingerprint),
+            })
+        return {
+            "profile": label,
+            "connected": connected,
+            "current": current,
+            "preferred": self.preferred,
+            "progress": self._ping_progress,
+            "servers": items,
+        }
+
+    def start_ping(self, profile: str) -> dict[str, int]:
+        if self._ping_task is not None and not self._ping_task.done():
+            return dict(self._ping_progress or {})
+        self._ping_progress = {"done": 0, "total": 0}
+        self._ping_task = asyncio.create_task(self._ping_all(profile))
+        return dict(self._ping_progress)
+
+    def stop_ping(self) -> None:
+        if self._ping_task is not None:
+            self._ping_task.cancel()
+
+    async def _ping_all(self, profile: str) -> None:
+        try:
+            if self.status.get("state") == "connected":
+                names = {value: name for name, value in self._names.items()}
+                records = getattr(self, "_records", {})
+                nodes = [records[f].node for f in self._names.values() if f in records]
+            else:
+                names = {}
+                nodes = [record.node for record in (await asyncio.to_thread(self._ranked, profile))[1]]
+            progress = {"done": 0, "total": len(nodes)}
+            self._ping_progress = progress
+            gate = asyncio.Semaphore(PING_PARALLEL)
+
+            async def one(api: httpx.AsyncClient | None, node) -> None:
+                async with gate:
+                    key = node.fingerprint
+                    if api is not None and key in names:
+                        self._pings[key] = await self._delay(api, names[key])
+                    elif node.protocol.lower() not in UDP_PROTOCOLS:
+                        # A TCP knock says nothing about UDP servers: leave them unchecked.
+                        self._pings[key] = await knock(node.host, node.port)
+                    progress["done"] += 1
+
+            if names:
+                async with self._api() as api:
+                    await asyncio.gather(*(one(api, node) for node in nodes))
+            else:
+                await asyncio.gather(*(one(None, node) for node in nodes))
+        finally:
+            self._ping_progress = None
 
     async def failover(self) -> dict[str, object]:
         if self.status.get("state") != "connected":
@@ -559,6 +698,8 @@ class VpnClient:
             response.raise_for_status()
         self.status["nodes"] = len(self._names)
         self._event("reload", None, f"серверов {len(self._names)}, изменилось {int(changed * 100)}%")
+        if self.preferred:
+            await self._apply_preferred()
 
     def _save_session(self, *, ended: bool = False, reason: str | None = None) -> None:
         if self._session is None:

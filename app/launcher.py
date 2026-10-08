@@ -162,7 +162,7 @@ CHROME_JS = r"""
   css.textContent = `
     html.sq-frameless body { padding-top: ${H}px !important; }
     #sq-chrome { position: fixed; top: 0; left: 0; right: 0; height: ${H}px; z-index: 2147483000;
-      display: flex; align-items: center; background: rgba(0,0,0,.82); backdrop-filter: blur(16px);
+      display: flex; align-items: center; background: rgba(12,2,4,.62); backdrop-filter: blur(24px) saturate(1.25);
       font: 500 12px/16px "Segoe UI", Roboto, system-ui, sans-serif; letter-spacing: .5px; color: #C7A5A5;
       user-select: none; animation: sq-in .45s cubic-bezier(.05,.7,.1,1) both; }
     #sq-chrome::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px;
