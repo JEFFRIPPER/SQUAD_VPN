@@ -1,0 +1,82 @@
+# XcodeGen spec: CI turns it into SquadVPN.xcodeproj (no Mac needed in the repo).
+name: SquadVPN
+options:
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # gomobile's Go runtime needs the system resolver.
+    OTHER_LDFLAGS: ["-lresolv"]
+    ENABLE_BITCODE: NO
+    CODE_SIGN_STYLE: Manual
+targets:
+  SquadVPN:
+    type: application
+    platform: iOS
+    sources:
+      - App
+      - Shared
+      - path: Bundled/subs
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - target: SquadTunnel
+      - framework: Frameworks/LibXray.xcframework
+        embed: false
+      - sdk: NetworkExtension.framework
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: SQUAD VPN
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIUserInterfaceStyle: Dark
+        ITSAppUsesNonExemptEncryption: false
+    entitlements:
+      path: App/SquadVPN.entitlements
+      properties:
+        com.apple.developer.networking.networkextension: [packet-tunnel-provider]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.squad.vpn
+        PRODUCT_NAME: SquadVPN
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  SquadTunnel:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Tunnel
+      - Shared
+    dependencies:
+      - framework: Frameworks/LibXray.xcframework
+        embed: false
+      - sdk: NetworkExtension.framework
+    info:
+      path: Tunnel/Info.plist
+      properties:
+        CFBundleDisplayName: SQUAD VPN
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.networkextension.packet-tunnel
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).PacketTunnelProvider
+    entitlements:
+      path: Tunnel/SquadTunnel.entitlements
+      properties:
+        com.apple.developer.networking.networkextension: [packet-tunnel-provider]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.squad.vpn.tunnel
+        PRODUCT_NAME: SquadTunnel
+schemes:
+  SquadVPN:
+    build:
+      targets:
+        SquadVPN: all
+        SquadTunnel: all

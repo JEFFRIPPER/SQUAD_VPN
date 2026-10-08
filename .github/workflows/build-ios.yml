@@ -1,0 +1,143 @@
+name: Build iOS app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - ".github/workflows/build-ios.yml"
+      - "!ios/**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-ios
+  cancel-in-progress: true
+
+env:
+  # XTLS/libXray (Xray-core v26.9.30), built with gomobile for iPhone.
+  LIBXRAY_COMMIT: 671b85ce495cb0539261d0099d89a027b8cad787
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        id: v
+        run: echo "version=$(grep VERSION_NAME ios/version.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+
+      # The Go core takes ~10 minutes to build; it changes only with LIBXRAY_COMMIT.
+      - name: Cache Xray core
+        id: core
+        uses: actions/cache@v4
+        with:
+          path: ios/Frameworks/LibXray.xcframework
+          key: libxray-ios-${{ env.LIBXRAY_COMMIT }}
+
+      - uses: actions/setup-go@v5
+        if: steps.core.outputs.cache-hit != 'true'
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Build Xray core (LibXray.xcframework)
+        if: steps.core.outputs.cache-hit != 'true'
+        run: |
+          src="$RUNNER_TEMP/libXray"
+          git clone https://github.com/XTLS/libXray "$src"
+          cd "$src"
+          git checkout "$LIBXRAY_COMMIT"
+          # Only the iPhone slice: no simulator or Mac runtimes needed.
+          sed -i '' 's/"ios,iossimulator,macos,maccatalyst"/"ios"/' build/app/apple_gomobile.py
+          python3 build/main.py apple gomobile > "$RUNNER_TEMP/core.log" 2>&1 || {
+            tail -n 30 "$RUNNER_TEMP/core.log" | while IFS= read -r line; do echo "::error::$line"; done
+            exit 1
+          }
+          framework=$(find "$src" -maxdepth 2 -name LibXray.xcframework -type d | head -1)
+          test -n "$framework"
+          mkdir -p "$GITHUB_WORKSPACE/ios/Frameworks"
+          cp -R "$framework" "$GITHUB_WORKSPACE/ios/Frameworks/"
+          ls "$GITHUB_WORKSPACE/ios/Frameworks/LibXray.xcframework"
+
+      # Subscriptions built into the app: its first start may happen where GitHub does not open.
+      - name: Bundle current subscriptions
+        run: |
+          mkdir -p ios/Bundled/subs
+          for id in top best whitelist; do
+            curl -fsSL --retry 3 -o "ios/Bundled/subs/$id.b64" \
+              "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/subs/$id.b64" || echo "no $id subscription"
+          done
+          ls -la ios/Bundled/subs
+
+      - name: Generate the Xcode project
+        run: |
+          brew install xcodegen ldid
+          cd ios && xcodegen generate
+
+      - name: Build
+        run: |
+          xcodebuild -project ios/SquadVPN.xcodeproj -scheme SquadVPN -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            MARKETING_VERSION="${{ steps.v.outputs.version }}" CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build > xcodebuild.log 2>&1 || {
+              # Job logs are hard to reach from outside; errors also go out as annotations.
+              grep -E "error:|ld: |Undefined symbol" xcodebuild.log | sort -u | head -40 | while IFS= read -r line; do echo "::error::$line"; done
+              tail -n 80 xcodebuild.log
+              exit 1
+            }
+          tail -n 20 xcodebuild.log
+
+      # Unsigned .ipa: Sideloadly/AltStore/TrollStore sign it on install. ldid
+      # puts the VPN entitlement in, so TrollStore keeps it.
+      - name: Package the IPA
+        run: |
+          app=build/Build/Products/Release-iphoneos/SquadVPN.app
+          test -d "$app/PlugIns/SquadTunnel.appex"
+          ldid -Sios/Tunnel/SquadTunnel.entitlements "$app/PlugIns/SquadTunnel.appex/SquadTunnel"
+          ldid -Sios/App/SquadVPN.entitlements "$app/SquadVPN"
+          mkdir -p Payload dist
+          cp -R "$app" Payload/
+          zip -qry dist/SQUAD-VPN.ipa Payload
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SQUAD-VPN-ipa
+          path: dist/SQUAD-VPN.ipa
+
+      # Each version gets its own release ios-v<version> (never "Latest", that one belongs to the Windows program).
+      - name: Publish versioned release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${{ steps.v.outputs.version }}"
+          tag="ios-v$version"
+          awk -v v="## $version" '$0 == v || index($0, v " ") == 1 {on=1; next} /^## / {on=0} on' ios/CHANGELOG.md > notes.md
+          printf '\nКак установить SQUAD-VPN.ipa на iPhone: https://github.com/%s/blob/main/ios/README.md\n' "$GITHUB_REPOSITORY" >> notes.md
+          if ! gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$tag" dist/SQUAD-VPN.ipa -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest=false \
+              --title "SQUAD VPN для iPhone $version" --notes-file notes.md
+          else
+            gh release upload "$tag" dist/SQUAD-VPN.ipa -R "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$tag" -R "$GITHUB_REPOSITORY" --notes-file notes.md
+          fi
+
+      # The "Latest" release (Windows program) carries the ipa too, next to the exe and apk.
+      - name: Attach the IPA to the latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag=$(gh release view -R "$GITHUB_REPOSITORY" --json tagName -q .tagName) || exit 0
+          case "$tag" in v*) ;; *) echo "latest release is $tag, skipping"; exit 0;; esac
+          gh release upload "$tag" dist/SQUAD-VPN.ipa -R "$GITHUB_REPOSITORY" --clobber
+          body=$(gh release view "$tag" -R "$GITHUB_REPOSITORY" --json body -q .body)
+          if ! grep -q "SQUAD-VPN.ipa" <<< "$body"; then
+            printf '%s\n\nДля iPhone: **SQUAD-VPN.ipa**, инструкция в ios/README.md.\n' "$body" > body.md
+            gh release edit "$tag" -R "$GITHUB_REPOSITORY" --notes-file body.md
+          fi

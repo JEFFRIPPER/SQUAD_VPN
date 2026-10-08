@@ -1,0 +1,6 @@
+Frameworks/
+Bundled/
+*.xcodeproj/
+App/Info.plist
+Tunnel/Info.plist
+build/

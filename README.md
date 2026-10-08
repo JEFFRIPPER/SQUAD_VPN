@@ -2,20 +2,20 @@
 
 Отбирает живые и быстрые публичные VPN-серверы (VLESS, VMess, Trojan,
 Shadowsocks, Hysteria2) из открытых источников, проверяет их и раздаёт
-в программе для ПК, в приложении для Android или подпиской.
+в программе для ПК, в приложениях для Android и iPhone или подпиской.
 
 **Версия 2.0.0.** Что нового — в [CHANGELOG.md](CHANGELOG.md).
 
 **Скачать:** [SQUAD-VPN.exe для Windows](https://github.com/JEFFRIPPER/SQUAD_VPN/releases/latest/download/SQUAD-VPN.exe)
 и [SQUAD-VPN.apk для Android](https://github.com/JEFFRIPPER/SQUAD_VPN/releases/latest/download/SQUAD-VPN.apk),
-оба файла лежат в [последнем релизе](https://github.com/JEFFRIPPER/SQUAD_VPN/releases/latest).
+файлы лежат в [последнем релизе](https://github.com/JEFFRIPPER/SQUAD_VPN/releases/latest).
 
 ## Клиенты
 
-| [🖥️ ПК клиент (Windows)](app/README.md) | [📱 Android клиент](android/README.md) |
-| --- | --- |
-| SQUAD-VPN.exe: установка в один клик, проверка серверов из твоей сети, подключение одной кнопкой, обновления сами. | SQUAD-VPN.apk: встроенные подписки, ядро Xray, лучший сервер и смена сервера при обрыве, обход DPI, kill switch, тест скорости, виджет, обновления сами. |
-| [Подробнее →](app/README.md) | [Подробнее →](android/README.md) |
+| [🖥️ ПК клиент (Windows)](app/README.md) | [📱 Android клиент](android/README.md) | [🍏 iPhone клиент](ios/README.md) |
+| --- | --- | --- |
+| SQUAD-VPN.exe: установка в один клик, проверка серверов из твоей сети, подключение одной кнопкой, обновления сами. | SQUAD-VPN.apk: встроенные подписки, ядро Xray, лучший сервер и смена сервера при обрыве, обход DPI, kill switch, тест скорости, виджет, обновления сами. | SQUAD-VPN.ipa: те же подписки и ядро Xray, самый быстрый сервер, смена сервера, если интернет не открылся, обход DPI. |
+| [Подробнее →](app/README.md) | [Подробнее →](android/README.md) | [Подробнее →](ios/README.md) |
 
 ## Подписка без приложения
 
