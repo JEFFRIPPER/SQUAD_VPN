@@ -269,9 +269,10 @@ class SquadVpnService : VpnService() {
             .isSuccess
     }
 
-    /** No hand-picked server: the last one that worked on this network, unless it is known dead. */
+    /** The last server that worked on this network, unless it is known dead. */
     private fun quickPick(): Node? {
-        if (Prefs.selectedNode != null || netId.isEmpty()) return null
+        // A hand-picked server of this list is checked first instead (one of another subscription does not count).
+        if (netId.isEmpty() || candidates.any { it.key == Prefs.selectedNode }) return null
         val pings = Vpn.pings.value
         val good = Prefs.goodOn(netId)
         return good.firstNotNullOfOrNull { key -> candidates.firstOrNull { it.key == key && pings[it.key] != Pinger.DEAD } }

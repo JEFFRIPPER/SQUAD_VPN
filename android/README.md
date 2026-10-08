@@ -3,7 +3,7 @@
 [← На главную](../README.md) · [ПК клиент](../app/README.md)
 
 **Скачать:** [SQUAD-VPN.apk](https://github.com/JEFFRIPPER/SQUAD_VPN/releases/latest/download/SQUAD-VPN.apk)
-(Android 8 и новее). **Версия 3.1.** Что нового — в [CHANGELOG.md](CHANGELOG.md).
+(Android 8 и новее). **Версия 3.1.1.** Что нового — в [CHANGELOG.md](CHANGELOG.md).
 
 ## Установка
 
