@@ -218,3 +218,29 @@ def test_launcher_frameless_window_controls(tmp_path):
     api.window_minimize()
     api.window_close()
     assert calls == [("move", 10, 20), ("resize", 1280, 720), ("minimize",), ("destroy",)]
+
+
+def test_launcher_reads_install_progress(tmp_path):
+    launcher = _launcher()
+    assert launcher.install_progress(tmp_path) == ("", "")
+    logs = tmp_path / "data" / "logs"
+    logs.mkdir(parents=True)
+    (logs / "install.log").write_text(
+        "08.10.2026 9:00:00,00 BEGIN\n08.10.2026 9:00:01,00 FAIL deps\n"
+        "08.10.2026 9:05:00,00 BEGIN\n08.10.2026 9:05:01,00 STEP 1 git\n"
+        "08.10.2026 9:05:02,00 STEP 2 python\n",
+        encoding="utf-8",
+    )
+    step, failed = launcher.install_progress(tmp_path)
+    assert step.startswith("Шаг 2 из 6") and failed == ""  # an older run's failure is ignored
+    with open(logs / "install.log", "a", encoding="utf-8") as handle:
+        handle.write("08.10.2026 9:06:00,00 FAIL python\n")
+    assert launcher.install_progress(tmp_path)[1] == "Python"
+
+
+def test_install_cmd_needs_no_admin_and_does_not_block_on_git():
+    script = (Path(__file__).resolve().parents[1] / "install.cmd").read_bytes()
+    assert b"\r\n" in script  # cmd.exe needs CRLF
+    text = script.decode("ascii")
+    assert "--scope user" in text and "InstallAllUsers=0" in text
+    assert 'start "SQUAD VPN - Git" /min winget' in text

@@ -72,6 +72,35 @@ def download_source(target: Path, progress=lambda text: None) -> None:
                 shutil.copyfileobj(source, out)
 
 
+# install.cmd writes "STEP <n> <name>" lines to data/logs/install.log.
+INSTALL_STEPS = {
+    "1": "Шаг 1 из 6: Git для обновлений (ставится в фоне)",
+    "2": "Шаг 2 из 6: ставлю Python, это самый долгий шаг, обычно 1–5 минут",
+    "3": "Шаг 3 из 6: ставлю библиотеки",
+    "4": "Шаг 4 из 6: останавливаю старую версию",
+    "5": "Шаг 5 из 6: включаю автозапуск",
+    "6": "Шаг 6 из 6: запускаю SQUAD VPN",
+}
+FAILED_STEPS = {"python": "Python", "venv": "Python", "deps": "библиотеки", "autostart": "автозапуск"}
+
+
+def install_progress(root: Path) -> tuple[str, str]:
+    """Current step of the running install.cmd and the failed step, if any."""
+    try:
+        lines = (root / "data" / "logs" / "install.log").read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return "", ""
+    begins = [i for i, line in enumerate(lines) if line.rstrip().endswith("BEGIN")]
+    step = failed = ""
+    for line in lines[begins[-1] if begins else 0:]:
+        words = line.split()
+        if "STEP" in words and words.index("STEP") + 1 < len(words):
+            step = INSTALL_STEPS.get(words[words.index("STEP") + 1], step)
+        elif "FAIL" in words and words.index("FAIL") + 1 < len(words):
+            failed = FAILED_STEPS.get(words[words.index("FAIL") + 1], words[words.index("FAIL") + 1])
+    return step, failed
+
+
 def project_root() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
@@ -314,18 +343,30 @@ class Api:
             ["cmd", "/c", str(installer)], cwd=self._root, creationflags=NEW_CONSOLE,
             env={**os.environ, "SQUAD_FROM_APP": "1"},
         )
-        self._window.load_html(page(
-            "Устанавливаю…",
-            "Открылось окно установки: дождись слова Done. Это окно само переключится на панель.",
-        ))
+        self._window.load_html(page("Устанавливаю…", "Открылось окно установки, оно закроется само."))
         threading.Thread(target=self._after_install, daemon=True).start()
 
     def _after_install(self) -> None:
-        if wait_healthy(900):
-            self._window.load_url(APP_URL)
-        else:
-            show_error(self._window, self._root, "Установка не завершилась",
-                       "Посмотри окно установки: если там ошибка, пришли её текст.")
+        started = time.monotonic()
+        shown = None
+        while time.monotonic() - started < 900:
+            if healthy():
+                self._window.load_url(APP_URL)
+                return
+            step, failed = install_progress(self._root)
+            if failed:
+                log(self._root, f"install failed at {failed}")
+                show_error(self._window, self._root, "Установка не завершилась",
+                           f"Ошибка на шаге «{failed}». Посмотри окно установки и пришли текст ошибки.")
+                return
+            minutes = int(time.monotonic() - started) // 60
+            text = f"{step}. Прошло {minutes} мин." if step else "Готовлю установку…"
+            if text != shown:
+                self._window.load_html(page("Устанавливаю…", text))
+                shown = text
+            time.sleep(2)
+        show_error(self._window, self._root, "Установка не завершилась",
+                   "Посмотри окно установки: если там ошибка, пришли её текст.")
 
     def setup_fresh(self) -> None:
         """Install SQUAD VPN from scratch into %LOCALAPPDATA%\\SQUAD VPN."""
