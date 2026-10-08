@@ -21,9 +21,27 @@ Apple даёт включать VPN только приложениям, под�
 Apple ID с платной подпиской разработчика, Start. На iPhone: Настройки → Основные →
 VPN и управление устройством → доверять разработчику.
 
-Если ни один способ не подходит, подписку SQUAD VPN можно добавить в бесплатные
-приложения из App Store (Streisand, V2Box, Happ и т. п.):
-`https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/top.b64`.
+## Бесплатно на iOS 26: подписка в готовом клиенте
+
+На iOS 26 без платной подписи VPN-приложение не поставить, поэтому проще
+добавить подписку SQUAD VPN в готовый клиент: Happ, v2RayTun, Streisand, V2Box.
+В российском App Store их удалили (март 2026), поэтому ставь из App Store
+другой страны:
+
+1. Создай бесплатный Apple ID другой страны (например, Казахстан или США) на
+   [account.apple.com](https://account.apple.com), способ оплаты «Нет».
+2. На iPhone: App Store → значок профиля → «Выйти» (только из App Store,
+   iCloud не трогай) → войди новым Apple ID.
+3. Скачай Happ или v2RayTun, потом можно вернуть свой Apple ID: приложение останется.
+4. Скопируй ссылку подписки, в клиенте нажми «+» → вставить из буфера:
+
+| Подписка | Ссылка |
+| --- | --- |
+| топ-10 | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/top.b64` |
+| 300 лучших | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/best.b64` |
+| белые списки (добавь заранее) | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/whitelist.b64` |
+
+Если GitHub не открывается: `https://cdn.jsdelivr.net/gh/JEFFRIPPER/SQUAD_VPN@subs/top.b64`.
 
 ## Как устроено
 
