@@ -5,7 +5,7 @@ import java.io.File
 
 /** Downloads a profile's subscription and keeps the last good copy on disk. */
 object Subscriptions {
-    private const val STALE_MS = 60 * 60 * 1000L
+    const val STALE_MS = 60 * 60 * 1000L
 
     private fun file(profile: Profile) = File(App.context.filesDir, "subs/${profile.id}.txt")
 
@@ -22,7 +22,11 @@ object Subscriptions {
      * and the app must still have nodes to start from.
      */
     fun cached(profile: Profile): List<Node> {
-        file(profile).takeIf { it.exists() }?.let { return Links.parseSubscription(it.readText()) }
+        // A copy that no longer parses (cut short, old format) falls back to the built-in one.
+        file(profile).takeIf { it.exists() }
+            ?.let { runCatching { Links.parseSubscription(it.readText()) }.getOrNull() }
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { return it }
         return bundled(profile)
     }
 
@@ -40,10 +44,12 @@ object Subscriptions {
         val text = if (inline) Prefs.customUrl else Http.getText(urls)
         val nodes = Links.parseSubscription(text)
         if (nodes.isEmpty()) throw IllegalStateException("В подписке нет подходящих серверов")
-        file(profile).apply {
-            parentFile?.mkdirs()
-            writeText(text)
-        }
+        // Through a temporary file: a background refresh and a connection may read it at the same time.
+        val target = file(profile)
+        target.parentFile?.mkdirs()
+        val tmp = File(target.path + ".tmp")
+        tmp.writeText(text)
+        if (!tmp.renameTo(target)) target.writeText(text)
         return nodes
     }
 

@@ -175,7 +175,8 @@ class SquadVpnService : VpnService() {
         netId = NetworkId.current(this)
         dpi = dpiFor(netId)
         val profile = chooseProfile()
-        val nodes = Subscriptions.load(profile)
+        // The saved copy at once: an old one is downloaded again after connecting, through the VPN if need be.
+        val nodes = Subscriptions.cached(profile).ifEmpty { Subscriptions.load(profile) }
         setInUse(profile, nodes)
         if (profile != Profile.current) Vpn.event("Оператор включил белые списки: беру подписку «${profile.title}»")
         candidates = ordered(nodes)
@@ -204,7 +205,7 @@ class SquadVpnService : VpnService() {
         scope.launch {
             // The app's own way out in white-list mode (updates, the probe): say if it is shut.
             Http.socksProblem()?.let { Vpn.event("Внутренний прокси не отвечает: $it") }
-            pingRest(nodes)
+            pingRest(freshNodes(profile) ?: nodes)
             PhoneProbe.maybeRun(this@SquadVpnService)
         }
     }
@@ -624,6 +625,19 @@ class SquadVpnService : VpnService() {
             }
             .onFailure { shutdown(Status.Failed, it.message ?: "Ядро не перезапустилось") }
         Unit
+    }
+
+    /** The subscription downloaded again when the saved copy is old; the VPN's list follows. */
+    private suspend fun freshNodes(profile: Profile): List<Node>? {
+        if (System.currentTimeMillis() - Subscriptions.updatedAt(profile) < Subscriptions.STALE_MS) return null
+        val fresh = runCatching { Subscriptions.refresh(profile) }.getOrNull() ?: return null
+        lock.withLock {
+            if (inUse == profile && wanted) {
+                inUseNodes = fresh
+                Vpn.setNodes(fresh)
+            }
+        }
+        return fresh
     }
 
     /** The same check as the Servers screen button, so Stop there stops it too. */
