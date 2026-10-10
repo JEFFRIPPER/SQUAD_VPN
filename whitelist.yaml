@@ -1,0 +1,1781 @@
+#profile-title: base64:U1FVQUQgVlBOIMK3INCR0LXQu9GL0LUg0YHQv9C40YHQutC4
+#profile-update-interval: 1
+#announce: base64:0JTQu9GPINGA0LXQttC40LzQsCDQsdC10LvRi9GFINGB0L/QuNGB0LrQvtCyLCDQutC+0LPQtNCwINCz0LvRg9GI0LDRgiDQvNC+0LHQuNC70YzQvdGL0Lkg0LjQvdGC0LXRgNC90LXRgi4g0J7QsdC90L7QstC4INC/0L7QtNC/0LjRgdC60YMg0LfQsNGA0LDQvdC10LUsINC/0L7QutCwINC40L3RgtC10YDQvdC10YIg0YDQsNCx0L7RgtCw0LXRgi4=
+#profile-web-page-url: https://github.com/JEFFRIPPER/SQUAD_VPN
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: 🇵🇱 Польша 1
+  type: vless
+  server: 91.215.43.248
+  port: 443
+  uuid: a5893c8b-28a2-4947-9a1c-708db25506c3
+  udp: true
+  encryption: none
+  tls: true
+  servername: my.kempekl.online
+  client-fingerprint: ios
+  network: ws
+  ws-opts:
+    path: /gateway/v1/ws/a64eb463966ba9c4bfd628f1de0362ae
+    headers:
+      Host: my.kempekl.online
+- name: 🇵🇱 Польша 2
+  type: vless
+  server: 91.215.43.248
+  port: 443
+  uuid: a5893c8b-28a2-4947-9a1c-708db25506c3
+  udp: true
+  encryption: none
+  tls: true
+  servername: my.kempekl.online
+  client-fingerprint: firefox
+  network: ws
+  ws-opts:
+    path: /gateway/v1/ws/a64eb463966ba9c4bfd628f1de0362ae
+    headers:
+      Host: my.kempekl.online
+- name: 🇵🇱 Польша 3
+  type: vless
+  server: 91.215.43.248
+  port: 443
+  uuid: a5893c8b-28a2-4947-9a1c-708db25506c3
+  udp: true
+  encryption: none
+  tls: true
+  servername: my.kempekl.online
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /gateway/v1/ws/a64eb463966ba9c4bfd628f1de0362ae
+    headers:
+      Host: my.kempekl.online
+- name: 🇳🇱 Нидерланды 1
+  type: vless
+  server: 188.225.45.77
+  port: 443
+  uuid: 57284239-1ceb-439f-826e-cd25fcc1c1c5
+  udp: true
+  encryption: none
+  tls: true
+  servername: 5post-gate.x5.ru
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 5SjHShy0uFG9MmzFbZ21Ozg623ZXKwLf3pzC_QA8CBE
+    short-id: 5803463a64073dfc
+  network: grpc
+  grpc-opts:
+    grpc-service-name: grpc
+- name: 🇪🇪 Эстония 1
+  type: vless
+  server: 45.133.151.163
+  port: 25895
+  uuid: f90b7d43-69e2-4b46-a672-8029bc6796a2
+  udp: true
+  encryption: none
+  tls: true
+  servername: www.samsung.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: jOVKSP-bS9OkILJ8Epz8hadh6qhavCrOiJYeF0NCn0k
+    short-id: a73f0410d728c823
+  network: tcp
+- name: 🇳🇱 Нидерланды 2
+  type: vless
+  server: 188.225.45.77
+  port: 443
+  uuid: 57284239-1ceb-439f-826e-cd25fcc1c1c5
+  udp: true
+  encryption: none
+  tls: true
+  servername: 5post-gate.x5.ru
+  client-fingerprint: random
+  reality-opts:
+    public-key: 5SjHShy0uFG9MmzFbZ21Ozg623ZXKwLf3pzC_QA8CBE
+    short-id: 5803463a64073dfc
+  network: grpc
+  grpc-opts:
+    grpc-service-name: grpc
+- name: 🇳🇱 Нидерланды 3
+  type: vless
+  server: 188.225.45.77
+  port: 443
+  uuid: 57284239-1ceb-439f-826e-cd25fcc1c1c5
+  udp: true
+  encryption: none
+  tls: true
+  servername: 5post-gate.x5.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 5SjHShy0uFG9MmzFbZ21Ozg623ZXKwLf3pzC_QA8CBE
+    short-id: 5803463a64073dfc
+  network: grpc
+  grpc-opts:
+    grpc-service-name: grpc
+- name: 🇨🇭 Швейцария 1
+  type: vless
+  server: ns.l90909l.vip
+  port: 2096
+  uuid: 3fcec4e4-a674-44d2-8cae-c253cec43b9c
+  udp: true
+  encryption: none
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: random
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇩🇪 Германия 1
+  type: vless
+  server: 188.225.32.76
+  port: 443
+  uuid: 12e95f93-443c-0002-9a2a-5b318b9124cf
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: V-wRiXvhBx01utmXJbrThJ_DE4tNJfK6mnzo9EB3fVA
+    short-id: ''
+  network: tcp
+- name: 🇨🇭 Швейцария 2
+  type: vless
+  server: ns.l90909l.vip
+  port: 2096
+  uuid: 3fcec4e4-a674-44d2-8cae-c253cec43b9c
+  udp: true
+  encryption: none
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: edge
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇩🇪 Германия 2
+  type: vless
+  server: 193.233.220.194
+  port: 443
+  uuid: e2599b64-2eaa-4b81-b2bc-738605ecfeec
+  udp: true
+  encryption: none
+  tls: true
+  servername: spb.ai-boost.tech
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /bKGK1ZI0PzpQz3OeEeq1
+    headers:
+      Host: spb.ai-boost.tech
+- name: 🇦🇹 Австрия 1
+  type: vless
+  server: 80.87.196.9
+  port: 2096
+  uuid: f13b36ac-3765-4458-8a4d-08575038c463
+  udp: true
+  encryption: none
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇦🇹 Австрия 2
+  type: vless
+  server: 80.87.194.253
+  port: 2096
+  uuid: f13b36ac-3765-4458-8a4d-08575038c463
+  udp: true
+  encryption: none
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇩🇪 Германия 3
+  type: vless
+  server: 91.240.87.166
+  port: 443
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yandex.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 2ZUQYIhUijdJ1vRL8iR8RxjmJvRVHYp-JoWevQ2LyR4
+    short-id: 7bb730e3e6616d31
+  network: tcp
+- name: 🇩🇪 Германия 4
+  type: vless
+  server: 185.229.9.234
+  port: 443
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: api.ok.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: lIgF8B3ICGAQ6ExbRe9YDu8ZD1Ozzqu7-YO7hfuXfRw
+    short-id: cc8069f6c2cbcb32
+  network: tcp
+- name: 🇩🇪 Германия 5
+  type: vless
+  server: 185.229.9.234
+  port: 443
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: max.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: AD7roAsP-vrlxeyfnVEWj7Cq_2viTSICXo2Psm6B_3E
+    short-id: cb425a961bb7d67c
+  network: tcp
+- name: 🇩🇪 Германия 6
+  type: vless
+  server: 185.229.9.234
+  port: 443
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yandex.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: fsyvGBPzzwpnSA0UnJML_cDqviNSEdj9zktpC1EeFhY
+    short-id: 743541f932fa3959
+  network: tcp
+- name: 🇩🇪 Германия 7
+  type: vless
+  server: 185.229.9.175
+  port: 443
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: api.ok.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: Eutx4frdhG1y7THj7k3CjazAsrCMj932RtbV4a1QfQk
+    short-id: d5b6308860d578bb
+  network: tcp
+- name: 🇩🇪 Германия 8
+  type: vless
+  server: 185.229.9.175
+  port: 443
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: max.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 2QoNARj5aaa5-kUEiwx38KzbbiENQZ95V7x9jFo6f2A
+    short-id: 88a84e3390fcf4a7
+  network: tcp
+- name: 🇩🇪 Германия 9
+  type: vless
+  server: 185.229.9.175
+  port: 443
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yandex.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 1ea_kTf2MvXh9PtpzQdjQWb5ls5BjyUtSbn-qiR8ZXk
+    short-id: cb0e256070ac91c7
+  network: tcp
+- name: 🇩🇪 Германия 10
+  type: vless
+  server: 185.229.9.235
+  port: 46005
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: max.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: tP_mtYuA3fZq8C6WatAA4TmDv0_Wigq9xYcmb5UsTRA
+    short-id: 93653ee07ff5124c
+  network: tcp
+- name: 🇵🇱 Польша 4
+  type: vless
+  server: 90.156.218.163
+  port: 443
+  uuid: adc11f30-e4cb-4985-bf5e-f9ded69c019f
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: eh.vk.ru
+  client-fingerprint: edge
+  reality-opts:
+    public-key: fNfokzklCF4l_c8k8PciOCjm5ecNoF_sNLjEtaO-xzI
+    short-id: db04ce8bdb8900f1
+  network: tcp
+- name: 🇲🇩 Молдова 1
+  type: vless
+  server: ap2.directly.chat
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: qq
+  alpn:
+  - h2
+  - http/1.1
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 2
+  type: vless
+  server: ap2.directly.chat
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: safari
+  alpn:
+  - h2
+  - http/1.1
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 3
+  type: vless
+  server: ap2.directly.chat
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  client-fingerprint: edge
+  alpn:
+  - h2
+  - http/1.1
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /md/1
+- name: 🇳🇱 Нидерланды 4
+  type: vless
+  server: 31.130.155.114
+  port: 443
+  uuid: 6ed6162d-fc15-447c-b04c-5d6975d2231d
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: api.max.ru
+  client-fingerprint: edge
+  reality-opts:
+    public-key: aySWi4vGm4__zU_RFNtym1AyjtfY0AX9WoigfVG7hWA
+    short-id: 6c183039c8fe2676
+  network: tcp
+- name: 🇳🇱 Нидерланды 5
+  type: vless
+  server: 31.130.155.114
+  port: 443
+  uuid: 3c23a041-b686-4d93-af6b-2d793f5c45dc
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: api.max.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: aySWi4vGm4__zU_RFNtym1AyjtfY0AX9WoigfVG7hWA
+    short-id: 6c183039c8fe2676
+  network: tcp
+- name: 🇩🇪 Германия 11
+  type: vless
+  server: 37.18.14.168
+  port: 10654
+  uuid: 953358cb-82ba-4296-960d-6d2ec3468f4c
+  udp: true
+  encryption: none
+  tls: true
+  servername: bl3fk52.sysopnova.art
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: ds10ztOlMn8xfeIKEQ1m3I-tdem-abZbHKtJCU13CQM
+    short-id: 5c3fb122
+  network: xhttp
+  xhttp-opts:
+    path: /xhttp_client_upload
+    mode: packet-up
+- name: 🇩🇪 Германия 12
+  type: vless
+  server: 78.159.240.159
+  port: 10654
+  uuid: 953358cb-82ba-4296-960d-6d2ec3468f4c
+  udp: true
+  encryption: none
+  tls: true
+  servername: dailycanvas.sysopnova.art
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: lGKKIZsN9yBMxzZm8yl7nzNwJII18c_wLd_AbzzvRD8
+    short-id: '53361376'
+  network: xhttp
+  xhttp-opts:
+    path: /xhttp_client_upload
+    mode: packet-up
+- name: 🇩🇪 Германия 13
+  type: vless
+  server: 37.18.14.115
+  port: 10654
+  uuid: 953358cb-82ba-4296-960d-6d2ec3468f4c
+  udp: true
+  encryption: none
+  tls: true
+  servername: dailycanvas.sysopnova.art
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: lGKKIZsN9yBMxzZm8yl7nzNwJII18c_wLd_AbzzvRD8
+    short-id: '53361376'
+  network: xhttp
+  xhttp-opts:
+    path: /xhttp_client_upload
+    mode: packet-up
+- name: 🇵🇱 Польша 5
+  type: vless
+  server: 90.156.218.163
+  port: 443
+  uuid: adc11f30-e4cb-4985-bf5e-f9ded69c019f
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: eh.vk.ru
+  client-fingerprint: random
+  reality-opts:
+    public-key: fNfokzklCF4l_c8k8PciOCjm5ecNoF_sNLjEtaO-xzI
+    short-id: db04ce8bdb8900f1
+  network: tcp
+- name: 🇩🇪 Германия 14
+  type: vless
+  server: 91.240.87.166
+  port: 443
+  uuid: c5b5ef33-819e-4972-9a5a-4ad91f38507f
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.vk.com
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: nkpZyXHfG7nhEh1vjBjEDV-Tn7UhHEb5iN9iA8gc9VE
+    short-id: c31188450fe50718
+  network: tcp
+- name: 🇫🇷 Франция 1
+  type: vless
+  server: 82.202.178.133
+  port: 31443
+  uuid: 03218c7c-acd1-45c0-87a1-9cc77101c6b4
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: smartcaptcha.yandexcloud.net
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: lA0NS88gVVkaZf4qA1aYystzmLsZ5SNzszDsC-8DMSM
+    short-id: e351ebf520
+  network: tcp
+- name: 🇫🇷 Франция 2
+  type: vless
+  server: 82.202.179.104
+  port: 9443
+  uuid: ccd6419d-6943-4e7c-bc8c-7a157dadff80
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: smartcaptcha.yandexcloud.net
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: tvc-zUxqKX5P3DrZ2OiLIKHVPeu5MKjFLRWRYcvL3BQ
+    short-id: 9b027a0fe332
+  network: tcp
+- name: 🇩🇪 Германия 15
+  type: vless
+  server: 91.240.87.166
+  port: 443
+  uuid: c5b5ef33-819e-4972-9a5a-4ad91f38507f
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.vk.com
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: nkpZyXHfG7nhEh1vjBjEDV-Tn7UhHEb5iN9iA8gc9VE
+    short-id: c31188450fe50718
+  network: tcp
+- name: 🇷🇸 Сербия 1
+  type: vless
+  server: 45.132.176.172
+  port: 9889
+  uuid: 5d16ac22-6eea-426f-b778-6f4c2961faef
+  udp: true
+  encryption: ''
+  tls: true
+  servername: dl.google.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: ycPIUcY6ci2yi7YA_OHc20e4gzxEdJTqpmeShxSuHRU
+    short-id: aa
+  network: grpc
+  grpc-opts:
+    grpc-service-name: grpc-tunnel
+- name: 🇷🇸 Сербия 2
+  type: vless
+  server: 45.132.176.172
+  port: 9889
+  uuid: 5d16ac22-6eea-426f-b778-6f4c2961faef
+  udp: true
+  encryption: ''
+  tls: true
+  servername: dl.google.com
+  client-fingerprint: qq
+  reality-opts:
+    public-key: ycPIUcY6ci2yi7YA_OHc20e4gzxEdJTqpmeShxSuHRU
+    short-id: aa
+  network: grpc
+  grpc-opts:
+    grpc-service-name: grpc-tunnel
+- name: 🇷🇸 Сербия 3
+  type: vless
+  server: 45.132.176.172
+  port: 9889
+  uuid: 5d16ac22-6eea-426f-b778-6f4c2961faef
+  udp: true
+  encryption: ''
+  tls: true
+  servername: dl.google.com
+  client-fingerprint: safari
+  reality-opts:
+    public-key: ycPIUcY6ci2yi7YA_OHc20e4gzxEdJTqpmeShxSuHRU
+    short-id: aa
+  network: grpc
+  grpc-opts:
+    grpc-service-name: grpc-tunnel
+- name: 🇫🇷 Франция 3
+  type: vless
+  server: 82.202.178.133
+  port: 31443
+  uuid: 03218c7c-acd1-45c0-87a1-9cc77101c6b4
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: smartcaptcha.yandexcloud.net
+  client-fingerprint: random
+  reality-opts:
+    public-key: lA0NS88gVVkaZf4qA1aYystzmLsZ5SNzszDsC-8DMSM
+    short-id: e351ebf520
+  network: tcp
+- name: 🇫🇷 Франция 4
+  type: vless
+  server: 82.202.179.104
+  port: 9443
+  uuid: ccd6419d-6943-4e7c-bc8c-7a157dadff80
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: smartcaptcha.yandexcloud.net
+  client-fingerprint: random
+  reality-opts:
+    public-key: tvc-zUxqKX5P3DrZ2OiLIKHVPeu5MKjFLRWRYcvL3BQ
+    short-id: 9b027a0fe332
+  network: tcp
+- name: 🇫🇷 Франция 5
+  type: vless
+  server: 82.202.178.133
+  port: 31443
+  uuid: 54f22246-cc9c-4315-907a-6c94c901d20f
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: smartcaptcha.yandexcloud.net
+  client-fingerprint: random
+  reality-opts:
+    public-key: lA0NS88gVVkaZf4qA1aYystzmLsZ5SNzszDsC-8DMSM
+    short-id: e351ebf520
+  network: tcp
+- name: 🇸🇪 Швеция 1
+  type: vless
+  server: moscow.content.delivery.kandnet.com
+  port: 9443
+  uuid: 621bcb9e-7df5-427b-a9d4-6e87223c8bca
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: ads.x5.ru
+  client-fingerprint: safari
+  reality-opts:
+    public-key: nihwYkU8yyDKIU1dZqydOaISBdarJRNxOFGO5SNOl2U
+    short-id: ''
+  network: tcp
+- name: 🇲🇩 Молдова 4
+  type: vless
+  server: 87.228.71.195
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 5
+  type: vless
+  server: 87.228.71.196
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 6
+  type: vless
+  server: 87.228.71.198
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇺🇸 США 1
+  type: vless
+  server: 188.225.77.44
+  port: 4433
+  uuid: 66217279-de40-4b62-b2bb-9c33b8fb7a01
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: rufi.willo.help
+  client-fingerprint: random
+  reality-opts:
+    public-key: S_s3FVodJIep88KnIgT0cZLUMB2tAJHTJEn0o-J03G8
+    short-id: 283f4b51fbe39ad9
+  network: tcp
+- name: 🇺🇸 США 2
+  type: vless
+  server: 188.225.77.44
+  port: 4433
+  uuid: f3765e79-995f-43a7-bf47-41695ab5e51c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: rufi.willo.help
+  client-fingerprint: random
+  reality-opts:
+    public-key: S_s3FVodJIep88KnIgT0cZLUMB2tAJHTJEn0o-J03G8
+    short-id: 283f4b51fbe39ad9
+  network: tcp
+- name: 🇫🇮 Финляндия 1
+  type: vless
+  server: 83.220.175.235
+  port: 2096
+  uuid: f13b36ac-3765-4458-8a4d-08575038c463
+  udp: true
+  encryption: none
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: edge
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇫🇮 Финляндия 2
+  type: vless
+  server: ss.ll0ll.vip
+  port: 2096
+  uuid: f13b36ac-3765-4458-8a4d-08575038c463
+  udp: true
+  encryption: none
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇫🇮 Финляндия 3
+  type: vless
+  server: ss.ll0ll.vip
+  port: 2096
+  uuid: f13b36ac-3765-4458-8a4d-08575038c463
+  udp: true
+  encryption: none
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: random
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇫🇮 Финляндия 4
+  type: vless
+  server: ss.ll0ll.vip
+  port: 2096
+  uuid: f13b36ac-3765-4458-8a4d-08575038c463
+  udp: true
+  encryption: none
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: safari
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇨🇭 Швейцария 3
+  type: vless
+  server: ns.l90909l.vip
+  port: 2096
+  uuid: 3fcec4e4-a674-44d2-8cae-c253cec43b9c
+  udp: true
+  encryption: none
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: android
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇩🇪 Германия 16
+  type: vless
+  server: 95.129.236.149
+  port: 443
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  tls: true
+  servername: d.nehtar.ru
+  client-fingerprint: firefox
+  alpn:
+  - http/1.1
+  network: ws
+  ws-opts:
+    path: /gateway/v1/ws/74c4d5e82a8e50ccf09fc628c17dc9be
+- name: 🇵🇱 Польша 6
+  type: vless
+  server: 95.129.236.171
+  port: 443
+  uuid: 5a0cd9b1-4095-4747-a3db-dffcf13639d7
+  udp: true
+  encryption: none
+  tls: true
+  servername: my.console.pc-club.app
+  client-fingerprint: firefox
+  alpn:
+  - h2
+  - http/1.1
+  network: xhttp
+  xhttp-opts:
+    path: /api/users/loadChunk/
+    host: my.console.pc-club.app
+    mode: packet-up
+- name: 🇵🇱 Польша 7
+  type: vless
+  server: 91.215.42.63
+  port: 443
+  uuid: 5a0cd9b1-4095-4747-a3db-dffcf13639d7
+  udp: true
+  encryption: none
+  tls: true
+  servername: me.nehtar.ru
+  client-fingerprint: firefox
+  alpn:
+  - h2
+  - http/1.1
+  network: xhttp
+  xhttp-opts:
+    path: /api/users/loadChunk/
+    host: me.nehtar.ru
+    mode: packet-up
+- name: 🇺🇸 США 3
+  type: vless
+  server: 188.225.77.44
+  port: 4433
+  uuid: 66217279-de40-4b62-b2bb-9c33b8fb7a01
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: rufi.willo.help
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: S_s3FVodJIep88KnIgT0cZLUMB2tAJHTJEn0o-J03G8
+    short-id: 283f4b51fbe39ad9
+  network: tcp
+- name: 🇫🇮 Финляндия 5
+  type: vless
+  server: 91.107.126.228
+  port: 2096
+  uuid: f13b36ac-3765-4458-8a4d-08575038c463
+  udp: true
+  encryption: none
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: qq
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇫🇮 Финляндия 6
+  type: vless
+  server: 83.220.175.235
+  port: 2096
+  uuid: f13b36ac-3765-4458-8a4d-08575038c463
+  udp: true
+  encryption: ''
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: android
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇫🇮 Финляндия 7
+  type: vless
+  server: 83.220.175.235
+  port: 2096
+  uuid: f13b36ac-3765-4458-8a4d-08575038c463
+  udp: true
+  encryption: ''
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇫🇮 Финляндия 8
+  type: vless
+  server: 91.107.126.228
+  port: 2096
+  uuid: f13b36ac-3765-4458-8a4d-08575038c463
+  udp: true
+  encryption: none
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: random
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇲🇩 Молдова 7
+  type: vless
+  server: 185.147.27.105
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 8
+  type: vless
+  server: 185.147.27.115
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: chrome
+  alpn:
+  - h2
+  - http/1.1
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 9
+  type: vless
+  server: 185.147.27.115
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: ios
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 10
+  type: vless
+  server: 185.147.27.128
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: qq
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 11
+  type: vless
+  server: 185.147.27.130
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: firefox
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 12
+  type: vless
+  server: 185.147.27.196
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: ios
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 13
+  type: vless
+  server: 185.147.27.217
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 14
+  type: vless
+  server: 185.147.27.68
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: ios
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 15
+  type: vless
+  server: 87.228.71.195
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: edge
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 16
+  type: vless
+  server: 185.147.27.100
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: edge
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 17
+  type: vless
+  server: 185.147.27.105
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: qq
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 18
+  type: vless
+  server: 185.147.27.115
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: android
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 19
+  type: vless
+  server: 185.147.27.116
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: ios
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 20
+  type: vless
+  server: 185.147.27.116
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 21
+  type: vless
+  server: 185.147.27.130
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: ios
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 22
+  type: vless
+  server: 185.147.27.131
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: ios
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 23
+  type: vless
+  server: 185.147.27.196
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: android
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 24
+  type: vless
+  server: 185.147.27.215
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: ''
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: ios
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 25
+  type: vless
+  server: 185.147.27.217
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: firefox
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 26
+  type: vless
+  server: 185.147.27.217
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: safari
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 27
+  type: vless
+  server: 185.147.27.68
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: android
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 28
+  type: vless
+  server: 185.147.27.68
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: random
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 29
+  type: vless
+  server: 87.228.71.196
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 30
+  type: vless
+  server: 87.228.71.197
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: ios
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇲🇩 Молдова 31
+  type: vless
+  server: 87.228.71.198
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇪🇸 Испания 1
+  type: vless
+  server: spb.ai-boost.tech
+  port: 443
+  uuid: e2599b64-2eaa-4b81-b2bc-738605ecfeec
+  udp: true
+  encryption: none
+  tls: true
+  servername: spb.ai-boost.tech
+  client-fingerprint: firefox
+  network: ws
+  ws-opts:
+    path: /bKGK1ZI0PzpQz3OeEeq1
+    headers:
+      Host: spb.ai-boost.tech
+- name: 🇸🇪 Швеция 2
+  type: vless
+  server: moscow.content.delivery.kandnet.com
+  port: 9443
+  uuid: 621bcb9e-7df5-427b-a9d4-6e87223c8bca
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: ads.x5.ru
+  client-fingerprint: qq
+  reality-opts:
+    public-key: nihwYkU8yyDKIU1dZqydOaISBdarJRNxOFGO5SNOl2U
+    short-id: ''
+  network: tcp
+- name: 🇨🇭 Швейцария 4
+  type: vless
+  server: 153.76.161.59
+  port: 2096
+  uuid: 3fcec4e4-a674-44d2-8cae-c253cec43b9c
+  udp: true
+  encryption: none
+  tls: true
+  servername: id.vk.com
+  client-fingerprint: safari
+  reality-opts:
+    public-key: SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: vless-grpc-reality
+- name: 🇩🇪 Германия 17
+  type: vless
+  server: 193.233.220.194
+  port: 443
+  uuid: e2599b64-2eaa-4b81-b2bc-738605ecfeec
+  udp: true
+  encryption: none
+  tls: true
+  servername: spb.ai-boost.tech
+  client-fingerprint: android
+  network: ws
+  ws-opts:
+    path: /bKGK1ZI0PzpQz3OeEeq1
+    headers:
+      Host: spb.ai-boost.tech
+- name: 🇩🇪 Германия 18
+  type: vless
+  server: 193.233.220.194
+  port: 443
+  uuid: e2599b64-2eaa-4b81-b2bc-738605ecfeec
+  udp: true
+  encryption: none
+  tls: true
+  servername: spb.ai-boost.tech
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /bKGK1ZI0PzpQz3OeEeq1
+    headers:
+      Host: spb.ai-boost.tech
+- name: 🇲🇩 Молдова 32
+  type: vless
+  server: 185.147.27.216
+  port: 443
+  uuid: 2f9107cb-9af0-4c94-a89d-50437218e5fa
+  udp: true
+  encryption: none
+  tls: true
+  servername: ap2.directly.chat
+  client-fingerprint: ios
+  network: ws
+  ws-opts:
+    path: /md/1
+    headers:
+      Host: ap2.directly.chat
+- name: 🇳🇱 Нидерланды 6
+  type: hysteria2
+  server: 31.177.111.213
+  port: 443
+  password: 21e0c174-c4c3-4e8b-b69e-312b54b46f09
+  sni: fin.dataroute.biz
+- name: 🇸🇪 Швеция 3
+  type: vless
+  server: moscow.content.delivery.kandnet.com
+  port: 9443
+  uuid: 621bcb9e-7df5-427b-a9d4-6e87223c8bca
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: ads.x5.ru
+  client-fingerprint: random
+  reality-opts:
+    public-key: nihwYkU8yyDKIU1dZqydOaISBdarJRNxOFGO5SNOl2U
+    short-id: ''
+  network: tcp
+- name: 🇩🇪 Германия 19
+  type: vless
+  server: 31.177.111.140
+  port: 443
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  tls: true
+  servername: cdn.rucdncomp.pro
+  client-fingerprint: firefox
+  alpn:
+  - http/1.1
+  network: ws
+  ws-opts:
+    path: /client/collect/6b3a32fb9f37/
+- name: 🇩🇪 Германия 20
+  type: vless
+  server: 87.242.94.90
+  port: 7445
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: passport.yandex.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 0w339GBhpDiYwa9Wgqu3z3epu8dHAzeYUFXPtvzK8To
+    short-id: 190c27ae5f2e4d2c
+  network: tcp
+- name: 🇩🇪 Германия 21
+  type: vless
+  server: 31.177.111.75
+  port: 8443
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: wap.yandex.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: rVAe7lMXUS4ie-OaecaucJOyl0y1gVmaWFrRq2gMRG8
+    short-id: c1756ac68565f85c
+  network: tcp
+- name: 🇩🇪 Германия 22
+  type: vless
+  server: 185.86.145.142
+  port: 443
+  uuid: 3be856e3-4abb-4c65-af0d-73344293bdce
+  udp: true
+  encryption: none
+  tls: true
+  servername: n2.185-86-145-142.sslip.io
+  client-fingerprint: edge
+  alpn:
+  - http/1.1
+  network: ws
+  ws-opts:
+    path: /e7ws
+- name: 🇩🇪 Германия 23
+  type: vless
+  server: 188.225.77.178
+  port: 443
+  uuid: 3cc94d6b-a357-4b79-ba10-a774f6c58d06
+  udp: true
+  encryption: none
+  tls: true
+  servername: cloudcdn-m9-12.cdn.yandex.net
+  client-fingerprint: qq
+  reality-opts:
+    public-key: 9YcV-gA7iaXFnI0HXQa624OIqm4zxO_U2eMCWXQAiCQ
+    short-id: 8375b32501373f41
+  network: grpc
+  grpc-opts:
+    grpc-service-name: grpc_vless
+- name: 🇬🇧 Великобритания 1
+  type: vless
+  server: 46.182.24.15
+  port: 443
+  uuid: 12e95f93-443c-0002-9a2a-5b318b9124cf
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: V-wRiXvhBx01utmXJbrThJ_DE4tNJfK6mnzo9EB3fVA
+    short-id: ''
+  network: tcp
+- name: 🇳🇴 Норвегия 1
+  type: vless
+  server: 87.242.95.164
+  port: 9443
+  uuid: 3cc94d6b-a357-4b79-ba10-a774f6c58d06
+  udp: true
+  encryption: none
+  tls: true
+  servername: passport.yandex.ru
+  client-fingerprint: qq
+  reality-opts:
+    public-key: 9YcV-gA7iaXFnI0HXQa624OIqm4zxO_U2eMCWXQAiCQ
+    short-id: 8375b32501373f41
+  network: grpc
+  grpc-opts:
+    grpc-service-name: grpc
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - 🇵🇱 Польша 1
+  - 🇵🇱 Польша 2
+  - 🇵🇱 Польша 3
+  - 🇳🇱 Нидерланды 1
+  - 🇪🇪 Эстония 1
+  - 🇳🇱 Нидерланды 2
+  - 🇳🇱 Нидерланды 3
+  - 🇨🇭 Швейцария 1
+  - 🇩🇪 Германия 1
+  - 🇨🇭 Швейцария 2
+  - 🇩🇪 Германия 2
+  - 🇦🇹 Австрия 1
+  - 🇦🇹 Австрия 2
+  - 🇩🇪 Германия 3
+  - 🇩🇪 Германия 4
+  - 🇩🇪 Германия 5
+  - 🇩🇪 Германия 6
+  - 🇩🇪 Германия 7
+  - 🇩🇪 Германия 8
+  - 🇩🇪 Германия 9
+  - 🇩🇪 Германия 10
+  - 🇵🇱 Польша 4
+  - 🇲🇩 Молдова 1
+  - 🇲🇩 Молдова 2
+  - 🇲🇩 Молдова 3
+  - 🇳🇱 Нидерланды 4
+  - 🇳🇱 Нидерланды 5
+  - 🇩🇪 Германия 11
+  - 🇩🇪 Германия 12
+  - 🇩🇪 Германия 13
+  - 🇵🇱 Польша 5
+  - 🇩🇪 Германия 14
+  - 🇫🇷 Франция 1
+  - 🇫🇷 Франция 2
+  - 🇩🇪 Германия 15
+  - 🇷🇸 Сербия 1
+  - 🇷🇸 Сербия 2
+  - 🇷🇸 Сербия 3
+  - 🇫🇷 Франция 3
+  - 🇫🇷 Франция 4
+  - 🇫🇷 Франция 5
+  - 🇸🇪 Швеция 1
+  - 🇲🇩 Молдова 4
+  - 🇲🇩 Молдова 5
+  - 🇲🇩 Молдова 6
+  - 🇺🇸 США 1
+  - 🇺🇸 США 2
+  - 🇫🇮 Финляндия 1
+  - 🇫🇮 Финляндия 2
+  - 🇫🇮 Финляндия 3
+  - 🇫🇮 Финляндия 4
+  - 🇨🇭 Швейцария 3
+  - 🇩🇪 Германия 16
+  - 🇵🇱 Польша 6
+  - 🇵🇱 Польша 7
+  - 🇺🇸 США 3
+  - 🇫🇮 Финляндия 5
+  - 🇫🇮 Финляндия 6
+  - 🇫🇮 Финляндия 7
+  - 🇫🇮 Финляндия 8
+  - 🇲🇩 Молдова 7
+  - 🇲🇩 Молдова 8
+  - 🇲🇩 Молдова 9
+  - 🇲🇩 Молдова 10
+  - 🇲🇩 Молдова 11
+  - 🇲🇩 Молдова 12
+  - 🇲🇩 Молдова 13
+  - 🇲🇩 Молдова 14
+  - 🇲🇩 Молдова 15
+  - 🇲🇩 Молдова 16
+  - 🇲🇩 Молдова 17
+  - 🇲🇩 Молдова 18
+  - 🇲🇩 Молдова 19
+  - 🇲🇩 Молдова 20
+  - 🇲🇩 Молдова 21
+  - 🇲🇩 Молдова 22
+  - 🇲🇩 Молдова 23
+  - 🇲🇩 Молдова 24
+  - 🇲🇩 Молдова 25
+  - 🇲🇩 Молдова 26
+  - 🇲🇩 Молдова 27
+  - 🇲🇩 Молдова 28
+  - 🇲🇩 Молдова 29
+  - 🇲🇩 Молдова 30
+  - 🇲🇩 Молдова 31
+  - 🇪🇸 Испания 1
+  - 🇸🇪 Швеция 2
+  - 🇨🇭 Швейцария 4
+  - 🇩🇪 Германия 17
+  - 🇩🇪 Германия 18
+  - 🇲🇩 Молдова 32
+  - 🇳🇱 Нидерланды 6
+  - 🇸🇪 Швеция 3
+  - 🇩🇪 Германия 19
+  - 🇩🇪 Германия 20
+  - 🇩🇪 Германия 21
+  - 🇩🇪 Германия 22
+  - 🇩🇪 Германия 23
+  - 🇬🇧 Великобритания 1
+  - 🇳🇴 Норвегия 1
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - 🇵🇱 Польша 1
+  - 🇵🇱 Польша 2
+  - 🇵🇱 Польша 3
+  - 🇳🇱 Нидерланды 1
+  - 🇪🇪 Эстония 1
+  - 🇳🇱 Нидерланды 2
+  - 🇳🇱 Нидерланды 3
+  - 🇨🇭 Швейцария 1
+  - 🇩🇪 Германия 1
+  - 🇨🇭 Швейцария 2
+  - 🇩🇪 Германия 2
+  - 🇦🇹 Австрия 1
+  - 🇦🇹 Австрия 2
+  - 🇩🇪 Германия 3
+  - 🇩🇪 Германия 4
+  - 🇩🇪 Германия 5
+  - 🇩🇪 Германия 6
+  - 🇩🇪 Германия 7
+  - 🇩🇪 Германия 8
+  - 🇩🇪 Германия 9
+  - 🇩🇪 Германия 10
+  - 🇵🇱 Польша 4
+  - 🇲🇩 Молдова 1
+  - 🇲🇩 Молдова 2
+  - 🇲🇩 Молдова 3
+  - 🇳🇱 Нидерланды 4
+  - 🇳🇱 Нидерланды 5
+  - 🇩🇪 Германия 11
+  - 🇩🇪 Германия 12
+  - 🇩🇪 Германия 13
+  - 🇵🇱 Польша 5
+  - 🇩🇪 Германия 14
+  - 🇫🇷 Франция 1
+  - 🇫🇷 Франция 2
+  - 🇩🇪 Германия 15
+  - 🇷🇸 Сербия 1
+  - 🇷🇸 Сербия 2
+  - 🇷🇸 Сербия 3
+  - 🇫🇷 Франция 3
+  - 🇫🇷 Франция 4
+  - 🇫🇷 Франция 5
+  - 🇸🇪 Швеция 1
+  - 🇲🇩 Молдова 4
+  - 🇲🇩 Молдова 5
+  - 🇲🇩 Молдова 6
+  - 🇺🇸 США 1
+  - 🇺🇸 США 2
+  - 🇫🇮 Финляндия 1
+  - 🇫🇮 Финляндия 2
+  - 🇫🇮 Финляндия 3
+  - 🇫🇮 Финляндия 4
+  - 🇨🇭 Швейцария 3
+  - 🇩🇪 Германия 16
+  - 🇵🇱 Польша 6
+  - 🇵🇱 Польша 7
+  - 🇺🇸 США 3
+  - 🇫🇮 Финляндия 5
+  - 🇫🇮 Финляндия 6
+  - 🇫🇮 Финляндия 7
+  - 🇫🇮 Финляндия 8
+  - 🇲🇩 Молдова 7
+  - 🇲🇩 Молдова 8
+  - 🇲🇩 Молдова 9
+  - 🇲🇩 Молдова 10
+  - 🇲🇩 Молдова 11
+  - 🇲🇩 Молдова 12
+  - 🇲🇩 Молдова 13
+  - 🇲🇩 Молдова 14
+  - 🇲🇩 Молдова 15
+  - 🇲🇩 Молдова 16
+  - 🇲🇩 Молдова 17
+  - 🇲🇩 Молдова 18
+  - 🇲🇩 Молдова 19
+  - 🇲🇩 Молдова 20
+  - 🇲🇩 Молдова 21
+  - 🇲🇩 Молдова 22
+  - 🇲🇩 Молдова 23
+  - 🇲🇩 Молдова 24
+  - 🇲🇩 Молдова 25
+  - 🇲🇩 Молдова 26
+  - 🇲🇩 Молдова 27
+  - 🇲🇩 Молдова 28
+  - 🇲🇩 Молдова 29
+  - 🇲🇩 Молдова 30
+  - 🇲🇩 Молдова 31
+  - 🇪🇸 Испания 1
+  - 🇸🇪 Швеция 2
+  - 🇨🇭 Швейцария 4
+  - 🇩🇪 Германия 17
+  - 🇩🇪 Германия 18
+  - 🇲🇩 Молдова 32
+  - 🇳🇱 Нидерланды 6
+  - 🇸🇪 Швеция 3
+  - 🇩🇪 Германия 19
+  - 🇩🇪 Германия 20
+  - 🇩🇪 Германия 21
+  - 🇩🇪 Германия 22
+  - 🇩🇪 Германия 23
+  - 🇬🇧 Великобритания 1
+  - 🇳🇴 Норвегия 1
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

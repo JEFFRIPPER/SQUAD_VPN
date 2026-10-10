@@ -1,0 +1,178 @@
+{
+  "profiles": {
+    "top": {
+      "count": 10,
+      "title": "SQUAD VPN",
+      "plain": "top",
+      "base64": "top.b64",
+      "mihomo": "top.yaml",
+      "criteria": {
+        "name": "top",
+        "description": "10 самых надёжных — начни с неё",
+        "min_score": 75,
+        "min_stability": 80,
+        "max_latency": 400,
+        "checked_within_hours": 12,
+        "seen_within_hours": 48,
+        "limit": 10,
+        "countries": [],
+        "exclude_countries": [
+          "RU"
+        ],
+        "protocols": [
+          "vless",
+          "trojan",
+          "hysteria2"
+        ],
+        "require_regions": [],
+        "avoid_blocked_in": [
+          "RU"
+        ],
+        "require_tls": true,
+        "min_checks": 4,
+        "prefer_regions": [
+          "RU"
+        ],
+        "prefer_tags": [
+          "ru-checked"
+        ],
+        "deprioritize_asns": [
+          "AS13335",
+          "AS24940",
+          "AS16276",
+          "AS14061",
+          "AS63949",
+          "AS20473",
+          "AS16509",
+          "AS14618",
+          "AS396982",
+          "AS8075",
+          "AS31898",
+          "AS12876",
+          "AS51167"
+        ],
+        "min_speed_kbps": 2000,
+        "sort_by": "score",
+        "whitelist": false,
+        "require_alive": true,
+        "per_host": 1,
+        "per_exit_ip": 1,
+        "max_asn_share": 0.2,
+        "aliases": []
+      }
+    },
+    "best": {
+      "count": 161,
+      "title": "SQUAD VPN",
+      "plain": "best",
+      "base64": "best.b64",
+      "mihomo": "best.yaml",
+      "criteria": {
+        "name": "best",
+        "description": "300 лучших серверов",
+        "min_score": 70,
+        "min_stability": 60,
+        "max_latency": 500,
+        "checked_within_hours": 12,
+        "seen_within_hours": 48,
+        "limit": 300,
+        "countries": [],
+        "exclude_countries": [
+          "RU"
+        ],
+        "protocols": [],
+        "require_regions": [],
+        "avoid_blocked_in": [
+          "RU"
+        ],
+        "require_tls": true,
+        "min_checks": 3,
+        "prefer_regions": [
+          "RU"
+        ],
+        "prefer_tags": [
+          "ru-checked"
+        ],
+        "deprioritize_asns": [
+          "AS13335",
+          "AS24940",
+          "AS16276",
+          "AS14061",
+          "AS63949",
+          "AS20473",
+          "AS16509",
+          "AS14618",
+          "AS396982",
+          "AS8075",
+          "AS31898",
+          "AS12876",
+          "AS51167"
+        ],
+        "min_speed_kbps": 1000,
+        "sort_by": "score",
+        "whitelist": false,
+        "require_alive": true,
+        "per_host": 1,
+        "per_exit_ip": 1,
+        "max_asn_share": 0.2,
+        "aliases": [
+          "all",
+          "balanced",
+          "fast",
+          "stable",
+          "europe",
+          "russia"
+        ]
+      }
+    },
+    "whitelist": {
+      "count": 100,
+      "title": "SQUAD VPN · Белые списки",
+      "plain": "whitelist",
+      "base64": "whitelist.b64",
+      "mihomo": "whitelist.yaml",
+      "criteria": {
+        "name": "whitelist",
+        "description": "Белые списки — когда глушат мобильный интернет",
+        "min_score": 0.0,
+        "min_stability": 0.0,
+        "max_latency": null,
+        "checked_within_hours": 12,
+        "seen_within_hours": 2,
+        "limit": 100,
+        "countries": [],
+        "exclude_countries": [
+          "RU"
+        ],
+        "protocols": [],
+        "require_regions": [],
+        "avoid_blocked_in": [],
+        "require_tls": true,
+        "min_checks": 0,
+        "prefer_regions": [
+          "RU-WL"
+        ],
+        "prefer_tags": [],
+        "deprioritize_asns": [],
+        "min_speed_kbps": 0.0,
+        "sort_by": "score",
+        "whitelist": true,
+        "require_alive": false,
+        "per_host": 3,
+        "per_exit_ip": null,
+        "max_asn_share": null,
+        "aliases": []
+      }
+    }
+  },
+  "aliases": {
+    "all": "best",
+    "balanced": "best",
+    "fast": "best",
+    "stable": "best",
+    "europe": "best",
+    "russia": "best"
+  },
+  "countries": {},
+  "protocols": {}
+}
