@@ -103,7 +103,7 @@ class SquadVpnService : VpnService() {
         when (intent?.action) {
             ACTION_STOP -> stop("Отключено")
             ACTION_SWITCH -> switching = scope.launch { switchTo(Prefs.selectedNode, "выбран вручную") }
-            ACTION_FAILOVER -> switching = scope.launch { failover("сменить сервер") }
+            ACTION_FAILOVER -> switching = scope.launch { failover("сменить сервер", byUser = true) }
             ACTION_RELOAD_APPS -> scope.launch { reloadApps() }
             ACTION_TOGGLE -> toggle()
             // ACTION_START, always-on VPN (SERVICE_INTERFACE) and a restart by the system.
@@ -183,8 +183,14 @@ class SquadVpnService : VpnService() {
 
         // The server that last worked on this network goes up at once and is checked after.
         val quick = quickPick()
-        val node = quick ?: findNode(Prefs.selectedNode)
-            ?: throw IllegalStateException("Ни один сервер не ответил. Обнови подписку или выбери другую")
+        val node = quick ?: findNode(Prefs.selectedNode) ?: run {
+            if (WhiteLists.offline()) {
+                // Offline every server looked dead: those marks say nothing.
+                Vpn.forgetDead()
+                throw IllegalStateException("Нет интернета: проверь мобильную сеть или Wi-Fi")
+            }
+            throw IllegalStateException("Ни один сервер не ответил. Обнови подписку или выбери другую")
+        }
 
         Vpn.setStatus(Status.Connecting, "Подключаюсь к ${node.name}…")
         val pfd = establish() ?: throw IllegalStateException("Нет разрешения на VPN")
@@ -467,11 +473,14 @@ class SquadVpnService : VpnService() {
             if (tick % 150 == 0 && (inUse != Profile.current || WhiteLists.onMobile(this))) {
                 if (recheckWhiteLists()) misses = 0
             }
-            if (++sinceCheck < if (awake) 8 else 30) continue
+            // After a miss the next check comes in 4 s, not after the full pause: a dead server is left sooner.
+            val every = if (misses > 0) 2 else if (awake) 8 else 30
+            if (++sinceCheck < every) continue
             sinceCheck = 0
             val ms = lock.withLock { measure() }
             if (ms > 0) {
                 misses = 0
+                offlineSaid = false
                 Vpn.setPingNow(ms)
                 Vpn.current.value?.let { Vpn.setPing(it.key, ms) }
             } else if (++misses >= missesToSwitch()) {
@@ -554,12 +563,29 @@ class SquadVpnService : VpnService() {
         TrafficStore.add(down, up)
     }
 
-    private suspend fun failover(reason: String): Unit = lock.withLock {
+    /**
+     * Another server. [byUser]: the "next server" button, the current one
+     * is skipped this time but not marked dead.
+     */
+    private suspend fun failover(reason: String, byUser: Boolean = false) {
+        if (!byUser && WhiteLists.offline()) {
+            if (!offlineSaid) Vpn.event("Нет интернета, жду его, сервер не меняю")
+            offlineSaid = true
+            return
+        }
+        offlineSaid = false
+        switchAway(reason, byUser)
+    }
+
+    @Volatile
+    private var offlineSaid = false
+
+    private suspend fun switchAway(reason: String, byUser: Boolean): Unit = lock.withLock {
         if (!wanted || Vpn.status.value != Status.Connected) return@withLock
         val current = Vpn.current.value
         current?.let {
             failed += it.key
-            Vpn.setPing(it.key, Pinger.DEAD)
+            if (!byUser) Vpn.setPing(it.key, Pinger.DEAD)
         }
         Vpn.event("Меняю сервер: $reason")
         candidates = ordered(inUseNodes)

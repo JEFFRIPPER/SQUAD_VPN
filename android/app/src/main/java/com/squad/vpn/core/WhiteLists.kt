@@ -24,6 +24,13 @@ object WhiteLists {
     fun on(timeoutMs: Int = 4_000): Boolean =
         !Http.reachableDirect(BLOCKED_URL, timeoutMs) && Http.reachableDirect(ALLOWED_URL, timeoutMs)
 
+    /**
+     * Nothing opens straight from the phone, not even the white-listed site:
+     * no internet at all (a lift, no signal), so another server would not
+     * help and every one would only look dead.
+     */
+    fun offline(): Boolean = !Http.reachableDirect(ALLOWED_URL, 4_000) && !Http.reachableDirect(BLOCKED_URL, 4_000)
+
     /** Mobile internet cut down to white lists right now. */
     fun active(context: Context): Boolean = onMobile(context) && on()
 }

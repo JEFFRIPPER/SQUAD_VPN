@@ -66,6 +66,8 @@ fun NodesScreen(
     val pings by Vpn.pings.collectAsStateWithLifecycle()
     val check by Vpn.pingProgress.collectAsStateWithLifecycle()
     val current by Vpn.current.collectAsStateWithLifecycle()
+    // The VPN took "Белые списки" by itself: this is their list.
+    val autoWhitelist by Vpn.autoWhitelist.collectAsStateWithLifecycle()
     var byPing by rememberSaveable { mutableStateOf(true) }
     var hideDead by remember { mutableStateOf(Prefs.hideDead) }
 
@@ -126,7 +128,7 @@ fun NodesScreen(
     ) {
         item(key = "header") {
             Column(Modifier.padding(bottom = GlassSpacing.xs)) {
-                Text(profile.title, style = MaterialTheme.typography.headlineMedium)
+                Text(if (autoWhitelist) Profile.WHITELIST.title else profile.title, style = MaterialTheme.typography.headlineMedium)
                 Text(
                     if (nodes.isEmpty()) "Серверы появятся после первой загрузки подписки"
                     else "${nodes.size} серверов · отвечают $alive" + if (hidden > 0) " · скрыто $hidden" else "",
