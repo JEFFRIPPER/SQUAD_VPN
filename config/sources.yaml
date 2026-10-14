@@ -62,6 +62,25 @@ sources:
     max_nodes: 200
     tags: [github, whitelist]
 
+  # whoahaow/rjsxrd: конфиги под белые списки (SNI/CIDR), автор проверяет
+  # их и сортирует по пингу, обновление каждый час.
+  - name: rjsxrd-white
+    url: https://raw.githubusercontent.com/whoahaow/rjsxrd/refs/heads/main/githubmirror/bypass/bypass-all.txt
+    enabled: true
+    priority: 3
+    max_nodes: 600
+    tags: [github, whitelist]
+
+  # solovyov-jenya2004/all_subs: большой сборник под белые списки, автор
+  # сам не проверяет. Ниже приоритетом: такие серверы идут после тех, что
+  # публикуют несколько независимых авторов.
+  - name: allsubs-white
+    url: https://raw.githubusercontent.com/solovyov-jenya2004/all_subs/refs/heads/main/final_sorted
+    enabled: true
+    priority: 6
+    max_nodes: 800
+    tags: [github, whitelist]
+
   - name: morpheus-mini
     url: https://raw.githubusercontent.com/morpheusadam/v2ray-config/main/subs/bundles/mini.txt
     enabled: true
