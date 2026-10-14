@@ -18,6 +18,7 @@ from .store import NodeStore
 
 DEFAULT_PROFILES_PATH = Path("config/profiles.yaml")
 FINGERPRINTS_FILE = "fingerprints.json"
+WHITELIST_LONG_LISTED_HOURS = 24.0
 
 
 @dataclass(slots=True, frozen=True)
@@ -52,6 +53,12 @@ class SmartProfile:
     # Throughput of the download check: nodes measured slower are dropped
     # (not yet measured ones stay), and "speed" ranks by it.
     min_speed_kbps: float = 0.0
+    # Longevity: a server that has kept working for a day usually keeps
+    # working, a fresh one often dies within hours. min_alive_hours drops
+    # nodes alive (by our checks, without a break) for less; long_lived_hours
+    # puts nodes alive at least that long first inside each preference group.
+    min_alive_hours: float = 0.0
+    long_lived_hours: float = 0.0
     sort_by: str = "score"
     # Only nodes from curated white-list collections (sources tagged
     # "whitelist"), see _whitelisted.
@@ -250,7 +257,13 @@ def _whitelisted(records: list[RankedNode], excluded: set[str] = frozenset()) ->
     if not index.empty:
         index.resolve({item.node.host for item in kept})
 
-    def order(item: RankedNode) -> tuple[int, int, int, int, int]:
+    # A server its authors have kept publishing for a day outlives a fresh one.
+    listed: dict[str, float] = {}
+    for item in kept:
+        host = item.node.host.lower()
+        listed[host] = max(listed.get(host, 0.0), item.listed_hours)
+
+    def order(item: RankedNode) -> tuple[int, int, int, int, int, int]:
         both = not index.empty and index.status(item) == "both"
         host = item.node.host.lower()
         # An exit in Russia keeps Discord/YouTube blocked: such relays go last,
@@ -260,6 +273,7 @@ def _whitelisted(records: list[RankedNode], excluded: set[str] = frozenset()) ->
         agreed = len(by_host[host])
         return (
             1 if exit_ru else 0, 1 if unknown else 0, -agreed,
+            0 if listed[host] >= WHITELIST_LONG_LISTED_HOURS else 1,
             0 if item.alive else 1, 0 if both else 1,
         )
 
@@ -335,6 +349,11 @@ def select_profile(store: NodeStore, profile: SmartProfile) -> list[RankedNode]:
         and (not profile.require_tls or is_masked(item))
         and item.success_count >= profile.min_checks
     ]
+    if profile.min_alive_hours and own_check:
+        filtered = [item for item in filtered if item.alive_hours >= profile.min_alive_hours]
+    if profile.long_lived_hours:
+        # Stable: the quality ranking stays inside both halves.
+        filtered.sort(key=lambda item: 0 if item.alive_hours >= profile.long_lived_hours else 1)
     if profile.min_speed_kbps:
         filtered = [
             item for item in filtered

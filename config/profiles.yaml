@@ -28,6 +28,10 @@
 #   deprioritize_asns    — эти сети выхода (ASN) ставить в конец списка
 #   prefer_tags          — узлы из источников с этими тегами (sources.yaml) первыми
 #   min_speed_kbps       — убрать узлы, скорость которых измерена ниже, кбит/с
+#   min_alive_hours      — только узлы, живые по нашим проверкам без перерыва
+#                          столько часов (два провала подряд обнуляют счёт)
+#   long_lived_hours     — узлы, живые без перерыва столько часов, первыми:
+#                          сервер, проработавший сутки, редко умирает сразу
 #   sort_by              — score (по умолчанию) или speed (по скорости загрузки)
 #   whitelist            — только узлы из коллекций «под белые списки»
 #   require_alive        — false: не требовать нашу проверку (см. whitelist)
@@ -74,20 +78,24 @@ profiles:
     prefer_regions: [RU]
     prefer_tags: [ru-checked]
     min_speed_kbps: 2000
+    # Только серверы, которые работают без перерыва хотя бы полсуток.
+    min_alive_hours: 12
+    long_lived_hours: 48
     deprioritize_asns: *throttled
     max_asn_share: 0.2
 
-  # 300 лучших: только проверенные несколько раз подряд, с маскировкой под
-  # HTTPS, от 1 Мбит/с, по одному узлу на сервер и IP выхода, не больше 20 %
-  # от одного провайдера. Заменяет прежние balanced, fast, stable, europe,
+  # До 1000 лучших: только проверенные несколько раз подряд, с маскировкой
+  # под HTTPS, от 1 Мбит/с, по одному узлу на сервер и IP выхода, не больше
+  # 20 % от одного провайдера. Проработавшие без перерыва сутки идут первыми. Заменяет прежние balanced, fast, stable, europe,
   # russia и all: их ссылки отдают эти же узлы.
   - name: best
-    description: 300 лучших серверов
+    description: До 1000 лучших серверов
     min_score: 70
     min_stability: 60
     min_checks: 3
     max_latency: 500
-    limit: 300
+    limit: 1000
+    long_lived_hours: 24
     require_tls: true
     exclude_countries: [RU]
     avoid_blocked_in: [RU]
@@ -109,8 +117,8 @@ profiles:
     require_tls: true
     seen_within_hours: 2
     exclude_countries: [RU]
-    limit: 100
-    # Серверов под белые списки мало (~40), поэтому до 3 конфигов на сервер:
+    limit: 300
+    # Серверов под белые списки мало, поэтому до 3 конфигов на сервер:
     # разные порты и транспорты, если один перекроют, сработает другой.
     per_host: 3
     per_exit_ip: null

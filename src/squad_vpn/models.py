@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from hashlib import sha256
 from urllib.parse import urlencode
 
@@ -72,6 +73,19 @@ class RankedNode:
     speed_kbps: float | None = None
     # Region code -> {"alive", "latency_ms", "checked_at", "probes"} from probes.
     regions: dict[str, dict[str, object]] = field(default_factory=dict)
+    # Alive by our checks without a break since then (two failures in a row reset it).
+    alive_since: str | None = None
+    first_seen: str | None = None
+
+    @property
+    def alive_hours(self) -> float:
+        """How long the node has kept working: long-lived servers tend to stay."""
+        return _hours_since(self.alive_since) if self.alive else 0.0
+
+    @property
+    def listed_hours(self) -> float:
+        """How long the node has been published by its sources."""
+        return _hours_since(self.first_seen)
 
     def region_status(self, region: str) -> str:
         """ok | blocked | down | unknown for one probe region (e.g. "RU").
@@ -92,3 +106,14 @@ class RankedNode:
     @property
     def attempts(self) -> int:
         return self.success_count + self.failure_count
+
+
+def _hours_since(stamp: str | None) -> float:
+    """Hours from an SQLite CURRENT_TIMESTAMP (UTC) until now; 0 when unknown."""
+    if not stamp:
+        return 0.0
+    try:
+        then = datetime.strptime(stamp[:19], "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return 0.0
+    return max(0.0, (datetime.now(timezone.utc) - then).total_seconds() / 3600.0)

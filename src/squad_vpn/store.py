@@ -158,6 +158,7 @@ MIGRATION_COLUMNS = {
     "success_count": "INTEGER NOT NULL DEFAULT 0",
     "failure_count": "INTEGER NOT NULL DEFAULT 0",
     "speed_kbps": "REAL",
+    "alive_since": "TEXT",
 }
 
 
@@ -248,6 +249,16 @@ class NodeStore:
                 added.add(name)
         if "stability_score" in added:
             self._backfill_scores()
+        if "alive_since" in added:
+            # Approximation from the kept history: the first success on record.
+            self.connection.execute(
+                """
+                UPDATE nodes SET alive_since = (
+                    SELECT MIN(checked_at) FROM health_checks h
+                    WHERE h.fingerprint = nodes.fingerprint AND h.alive = 1
+                ) WHERE alive = 1
+                """
+            )
         if "last_alive" in added:
             self.connection.execute(
                 """
@@ -398,6 +409,11 @@ class NodeStore:
                 alive=?, latency_ms=?, jitter_ms=?, recent_success_rate=?,
                 stability_score=?, quality_score=?, last_checked=CURRENT_TIMESTAMP,
                 last_alive=CASE WHEN ? = 1 THEN CURRENT_TIMESTAMP ELSE last_alive END,
+                alive_since=CASE
+                    WHEN ? = 1 THEN COALESCE(alive_since, CURRENT_TIMESTAMP)
+                    WHEN alive = 0 THEN NULL
+                    ELSE alive_since
+                END,
                 exit_ip=COALESCE(?, exit_ip), country=COALESCE(?, country),
                 asn=COALESCE(?, asn), validation_error=?,
                 speed_kbps=CASE
@@ -414,6 +430,7 @@ class NodeStore:
                 recent_rate,
                 stable,
                 score,
+                int(result.alive),
                 int(result.alive),
                 result.exit_ip,
                 result.country or None,
@@ -909,6 +926,8 @@ class NodeStore:
             failure_count=int(row["failure_count"] or 0),
             validation_error=row["validation_error"],
             speed_kbps=row["speed_kbps"] if "speed_kbps" in row.keys() else None,
+            alive_since=row["alive_since"] if "alive_since" in row.keys() else None,
+            first_seen=row["first_seen"],
         )
 
     def list_source_status(self) -> list[dict[str, object]]:

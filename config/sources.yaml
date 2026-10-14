@@ -6,14 +6,14 @@ sources:
     url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_VLESS_RUS_mobile.txt
     enabled: true
     priority: 1
-    max_nodes: 150
+    max_nodes: 300
     tags: [github, ru-checked]
 
   - name: igareck-ru
     url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/BLACK_VLESS_RUS.txt
     enabled: true
     priority: 2
-    max_nodes: 150
+    max_nodes: 300
     tags: [github, ru-checked]
 
   # zieng2/wl: самая популярная подписка под белые списки (обновляется раз в
@@ -24,77 +24,77 @@ sources:
     url: https://raw.githubusercontent.com/zieng2/wl/main/vless_universal.txt
     enabled: true
     priority: 2
-    max_nodes: 300
+    max_nodes: 600
     tags: [github, whitelist]
 
   - name: rkp-white
     url: https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/main/whitelist.txt
     enabled: true
     priority: 2
-    max_nodes: 100
+    max_nodes: 300
     tags: [github, whitelist]
 
   - name: igareck-white-checked
     url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-checked.txt
     enabled: true
     priority: 3
-    max_nodes: 50
+    max_nodes: 200
     tags: [github, whitelist]
 
   - name: igareck-white-cidr
     url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt
     enabled: true
     priority: 3
-    max_nodes: 100
+    max_nodes: 300
     tags: [github, whitelist]
 
   - name: igareck-white-mobile
     url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt
     enabled: true
     priority: 4
-    max_nodes: 100
+    max_nodes: 300
     tags: [github, whitelist]
 
   - name: igareck-white-sni
     url: https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/main/WHITE-SNI-RU-all.txt
     enabled: true
     priority: 5
-    max_nodes: 50
+    max_nodes: 200
     tags: [github, whitelist]
 
   - name: morpheus-mini
     url: https://raw.githubusercontent.com/morpheusadam/v2ray-config/main/subs/bundles/mini.txt
     enabled: true
     priority: 10
-    max_nodes: 100
+    max_nodes: 200
     tags: [github, measured, compact]
 
   - name: mrdevmohamed
     url: https://raw.githubusercontent.com/mrdevmohamed/v2ray-configs/main/All_Configs_Sub.txt
     enabled: true
     priority: 20
-    max_nodes: 250
+    max_nodes: 600
     tags: [github, aggregate]
 
   - name: epodonios
     url: https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt
     enabled: true
     priority: 30
-    max_nodes: 250
+    max_nodes: 600
     tags: [github, aggregate]
 
   - name: matin-sub1
     url: https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/subs/sub1.txt
     enabled: true
     priority: 40
-    max_nodes: 200
+    max_nodes: 400
     tags: [github, rotating]
 
   - name: delta-kronecker
     url: https://raw.githubusercontent.com/Delta-Kronecker/V2ray-Config/main/config/all_configs.txt
     enabled: true
     priority: 50
-    max_nodes: 250
+    max_nodes: 600
     tags: [github, tested]
 
   # Оставлен только как контрольный источник; по умолчанию выключен.
