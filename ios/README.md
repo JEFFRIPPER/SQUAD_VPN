@@ -38,7 +38,7 @@ VPN и управление устройством → доверять разр
 | Подписка | Ссылка |
 | --- | --- |
 | топ-10 | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/top.b64` |
-| До 1000 лучших | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/best.b64` |
+| 300 лучших | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/best.b64` |
 | белые списки (добавь заранее) | `https://raw.githubusercontent.com/JEFFRIPPER/SQUAD_VPN/subs/whitelist.b64` |
 
 Если GitHub не открывается: `https://cdn.jsdelivr.net/gh/JEFFRIPPER/SQUAD_VPN@subs/top.b64`.

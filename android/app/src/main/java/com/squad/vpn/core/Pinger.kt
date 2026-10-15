@@ -88,13 +88,16 @@ object Pinger {
             false
         }
 
-    /** Pings [nodes] with limited parallelism, publishing each result as it arrives. */
+    /**
+     * Pings [nodes], publishing each result as it arrives. By default all at
+     * once: the whole list is done within one ping timeout.
+     */
     suspend fun pingAll(
         nodes: List<Node>,
-        parallel: Int = 24,
+        parallel: Int = nodes.size,
         onEach: () -> Unit = {},
     ): Map<String, Long> = coroutineScope {
-        val gate = Semaphore(parallel)
+        val gate = Semaphore(parallel.coerceAtLeast(1))
         val fragment = autoFragment()
         nodes.map { node ->
             async {
