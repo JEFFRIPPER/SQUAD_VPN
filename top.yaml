@@ -1,0 +1,216 @@
+#profile-title: SQUAD VPN
+#profile-update-interval: 1
+#announce: base64:0JHQtdGB0L/Qu9Cw0YLQvdCw0Y8g0L/QvtC00L/QuNGB0LrQsCBWUE4g0L7RgiDQodC60LLQsNC00LAu
+#profile-web-page-url: https://github.com/JEFFRIPPER/SQUAD_VPN
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: 🇨🇦 Канада 1
+  type: vless
+  server: 188.164.248.216
+  port: 443
+  uuid: d342d11e-d224-4463-b982-532309285094
+  udp: true
+  encryption: none
+  tls: true
+  servername: ccc.010304.xyz
+  client-fingerprint: edge
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ccc.010304.xyz
+- name: 🇨🇦 Канада 2
+  type: vless
+  server: ccc.010304.xyz
+  port: 443
+  uuid: d342d11e-d224-4463-b982-532309285094
+  udp: true
+  encryption: none
+  tls: true
+  servername: ccc.010304.xyz
+  client-fingerprint: safari
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: ccc.010304.xyz
+- name: 🇵🇱 Польша 1
+  type: vless
+  server: pl.golangwikito.cfd
+  port: 443
+  uuid: f8d52ece-fad4-478d-875d-df6eed3befa7
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: pl.golangwikito.cfd
+  client-fingerprint: ios
+  reality-opts:
+    public-key: DsTVLCehsKvfFGtNZU5leKOLTlEp28qeifHYtRKOFwg
+    short-id: f8b695e5c59d028c
+  network: tcp
+- name: 🇺🇸 США 1
+  type: vless
+  server: freeus.aiage.work
+  port: 443
+  uuid: 6338c01a-310e-42c3-bf4f-2a20e161054b
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: freeus.aiage.work
+  client-fingerprint: qq
+  reality-opts:
+    public-key: pxLk0ocXqKYYqUFyALvH2BVXaswI-6NE00posKNayy0
+    short-id: ccaf7283610c6fa8
+  network: tcp
+- name: 🇺🇸 США 2
+  type: vless
+  server: 212.104.141.233
+  port: 443
+  uuid: 6338c01a-310e-42c3-bf4f-2a20e161054b
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  packet-encoding: none
+  tls: true
+  servername: freeus.aiage.work
+  client-fingerprint: qq
+  reality-opts:
+    public-key: pxLk0ocXqKYYqUFyALvH2BVXaswI-6NE00posKNayy0
+    short-id: ccaf7283610c6fa8
+  network: tcp
+- name: 🇭🇺 Венгрия 1
+  type: vless
+  server: hu1.aiage.work
+  port: 443
+  uuid: 6338c01a-310e-42c3-bf4f-2a20e161054b
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: hu1.aiage.work
+  client-fingerprint: safari
+  reality-opts:
+    public-key: mPzNFHO4pZMzFviRkIhRd7xDUz4dMHyI-flZLOrgDVg
+    short-id: f8379ce795f2e5ed
+  network: tcp
+- name: 🇭🇺 Венгрия 2
+  type: vless
+  server: 85.155.242.37
+  port: 443
+  uuid: 6338c01a-310e-42c3-bf4f-2a20e161054b
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: hu1.aiage.work
+  client-fingerprint: safari
+  reality-opts:
+    public-key: mPzNFHO4pZMzFviRkIhRd7xDUz4dMHyI-flZLOrgDVg
+    short-id: f8379ce795f2e5ed
+  network: tcp
+- name: 🇭🇺 Венгрия 3
+  type: vless
+  server: 85.155.242.38
+  port: 443
+  uuid: 6338c01a-310e-42c3-bf4f-2a20e161054b
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: hu1.aiage.work
+  client-fingerprint: edge
+  reality-opts:
+    public-key: mPzNFHO4pZMzFviRkIhRd7xDUz4dMHyI-flZLOrgDVg
+    short-id: f8379ce795f2e5ed
+  network: tcp
+- name: 🇨🇦 Канада 3
+  type: vless
+  server: 188.114.97.6
+  port: 443
+  uuid: e6df2095-a73c-4043-8693-8d5a03686870
+  udp: true
+  encryption: ''
+  tls: true
+  servername: lucasjow.us.ci
+  client-fingerprint: qq
+  network: ws
+  ws-opts:
+    path: /cart/docs/www/proxyip=108.160.132.132?ed#Telegram---TOOTFFARANGI
+    headers:
+      Host: lucasjow.us.ci
+- name: 🇱🇹 Литва 1
+  type: vless
+  server: b58e68t.lt1.h1clayd.click
+  port: 443
+  uuid: f90b7d43-69e2-4b46-a672-8029bc6796a2
+  udp: true
+  encryption: none
+  tls: true
+  servername: b58e68t.lt1.h1clayd.click
+  client-fingerprint: qq
+  reality-opts:
+    public-key: MbRONgV8ADD5B_aKDBv15LAW2a8QZok5bkkZexRRVAs
+    short-id: 2301ac8aee8bf6d4
+  network: tcp
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - 🇨🇦 Канада 1
+  - 🇨🇦 Канада 2
+  - 🇵🇱 Польша 1
+  - 🇺🇸 США 1
+  - 🇺🇸 США 2
+  - 🇭🇺 Венгрия 1
+  - 🇭🇺 Венгрия 2
+  - 🇭🇺 Венгрия 3
+  - 🇨🇦 Канада 3
+  - 🇱🇹 Литва 1
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - 🇨🇦 Канада 1
+  - 🇨🇦 Канада 2
+  - 🇵🇱 Польша 1
+  - 🇺🇸 США 1
+  - 🇺🇸 США 2
+  - 🇭🇺 Венгрия 1
+  - 🇭🇺 Венгрия 2
+  - 🇭🇺 Венгрия 3
+  - 🇨🇦 Канада 3
+  - 🇱🇹 Литва 1
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD
