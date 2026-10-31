@@ -1,0 +1,172 @@
+{
+  "total": 6885,
+  "alive": 1960,
+  "dead": 4925,
+  "unchecked": 0,
+  "average_latency_ms": 129.85,
+  "average_jitter_ms": 36.08,
+  "average_score": 93.31,
+  "last_checked": "2026-10-31 14:10:37",
+  "last_seen": "2026-10-31 13:54:17",
+  "protocols": {
+    "vless": {
+      "total": 4999,
+      "alive": 1322
+    },
+    "trojan": {
+      "total": 1062,
+      "alive": 358
+    },
+    "ss": {
+      "total": 364,
+      "alive": 117
+    },
+    "vmess": {
+      "total": 350,
+      "alive": 93
+    },
+    "hysteria2": {
+      "total": 110,
+      "alive": 70
+    }
+  },
+  "countries": {
+    "US": {
+      "total": 468,
+      "alive": 364
+    },
+    "NL": {
+      "total": 221,
+      "alive": 119
+    },
+    "FR": {
+      "total": 69,
+      "alive": 43
+    },
+    "CA": {
+      "total": 49,
+      "alive": 35
+    },
+    "SG": {
+      "total": 33,
+      "alive": 30
+    },
+    "DE": {
+      "total": 36,
+      "alive": 18
+    },
+    "IT": {
+      "total": 18,
+      "alive": 10
+    },
+    "GB": {
+      "total": 17,
+      "alive": 10
+    },
+    "JP": {
+      "total": 15,
+      "alive": 8
+    },
+    "KR": {
+      "total": 9,
+      "alive": 7
+    },
+    "MX": {
+      "total": 7,
+      "alive": 7
+    },
+    "PL": {
+      "total": 6,
+      "alive": 5
+    },
+    "ES": {
+      "total": 6,
+      "alive": 4
+    },
+    "CH": {
+      "total": 5,
+      "alive": 4
+    },
+    "LV": {
+      "total": 4,
+      "alive": 4
+    },
+    "TW": {
+      "total": 4,
+      "alive": 4
+    },
+    "TR": {
+      "total": 4,
+      "alive": 3
+    },
+    "BY": {
+      "total": 11,
+      "alive": 2
+    },
+    "FI": {
+      "total": 8,
+      "alive": 2
+    },
+    "HK": {
+      "total": 4,
+      "alive": 2
+    },
+    "AU": {
+      "total": 3,
+      "alive": 2
+    },
+    "RO": {
+      "total": 3,
+      "alive": 2
+    },
+    "CL": {
+      "total": 2,
+      "alive": 2
+    },
+    "IN": {
+      "total": 2,
+      "alive": 2
+    },
+    "AT": {
+      "total": 1,
+      "alive": 1
+    },
+    "BR": {
+      "total": 1,
+      "alive": 1
+    },
+    "NO": {
+      "total": 1,
+      "alive": 1
+    },
+    "PA": {
+      "total": 1,
+      "alive": 1
+    },
+    "ZA": {
+      "total": 1,
+      "alive": 1
+    },
+    "RU": {
+      "total": 13,
+      "alive": 0
+    },
+    "CZ": {
+      "total": 1,
+      "alive": 0
+    },
+    "EE": {
+      "total": 1,
+      "alive": 0
+    },
+    "GR": {
+      "total": 1,
+      "alive": 0
+    },
+    "UA": {
+      "total": 1,
+      "alive": 0
+    }
+  },
+  "updated_at": "2026-10-31 14:10 UTC"
+}
