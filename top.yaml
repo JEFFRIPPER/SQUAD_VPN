@@ -1,0 +1,195 @@
+#profile-title: SQUAD VPN
+#profile-update-interval: 1
+#announce: base64:0JHQtdGB0L/Qu9Cw0YLQvdCw0Y8g0L/QvtC00L/QuNGB0LrQsCBWUE4g0L7RgiDQodC60LLQsNC00LAu
+#profile-web-page-url: https://github.com/JEFFRIPPER/SQUAD_VPN
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: 🇳🇱 Нидерланды 1
+  type: vless
+  server: fr.golangwikito.cfd
+  port: 443
+  uuid: f8d52ece-fad4-478d-875d-df6eed3befa7
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fr.golangwikito.cfd
+  client-fingerprint: safari
+  reality-opts:
+    public-key: isYQuhKDrgc7IQ7G0LHywFnt57wffrkZ-er18DkVsBA
+    short-id: e6d589857d1cec5e
+  network: tcp
+- name: 🇺🇸 США 1
+  type: vless
+  server: us2.japancase.site
+  port: 443
+  uuid: db80088c-32a1-4cb8-a907-0f3cb7844152
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: us2.japancase.site
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: zEntiD6D81wY__YHPvIw78e09CBIgYkyQ5meIo7c_hg
+    short-id: 41ae8e266bc3346f
+  network: tcp
+- name: 🇩🇪 Германия 1
+  type: vless
+  server: 191.44.108.30
+  port: 443
+  uuid: 558b26f6-061b-4079-9b84-ca13b3e90ae3
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: c8.qwyak.ru
+  client-fingerprint: qq
+  reality-opts:
+    public-key: 3pBHfffYFRPpe8Lt47cLSSgCgwNR-70blFzpEbm11AE
+    short-id: b2baf331493d3de1
+  network: tcp
+- name: 🇳🇱 Нидерланды 2
+  type: vless
+  server: 31.56.186.24
+  port: 443
+  uuid: f8d52ece-fad4-478d-875d-df6eed3befa7
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fr.golangwikito.cfd
+  client-fingerprint: ios
+  reality-opts:
+    public-key: isYQuhKDrgc7IQ7G0LHywFnt57wffrkZ-er18DkVsBA
+    short-id: e6d589857d1cec5e
+  network: tcp
+- name: 🇹🇭 TH 1
+  type: trojan
+  server: th001.zestapp778.com
+  port: 33079
+  password: 5t6i121em5lkmsmk
+  udp: true
+  sni: th001.zestapp778.com
+  client-fingerprint: safari
+  network: tcp
+- name: 🇪🇸 Испания 1
+  type: vless
+  server: api.ferrin.uk
+  port: 443
+  uuid: 7d1a74fd-8a38-4a29-863f-5da53a9e557e
+  udp: true
+  encryption: none
+  tls: true
+  servername: 7d1a74fd.ferrin.uk
+  client-fingerprint: firefox
+  network: xhttp
+  xhttp-opts:
+    path: /es
+    mode: stream-one
+- name: 🇳🇱 Нидерланды 3
+  type: vless
+  server: 188.114.98.0
+  port: 443
+  uuid: 64c5f924-1c24-44a5-acff-2e3ebcd2f807
+  udp: true
+  encryption: none
+  tls: true
+  servername: nl29.dr-ping.ir
+  client-fingerprint: unsafe
+  alpn:
+  - h3
+  - h2
+  - http/1.1
+  network: xhttp
+  xhttp-opts:
+    path: /
+    host: nl29.dr-ping.ir
+    mode: auto
+- name: 🇬🇧 Великобритания 1
+  type: vless
+  server: 34.39.80.57
+  port: 50818
+  uuid: 408c814e-f70a-4d16-b3b3-8182bb70211d
+  udp: true
+  encryption: none
+  tls: true
+  servername: yingguo.rymaker.cn
+  client-fingerprint: firefox
+  network: ws
+  ws-opts:
+    path: /GunService
+- name: 🇺🇸 США 2
+  type: trojan
+  server: 66.163.112.31
+  port: 443
+  password: 0ab6c98dae3b48e8b9c4a776b6c9c19a
+  udp: true
+  sni: unlockyourfuturefindyourperfectcareer.com
+  skip-cert-verify: false
+  network: tcp
+- name: 🇺🇸 США 3
+  type: hysteria2
+  server: 64.32.13.230
+  port: 443
+  password: 0abd5d38-fdf1-11ed-bade-f23c91369f2d
+  sni: 6f9a8496-tmm5c0-txkkcl-1fli7.los.hyhuawei.com
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - 🇳🇱 Нидерланды 1
+  - 🇺🇸 США 1
+  - 🇩🇪 Германия 1
+  - 🇳🇱 Нидерланды 2
+  - 🇹🇭 TH 1
+  - 🇪🇸 Испания 1
+  - 🇳🇱 Нидерланды 3
+  - 🇬🇧 Великобритания 1
+  - 🇺🇸 США 2
+  - 🇺🇸 США 3
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - 🇳🇱 Нидерланды 1
+  - 🇺🇸 США 1
+  - 🇩🇪 Германия 1
+  - 🇳🇱 Нидерланды 2
+  - 🇹🇭 TH 1
+  - 🇪🇸 Испания 1
+  - 🇳🇱 Нидерланды 3
+  - 🇬🇧 Великобритания 1
+  - 🇺🇸 США 2
+  - 🇺🇸 США 3
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD
