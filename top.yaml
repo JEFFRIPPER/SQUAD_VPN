@@ -1,0 +1,210 @@
+#profile-title: SQUAD VPN
+#profile-update-interval: 1
+#announce: base64:0JHQtdGB0L/Qu9Cw0YLQvdCw0Y8g0L/QvtC00L/QuNGB0LrQsCBWUE4g0L7RgiDQodC60LLQsNC00LAu
+#profile-web-page-url: https://github.com/JEFFRIPPER/SQUAD_VPN
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: 🇺🇸 США 1
+  type: vless
+  server: 143.246.60.254
+  port: 443
+  uuid: fa895069-bfe5-42c9-9f30-f918e1e442c1
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.cloudflare.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: ccJ6xUaUhUxN6GEj6a1vqsQDNDTJJX1KYSURY5pJpBE
+    short-id: eb68848e2575a1f4
+  network: tcp
+- name: 🇨🇦 Канада 1
+  type: vless
+  server: 143.42.66.91
+  port: 443
+  uuid: 99c5b713-dedf-4a10-8070-916ff3f49b0e
+  udp: true
+  encryption: ''
+  tls: true
+  servername: fs.qicai99.com
+  client-fingerprint: safari
+  network: ws
+  ws-opts:
+    path: /fp=chrome
+    headers:
+      Host: fs.qicai99.com
+- name: 🇺🇸 США 2
+  type: vless
+  server: 172.67.74.177
+  port: 443
+  uuid: 99c5b713-dedf-4a10-8070-916ff3f49b0e
+  udp: true
+  encryption: none
+  tls: true
+  servername: fs.qicai99.com
+  client-fingerprint: chrome
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /?Telegram---@pirozi_ArGaP---@pirozi_ArGaP---@pirozi_ArGaP---@pirozi_ArGaP
+    headers:
+      Host: fs.qicai99.com
+- name: 🇺🇸 США 3
+  type: vless
+  server: 162.159.198.1
+  port: 443
+  uuid: 99c5b713-dedf-4a10-8070-916ff3f49b0e
+  udp: true
+  encryption: none
+  tls: true
+  servername: fs.qicai99.com
+  client-fingerprint: chrome
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /?Telegram---PLANB_NET---PLANB_NET---PLANB_NET---PLANB_NET
+    headers:
+      Host: fs.qicai99.com
+- name: 🇸🇬 Сингапур 1
+  type: vless
+  server: xjpp.zjlo.top
+  port: 36442
+  uuid: 5269e0b4-0dff-4f97-e0c7-83130bacb009
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: xjpp.zjlo.top
+  client-fingerprint: chrome
+  network: tcp
+- name: 🇵🇱 Польша 1
+  type: vless
+  server: 3.168.218.6
+  port: 443
+  uuid: 67cd3349-f789-4cbb-8b91-4b6b1654ce7c
+  udp: true
+  encryption: none
+  tls: true
+  servername: d2ex4nxd2e01ub.cloudfront.net
+  client-fingerprint: qq
+  alpn:
+  - http/1.1
+  network: ws
+  ws-opts:
+    path: /
+    headers:
+      Host: d2ex4nxd2e01ub.cloudfront.net
+- name: 🇺🇸 США 4
+  type: vless
+  server: 216.152.155.189
+  port: 443
+  uuid: dbf3f074-3b18-43f3-b82a-debd8c879c69
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: F5BVp5XkY93lll_Ju34lOIE6A1-dx16_frY6eu9Nzzk
+    short-id: fecf2b55bb11bb0d
+  network: tcp
+- name: 🇺🇸 США 5
+  type: vless
+  server: 167.17.69.171
+  port: 443
+  uuid: 00144519-7e0d-476b-8d28-435576af9262
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.cloudflare.com
+  client-fingerprint: random
+  reality-opts:
+    public-key: ALT8hIGeZEhi0sQFbXP_ntBg8Xo-v7i0YCLrqTnBxRk
+    short-id: 0990d22f
+  network: tcp
+- name: 🇺🇸 США 6
+  type: vless
+  server: 169.40.42.74
+  port: 443
+  uuid: d65cc14c-f53f-4fe2-b262-97856601319c
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: yahoo.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: e2RLf57Li_-MDZGE9ss1BWPgP54mqRb5PfXhW2jcVVg
+    short-id: c39cc7310a
+  network: tcp
+- name: 🇺🇸 США 7
+  type: trojan
+  server: 69.164.240.85
+  port: 50875
+  password: nwilryafgkyvuxauc8pz
+  udp: true
+  client-fingerprint: chrome
+  skip-cert-verify: true
+  network: tcp
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - 🇺🇸 США 1
+  - 🇨🇦 Канада 1
+  - 🇺🇸 США 2
+  - 🇺🇸 США 3
+  - 🇸🇬 Сингапур 1
+  - 🇵🇱 Польша 1
+  - 🇺🇸 США 4
+  - 🇺🇸 США 5
+  - 🇺🇸 США 6
+  - 🇺🇸 США 7
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - 🇺🇸 США 1
+  - 🇨🇦 Канада 1
+  - 🇺🇸 США 2
+  - 🇺🇸 США 3
+  - 🇸🇬 Сингапур 1
+  - 🇵🇱 Польша 1
+  - 🇺🇸 США 4
+  - 🇺🇸 США 5
+  - 🇺🇸 США 6
+  - 🇺🇸 США 7
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD
