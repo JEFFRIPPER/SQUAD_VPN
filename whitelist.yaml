@@ -1,0 +1,1784 @@
+#profile-title: base64:U1FVQUQgVlBOIMK3INCR0LXQu9GL0LUg0YHQv9C40YHQutC4
+#profile-update-interval: 1
+#announce: base64:0JTQu9GPINGA0LXQttC40LzQsCDQsdC10LvRi9GFINGB0L/QuNGB0LrQvtCyLCDQutC+0LPQtNCwINCz0LvRg9GI0LDRgiDQvNC+0LHQuNC70YzQvdGL0Lkg0LjQvdGC0LXRgNC90LXRgi4g0J7QsdC90L7QstC4INC/0L7QtNC/0LjRgdC60YMg0LfQsNGA0LDQvdC10LUsINC/0L7QutCwINC40L3RgtC10YDQvdC10YIg0YDQsNCx0L7RgtCw0LXRgi4=
+#profile-web-page-url: https://github.com/JEFFRIPPER/SQUAD_VPN
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: 🇩🇪 Германия 1
+  type: vless
+  server: almanac.filnex.baby
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: ''
+  tls: true
+  servername: morningfen.merlano.monster
+  client-fingerprint: chrome
+  network: grpc
+  grpc-opts:
+    grpc-service-name: glush.de1.v1
+- name: 🌐 Мир 1
+  type: vless
+  server: almanac.filnex.baby
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: none
+  tls: true
+  servername: morningfen.merlano.monster
+  client-fingerprint: edge
+  alpn:
+  - h2
+  network: grpc
+  grpc-opts:
+    grpc-service-name: glush.de1.v1
+- name: 🇩🇪 Германия 2
+  type: vless
+  server: almanac.filnex.baby
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: none
+  tls: true
+  servername: morningfen.merlano.monster
+  client-fingerprint: random
+  alpn:
+  - h2
+  network: grpc
+  grpc-opts:
+    grpc-service-name: glush.de1.v1
+- name: 🇩🇪 Германия 3
+  type: vless
+  server: 178.248.236.229
+  port: 443
+  uuid: a71d6c6d-c95e-4ec1-a892-22e21733bf09
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: 144.hexdey.com
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: _3mkK8SY6YVqws73SUVPKL77tzxDVNUt4ag9J9ec-D0
+    short-id: d05a120d3506d2cc
+  network: tcp
+- name: 🇩🇪 Германия 4
+  type: vless
+  server: 178.248.236.229
+  port: 443
+  uuid: a71d6c6d-c95e-4ec1-a892-22e21733bf09
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: 144.hexdey.com
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: _3mkK8SY6YVqws73SUVPKL77tzxDVNUt4ag9J9ec-D0
+    short-id: d05a120d3506d2cc
+  network: tcp
+- name: 🇪🇺 EU 1
+  type: vless
+  server: 178.248.236.229
+  port: 443
+  uuid: a71d6c6d-c95e-4ec1-a892-22e21733bf09
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: 144.hexdey.com
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: _3mkK8SY6YVqws73SUVPKL77tzxDVNUt4ag9J9ec-D0
+    short-id: d05a120d3506d2cc
+  network: tcp
+- name: 🇺🇸 США 1
+  type: vless
+  server: 167.17.69.171
+  port: 443
+  uuid: 00144519-7e0d-476b-8d28-435576af9262
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.cloudflare.com
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: ALT8hIGeZEhi0sQFbXP_ntBg8Xo-v7i0YCLrqTnBxRk
+    short-id: 0990d22f
+  network: tcp
+- name: 🇺🇸 США 2
+  type: vless
+  server: 167.17.69.171
+  port: 443
+  uuid: 00144519-7e0d-476b-8d28-435576af9262
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.cloudflare.com
+  client-fingerprint: qq
+  reality-opts:
+    public-key: ALT8hIGeZEhi0sQFbXP_ntBg8Xo-v7i0YCLrqTnBxRk
+    short-id: 0990d22f
+  network: tcp
+- name: 🇺🇸 США 3
+  type: vless
+  server: 167.17.69.171
+  port: 443
+  uuid: 00144519-7e0d-476b-8d28-435576af9262
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.cloudflare.com
+  client-fingerprint: random
+  reality-opts:
+    public-key: ALT8hIGeZEhi0sQFbXP_ntBg8Xo-v7i0YCLrqTnBxRk
+    short-id: 0990d22f
+  network: tcp
+- name: 🇳🇱 Нидерланды 1
+  type: vless
+  server: 51.158.206.80
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇺🇸 США 4
+  type: vless
+  server: 15.204.97.206
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇺🇸 США 5
+  type: vless
+  server: 15.204.97.198
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇺🇸 США 6
+  type: vless
+  server: 15.204.97.206
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇺🇸 США 7
+  type: vless
+  server: 15.204.97.198
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 2
+  type: vless
+  server: 51.158.206.25
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇺🇸 США 8
+  type: vless
+  server: 15.204.97.198
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 3
+  type: vless
+  server: 51.158.206.34
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 4
+  type: vless
+  server: 51.158.206.96
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 5
+  type: vless
+  server: 51.158.206.87
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 6
+  type: vless
+  server: 51.158.206.34
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 7
+  type: vless
+  server: 51.158.206.26
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 8
+  type: vless
+  server: 87.199.205.28
+  port: 443
+  uuid: 501a2da5-cb22-4a3f-915e-e3b821d1d62d
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: vkvd754.okcdn.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: W-9zyiOq287RtXVTZlTFbSDJ0Mx8joyBLJoA7ZE7eBw
+    short-id: ef1d3554c652a436
+  network: tcp
+- name: 🇳🇱 Нидерланды 9
+  type: vless
+  server: 51.158.206.26
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 10
+  type: vless
+  server: 51.158.206.103
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 11
+  type: vless
+  server: 51.158.206.80
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 12
+  type: vless
+  server: 51.158.206.103
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 13
+  type: vless
+  server: 51.158.206.8
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 14
+  type: vless
+  server: 51.158.206.25
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 15
+  type: vless
+  server: 51.158.206.8
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 16
+  type: vless
+  server: 87.199.205.28
+  port: 443
+  uuid: 501a2da5-cb22-4a3f-915e-e3b821d1d62d
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: vkvd754.okcdn.ru
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: W-9zyiOq287RtXVTZlTFbSDJ0Mx8joyBLJoA7ZE7eBw
+    short-id: ef1d3554c652a436
+  network: tcp
+- name: 🇳🇱 Нидерланды 17
+  type: vless
+  server: 51.158.206.34
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 18
+  type: vless
+  server: 51.158.206.25
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 19
+  type: vless
+  server: 87.199.205.28
+  port: 443
+  uuid: 501a2da5-cb22-4a3f-915e-e3b821d1d62d
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: vkvd754.okcdn.ru
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: W-9zyiOq287RtXVTZlTFbSDJ0Mx8joyBLJoA7ZE7eBw
+    short-id: b7cd177731793b1e
+  network: tcp
+- name: 🇳🇱 Нидерланды 20
+  type: vless
+  server: 51.158.206.96
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇹🇷 Турция 1
+  type: vless
+  server: 185.246.155.91
+  port: 10103
+  uuid: dbf3f074-3b18-43f3-b82a-debd8c879c69
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.apple.com
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: obQkp5VlQpnlt1hRLQ3VfHISYiiISZJyJZAMaIdjCko
+    short-id: 6859f5b59e55aa30
+  network: tcp
+- name: 🇹🇷 Турция 2
+  type: vless
+  server: 185.246.155.91
+  port: 10103
+  uuid: dbf3f074-3b18-43f3-b82a-debd8c879c69
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  packet-encoding: xudp
+  tls: true
+  servername: www.apple.com
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: obQkp5VlQpnlt1hRLQ3VfHISYiiISZJyJZAMaIdjCko
+    short-id: 6859f5b59e55aa30
+  network: tcp
+- name: 🇹🇷 Турция 3
+  type: vless
+  server: 185.246.155.91
+  port: 10103
+  uuid: dbf3f074-3b18-43f3-b82a-debd8c879c69
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  packet-encoding: xudp
+  tls: true
+  servername: www.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: obQkp5VlQpnlt1hRLQ3VfHISYiiISZJyJZAMaIdjCko
+    short-id: 6859f5b59e55aa30
+  network: tcp
+- name: 🇺🇸 США 9
+  type: vless
+  server: 15.204.97.206
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  packet-encoding: xudp
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 21
+  type: vless
+  server: 51.158.206.87
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  packet-encoding: xudp
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 22
+  type: vless
+  server: 51.158.206.26
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  packet-encoding: xudp
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 23
+  type: vless
+  server: 51.158.206.96
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  packet-encoding: xudp
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 24
+  type: vless
+  server: 51.158.206.80
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  packet-encoding: xudp
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 25
+  type: vless
+  server: 51.158.206.8
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  packet-encoding: xudp
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇳🇱 Нидерланды 26
+  type: vless
+  server: 51.158.206.87
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇺🇸 США 10
+  type: vless
+  server: 15.204.97.197
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇺🇸 США 11
+  type: vless
+  server: 15.204.97.214
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇨🇭 Швейцария 1
+  type: vless
+  server: 193.233.89.130
+  port: 8443
+  uuid: 7bd7c4aa-52c4-482c-bdcc-e7380fa6b5fe
+  udp: true
+  encryption: none
+  tls: true
+  servername: g.play2go.gay
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: xx8KWdR4HbVmvqPb0wRPAstBHGN2Uk99m7AF794_E3c
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: grpc
+- name: 🇺🇸 США 12
+  type: vless
+  server: 89.169.2.136
+  port: 443
+  uuid: 1547ed3d-3bb7-4153-afdc-8eb3e9373c84
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: us2.nztvpn.com
+  client-fingerprint: random
+  reality-opts:
+    public-key: Yn9rswmNTIdVx8jKgZkvQcqw61BRu_h_ZOl2blShDT4
+    short-id: 0da7e14db353e7d0
+  network: tcp
+- name: 🇨🇭 Швейцария 2
+  type: vless
+  server: 193.233.89.130
+  port: 8443
+  uuid: 7bd7c4aa-52c4-482c-bdcc-e7380fa6b5fe
+  udp: true
+  encryption: none
+  tls: true
+  servername: g.play2go.gay
+  client-fingerprint: random
+  reality-opts:
+    public-key: xx8KWdR4HbVmvqPb0wRPAstBHGN2Uk99m7AF794_E3c
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: grpc
+- name: 🇺🇸 США 13
+  type: vless
+  server: 15.204.97.214
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇺🇸 США 14
+  type: vless
+  server: 15.204.97.197
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇧🇾 Беларусь 1
+  type: vless
+  server: 178.172.227.124
+  port: 10444
+  uuid: 1af36694-b548-4b18-89a0-bc076eab4ed7
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: ads.x5.ru
+  client-fingerprint: edge
+  reality-opts:
+    public-key: 0oTkcqwLTUNLnSOP-VUWErmy6usAIg-biBE6ioZO-Vo
+    short-id: 8debcf36f1cc69ff
+  network: tcp
+- name: 🇧🇾 Беларусь 2
+  type: vless
+  server: 178.172.227.124
+  port: 10444
+  uuid: 1af36694-b548-4b18-89a0-bc076eab4ed7
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: ads.x5.ru
+  client-fingerprint: ios
+  reality-opts:
+    public-key: 0oTkcqwLTUNLnSOP-VUWErmy6usAIg-biBE6ioZO-Vo
+    short-id: 8debcf36f1cc69ff
+  network: tcp
+- name: 🌐 Мир 2
+  type: vless
+  server: 178.172.227.124
+  port: 10444
+  uuid: 1af36694-b548-4b18-89a0-bc076eab4ed7
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: ads.x5.ru
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 0oTkcqwLTUNLnSOP-VUWErmy6usAIg-biBE6ioZO-Vo
+    short-id: 8debcf36f1cc69ff
+  network: tcp
+- name: 🇹🇼 Тайвань 1
+  type: vless
+  server: free.fugui.lol
+  port: 47396
+  uuid: ead3595f-4020-4e76-a3ec-c248e1a2f2f7
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: swdist.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: IjWYbHNrZb3UCQxsTJyekEOA3tHq42L6Jw3O8MmLYVQ
+    short-id: fa514b83
+  network: tcp
+- name: 🇺🇸 США 15
+  type: vless
+  server: 15.204.97.214
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇺🇸 США 16
+  type: vless
+  server: 15.204.97.197
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇩🇪 Германия 5
+  type: vless
+  server: 89.169.2.136
+  port: 443
+  uuid: 1547ed3d-3bb7-4153-afdc-8eb3e9373c84
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: node-de-3.nztpro.com
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 95EyUgsp_C-OrWKVsULHhFyY-tVYA3kMCZHIjIjjJhc
+    short-id: 5ea969574fc3c06e
+  network: tcp
+- name: 🇸🇪 Швеция 1
+  type: vless
+  server: 89.169.2.136
+  port: 443
+  uuid: 1547ed3d-3bb7-4153-afdc-8eb3e9373c84
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: node-se-1.nztpro.com
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: cn6JqI1RByDql_wSwDjMQP7B3vXcnM1Q52yGPhvLwh0
+    short-id: e4272d5b51ac255e
+  network: tcp
+- name: 🇩🇪 Германия 6
+  type: vless
+  server: bookend.filnex.baby
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: none
+  tls: true
+  servername: hollowreed.gerqix.online
+  client-fingerprint: safari
+  alpn:
+  - http/1.1
+  network: ws
+  ws-opts:
+    path: /api/de1/stream
+- name: 🇩🇪 Германия 7
+  type: vless
+  server: willowbank.moltex.click
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: none
+  tls: true
+  servername: daylily.moltex.click
+  client-fingerprint: safari
+  alpn:
+  - h2
+  - http/1.1
+  network: xhttp
+  xhttp-opts:
+    path: /api/de2/sync
+    host: willowbank.moltex.click
+    mode: auto
+- name: 🇩🇪 Германия 8
+  type: vless
+  server: sunfield.moltex.click
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: none
+  tls: true
+  servername: sunfield.moltex.click
+  client-fingerprint: random
+  alpn:
+  - h2
+  - http/1.1
+  network: xhttp
+  xhttp-opts:
+    path: /api/de1/sync
+    host: sunfield.moltex.click
+    mode: auto
+- name: 🇩🇪 Германия 9
+  type: vless
+  server: foliose.merlano.monster
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: none
+  tls: true
+  servername: foliose.merlano.monster
+  client-fingerprint: firefox
+  alpn:
+  - http/1.1
+  network: ws
+  ws-opts:
+    path: /api/de2/stream
+- name: 🇺🇸 США 17
+  type: vless
+  server: 67.220.73.204
+  port: 18662
+  uuid: 814bd064-544d-4255-a070-5705c03f6da9
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: k2hPp0tTW0Da-HK94wYpSCLbuK44LfGqC2MSJIM1Ti0
+    short-id: 48050fab
+  network: tcp
+- name: 🇩🇪 Германия 10
+  type: vless
+  server: bookend.filnex.baby
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: none
+  tls: true
+  servername: hollowreed.gerqix.online
+  client-fingerprint: random
+  alpn:
+  - http/1.1
+  network: ws
+  ws-opts:
+    path: /api/de1/stream
+- name: 🇩🇪 Германия 11
+  type: vless
+  server: bookend.filnex.baby
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: ''
+  tls: true
+  servername: hollowreed.gerqix.online
+  client-fingerprint: safari
+  alpn:
+  - http/1.1
+  network: ws
+  ws-opts:
+    path: /api/de1/stream
+    headers:
+      Host: bookend.filnex.baby
+- name: 🇩🇪 Германия 12
+  type: vless
+  server: willowbank.moltex.click
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: none
+  tls: true
+  servername: daylily.moltex.click
+  client-fingerprint: firefox
+  alpn:
+  - h2
+  - http/1.1
+  network: xhttp
+  xhttp-opts:
+    path: /api/de2/sync
+    host: willowbank.moltex.click
+    mode: auto
+- name: 🇩🇪 Германия 13
+  type: vless
+  server: foliose.merlano.monster
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: ''
+  tls: true
+  servername: foliose.merlano.monster
+  client-fingerprint: safari
+  alpn:
+  - http/1.1
+  network: ws
+  ws-opts:
+    path: /api/de2/stream
+    headers:
+      Host: foliose.merlano.monster
+- name: 🇩🇪 Германия 14
+  type: vless
+  server: marsh.moltex.click
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: none
+  tls: true
+  servername: cotoneaster.moltex.click
+  client-fingerprint: firefox
+  alpn:
+  - h2
+  - http/1.1
+  network: xhttp
+  xhttp-opts:
+    path: /api/de1/sync
+    host: marsh.moltex.click
+    mode: auto
+- name: 🇩🇪 Германия 15
+  type: vless
+  server: willowbank.moltex.click
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: ''
+  tls: true
+  servername: daylily.moltex.click
+  client-fingerprint: firefox
+  network: xhttp
+  xhttp-opts:
+    path: /api/de2/sync
+    host: willowbank.moltex.click
+    mode: auto
+- name: 🇩🇪 Германия 16
+  type: vless
+  server: foliose.merlano.monster
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: ''
+  tls: true
+  servername: foliose.merlano.monster
+  client-fingerprint: ios
+  alpn:
+  - http/1.1
+  network: ws
+  ws-opts:
+    path: /api/de2/stream
+    headers:
+      Host: foliose.merlano.monster
+- name: 🇩🇪 Германия 17
+  type: vless
+  server: marsh.moltex.click
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: ''
+  tls: true
+  servername: cotoneaster.moltex.click
+  client-fingerprint: ios
+  network: xhttp
+  xhttp-opts:
+    path: /api/de1/sync
+    host: marsh.moltex.click
+    mode: auto
+- name: 🇩🇪 Германия 18
+  type: vless
+  server: free.fugui.lol
+  port: 51283
+  uuid: ead3595f-4020-4e76-a3ec-c248e1a2f2f7
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: swdist.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: IjWYbHNrZb3UCQxsTJyekEOA3tHq42L6Jw3O8MmLYVQ
+    short-id: fa514b83
+  network: tcp
+- name: 🇺🇸 США 18
+  type: vless
+  server: saas.sin.fan
+  port: 2083
+  uuid: 5d7b401c-78fa-4254-872e-6d42bf7e75ec
+  udp: true
+  encryption: ''
+  tls: true
+  servername: vp25.1145678.xyz
+  network: ws
+  ws-opts:
+    path: /comics/ads/threadfp=chrome
+    headers:
+      Host: vp25.1145678.xyz
+- name: 🇺🇸 США 19
+  type: vless
+  server: saas.sin.fan
+  port: 2087
+  uuid: 5d7b401c-78fa-4254-872e-6d42bf7e75ec
+  udp: true
+  encryption: ''
+  tls: true
+  servername: vp3.1145678.xyz
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /new/comics
+    headers:
+      Host: vp3.1145678.xyz
+- name: 🇩🇪 Германия 19
+  type: vless
+  server: marsh.moltex.click
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: none
+  tls: true
+  servername: cotoneaster.moltex.click
+  client-fingerprint: ios
+  alpn:
+  - h2
+  - http/1.1
+  network: xhttp
+  xhttp-opts:
+    path: /api/de1/sync
+    host: marsh.moltex.click
+    mode: auto
+- name: 🇺🇸 США 20
+  type: vless
+  server: saas.sin.fan
+  port: 8443
+  uuid: 5d7b401c-78fa-4254-872e-6d42bf7e75ec
+  udp: true
+  encryption: ''
+  tls: true
+  servername: vp17.1145678.xyz
+  network: ws
+  ws-opts:
+    path: /class/toolfp=chrome
+    headers:
+      Host: vp17.1145678.xyz
+- name: 🇳🇱 Нидерланды 27
+  type: vless
+  server: 51.158.206.103
+  port: 23576
+  uuid: 48ff2b70-e180-582f-8866-d9a2edeed5f5
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: fuck.rkn
+  reality-opts:
+    public-key: 1y5h2FGWKXTJ9xLPCqPo6Mw7RxoZzh6fGkEQKNxpZ3s
+    short-id: '01'
+  network: tcp
+- name: 🇩🇪 Германия 20
+  type: vless
+  server: 188.225.57.185
+  port: 443
+  uuid: 88e79aa6-f431-4453-8dcc-652a0c747198
+  udp: true
+  encryption: none
+  tls: true
+  servername: flintstack.dev
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: 4JggwEKhrkrIjQjO8kRX6iGvHQJixIFkiDOnE7zd3xE
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: ''
+- name: 🇨🇭 Швейцария 3
+  type: vless
+  server: 193.233.89.130
+  port: 8443
+  uuid: 7bd7c4aa-52c4-482c-bdcc-e7380fa6b5fe
+  udp: true
+  encryption: none
+  tls: true
+  servername: g.play2go.gay
+  client-fingerprint: ios
+  reality-opts:
+    public-key: xx8KWdR4HbVmvqPb0wRPAstBHGN2Uk99m7AF794_E3c
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: grpc
+- name: 🇭🇰 Гонконг 1
+  type: vless
+  server: 67.220.73.204
+  port: 18662
+  uuid: 814bd064-544d-4255-a070-5705c03f6da9
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  packet-encoding: xudp
+  tls: true
+  servername: www.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: k2hPp0tTW0Da-HK94wYpSCLbuK44LfGqC2MSJIM1Ti0
+    short-id: 48050fab
+  network: tcp
+- name: 🇩🇪 Германия 21
+  type: vless
+  server: 188.225.57.185
+  port: 443
+  uuid: 88e79aa6-f431-4453-8dcc-652a0c747198
+  udp: true
+  encryption: none
+  tls: true
+  servername: flintstack.dev
+  client-fingerprint: ios
+  reality-opts:
+    public-key: 4JggwEKhrkrIjQjO8kRX6iGvHQJixIFkiDOnE7zd3xE
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: ''
+- name: 🌐 Мир 3
+  type: vless
+  server: 4935e4t.de25.h1clayd.click
+  port: 443
+  uuid: 4201786b-d99b-4147-a5f0-20d47acddb81
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: 4935e4t.de25.h1clayd.click
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: MzgB17ZFbKqs8pbC3EscTzHid_ENc-k_Cp6nXl-2knw
+    short-id: 6976d670818644cc
+  network: tcp
+- name: 🌐 Мир 4
+  type: vless
+  server: free.fugui.lol
+  port: 62015
+  uuid: ead3595f-4020-4e76-a3ec-c248e1a2f2f7
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: swdist.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: IjWYbHNrZb3UCQxsTJyekEOA3tHq42L6Jw3O8MmLYVQ
+    short-id: fa514b83
+  network: tcp
+- name: 🇺🇸 США 21
+  type: vless
+  server: 153.56.230.77
+  port: 25155
+  uuid: 62995b2a-8f82-41f8-ac80-dfdfc1253e76
+  udp: true
+  encryption: none
+  tls: true
+  servername: 48688cr.us12.h1clayd.click
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: I4mzdgz1mvaVDtkDD9AzK1ZJkEaQu_GYEbGIfm_a5UM
+    short-id: 0ebb438948cdf356
+  network: xhttp
+  xhttp-opts:
+    path: /astral-edge-h1
+    host: 48688cr.us12.h1clayd.click
+- name: 🇪🇪 Эстония 1
+  type: vless
+  server: 4935e4t.de25.h1clayd.click
+  port: 443
+  uuid: 4201786b-d99b-4147-a5f0-20d47acddb81
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: 4935e4t.de25.h1clayd.click
+  client-fingerprint: qq
+  reality-opts:
+    public-key: MzgB17ZFbKqs8pbC3EscTzHid_ENc-k_Cp6nXl-2knw
+    short-id: 6976d670818644cc
+  network: tcp
+- name: 🇵🇱 Польша 1
+  type: vless
+  server: 188.225.25.35
+  port: 443
+  uuid: b29dbea6-ca59-4d9f-baac-596dc8402812
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: ru.starkclaude.top
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: rJ-fFNYXh7WW9LuYe1N71fh7nAEe5i09Pi5ZDSDlH1s
+    short-id: 4951a2313524dd8f
+  network: tcp
+- name: 🇩🇪 Германия 22
+  type: vless
+  server: 188.225.57.185
+  port: 443
+  uuid: 88e79aa6-f431-4453-8dcc-652a0c747198
+  udp: true
+  encryption: none
+  tls: true
+  servername: flintstack.dev
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: 4JggwEKhrkrIjQjO8kRX6iGvHQJixIFkiDOnE7zd3xE
+    short-id: ''
+  network: grpc
+  grpc-opts:
+    grpc-service-name: ''
+- name: 🇺🇸 США 22
+  type: vmess
+  server: 172.64.80.1
+  port: 8443
+  uuid: 60441548-b68e-43b2-8191-e3b884be4b3c
+  alterId: 0
+  cipher: auto
+  udp: true
+  tls: true
+  servername: v2ray1.dozapp.xyz
+  network: ws
+  ws-opts:
+    path: /lMnsZUN4/
+    headers:
+      Host: v2ray1.dozapp.xyz
+- name: 🇩🇪 Германия 23
+  type: vless
+  server: 4935e4t.de25.h1clayd.click
+  port: 443
+  uuid: 4201786b-d99b-4147-a5f0-20d47acddb81
+  udp: true
+  encryption: ''
+  flow: xtls-rprx-vision
+  tls: true
+  servername: 4935e4t.de25.h1clayd.click
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: MzgB17ZFbKqs8pbC3EscTzHid_ENc-k_Cp6nXl-2knw
+    short-id: 6976d670818644cc
+  network: tcp
+- name: 🇵🇱 Польша 2
+  type: vless
+  server: 188.225.25.35
+  port: 443
+  uuid: b29dbea6-ca59-4d9f-baac-596dc8402812
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: ru.starkclaude.top
+  client-fingerprint: safari
+  reality-opts:
+    public-key: rJ-fFNYXh7WW9LuYe1N71fh7nAEe5i09Pi5ZDSDlH1s
+    short-id: 4951a2313524dd8f
+  network: tcp
+- name: 🇵🇱 Польша 3
+  type: vless
+  server: 188.225.25.35
+  port: 443
+  uuid: b29dbea6-ca59-4d9f-baac-596dc8402812
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: ru.starkclaude.top
+  client-fingerprint: random
+  reality-opts:
+    public-key: rJ-fFNYXh7WW9LuYe1N71fh7nAEe5i09Pi5ZDSDlH1s
+    short-id: 4951a2313524dd8f
+  network: tcp
+- name: 🇩🇪 Германия 24
+  type: vless
+  server: sunfield.moltex.click
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: none
+  tls: true
+  servername: sunfield.moltex.click
+  client-fingerprint: android
+  alpn:
+  - h2
+  - http/1.1
+  network: xhttp
+  xhttp-opts:
+    path: /api/de1/sync
+    host: sunfield.moltex.click
+    mode: auto
+- name: 🇩🇪 Германия 25
+  type: vless
+  server: sunfield.moltex.click
+  port: 443
+  uuid: 25ac78e7-6d1d-4c9a-a450-c01a4871769f
+  udp: true
+  encryption: none
+  tls: true
+  servername: sunfield.moltex.click
+  client-fingerprint: chrome
+  alpn:
+  - h2
+  - http/1.1
+  network: xhttp
+  xhttp-opts:
+    path: /api/de1/sync
+    host: sunfield.moltex.click
+    mode: auto
+- name: 🇺🇸 США 23
+  type: vless
+  server: 153.56.230.77
+  port: 25155
+  uuid: 62995b2a-8f82-41f8-ac80-dfdfc1253e76
+  udp: true
+  encryption: none
+  tls: true
+  servername: 48688cr.us12.h1clayd.click
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: I4mzdgz1mvaVDtkDD9AzK1ZJkEaQu_GYEbGIfm_a5UM
+    short-id: 0ebb438948cdf356
+  network: xhttp
+  xhttp-opts:
+    path: astral-edge-h1
+- name: 🇨🇦 Канада 1
+  type: vless
+  server: 172.64.80.1
+  port: 443
+  uuid: 8344360f-0349-4784-a19f-33fd92e89389
+  udp: true
+  encryption: none
+  tls: true
+  servername: sync.2ml.bid
+  client-fingerprint: firefox
+  network: grpc
+  grpc-opts:
+    grpc-service-name: v3-direct
+- name: 🌐 Мир 5
+  type: vmess
+  server: 172.64.80.1
+  port: 8443
+  uuid: 60441548-b68e-43b2-8191-e3b884be4b3c
+  alterId: 0
+  cipher: auto
+  udp: true
+  tls: true
+  servername: v2ray1.dozapp.xyz
+  network: ws
+  ws-opts:
+    path: /lMnsZUN4/
+    headers:
+      Host: v2ray1.dozapp.xyz
+- name: 🇺🇸 США 24
+  type: vless
+  server: 67.220.73.204
+  port: 18662
+  uuid: 814bd064-544d-4255-a070-5705c03f6da9
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.apple.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: k2hPp0tTW0Da-HK94wYpSCLbuK44LfGqC2MSJIM1Ti0
+    short-id: 48050fab
+  network: tcp
+- name: 🇩🇪 Германия 26
+  type: vless
+  server: 153.56.230.77
+  port: 25155
+  uuid: 62995b2a-8f82-41f8-ac80-dfdfc1253e76
+  udp: true
+  encryption: ''
+  tls: true
+  servername: 48688cr.us12.h1clayd.click
+  client-fingerprint: firefox
+  reality-opts:
+    public-key: I4mzdgz1mvaVDtkDD9AzK1ZJkEaQu_GYEbGIfm_a5UM
+    short-id: 0ebb438948cdf356
+  network: xhttp
+  xhttp-opts:
+    path: astral-edge-h1
+- name: 🇳🇱 Нидерланды 28
+  type: vless
+  server: 51.170.191.10
+  port: 63286
+  uuid: 478d6288-3745-4558-bf38-47ab9bf16462
+  udp: true
+  encryption: none
+  flow: xtls-rprx-vision
+  tls: true
+  servername: www.cloudflare.com
+  client-fingerprint: chrome
+  reality-opts:
+    public-key: U7t4RFE9MSMtC-o1DoJ8pYzKMfgVpTg6ZhTTknBrVkU
+    short-id: 1f2519bb96e5589c
+  network: tcp
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - 🇩🇪 Германия 1
+  - 🌐 Мир 1
+  - 🇩🇪 Германия 2
+  - 🇩🇪 Германия 3
+  - 🇩🇪 Германия 4
+  - 🇪🇺 EU 1
+  - 🇺🇸 США 1
+  - 🇺🇸 США 2
+  - 🇺🇸 США 3
+  - 🇳🇱 Нидерланды 1
+  - 🇺🇸 США 4
+  - 🇺🇸 США 5
+  - 🇺🇸 США 6
+  - 🇺🇸 США 7
+  - 🇳🇱 Нидерланды 2
+  - 🇺🇸 США 8
+  - 🇳🇱 Нидерланды 3
+  - 🇳🇱 Нидерланды 4
+  - 🇳🇱 Нидерланды 5
+  - 🇳🇱 Нидерланды 6
+  - 🇳🇱 Нидерланды 7
+  - 🇳🇱 Нидерланды 8
+  - 🇳🇱 Нидерланды 9
+  - 🇳🇱 Нидерланды 10
+  - 🇳🇱 Нидерланды 11
+  - 🇳🇱 Нидерланды 12
+  - 🇳🇱 Нидерланды 13
+  - 🇳🇱 Нидерланды 14
+  - 🇳🇱 Нидерланды 15
+  - 🇳🇱 Нидерланды 16
+  - 🇳🇱 Нидерланды 17
+  - 🇳🇱 Нидерланды 18
+  - 🇳🇱 Нидерланды 19
+  - 🇳🇱 Нидерланды 20
+  - 🇹🇷 Турция 1
+  - 🇹🇷 Турция 2
+  - 🇹🇷 Турция 3
+  - 🇺🇸 США 9
+  - 🇳🇱 Нидерланды 21
+  - 🇳🇱 Нидерланды 22
+  - 🇳🇱 Нидерланды 23
+  - 🇳🇱 Нидерланды 24
+  - 🇳🇱 Нидерланды 25
+  - 🇳🇱 Нидерланды 26
+  - 🇺🇸 США 10
+  - 🇺🇸 США 11
+  - 🇨🇭 Швейцария 1
+  - 🇺🇸 США 12
+  - 🇨🇭 Швейцария 2
+  - 🇺🇸 США 13
+  - 🇺🇸 США 14
+  - 🇧🇾 Беларусь 1
+  - 🇧🇾 Беларусь 2
+  - 🌐 Мир 2
+  - 🇹🇼 Тайвань 1
+  - 🇺🇸 США 15
+  - 🇺🇸 США 16
+  - 🇩🇪 Германия 5
+  - 🇸🇪 Швеция 1
+  - 🇩🇪 Германия 6
+  - 🇩🇪 Германия 7
+  - 🇩🇪 Германия 8
+  - 🇩🇪 Германия 9
+  - 🇺🇸 США 17
+  - 🇩🇪 Германия 10
+  - 🇩🇪 Германия 11
+  - 🇩🇪 Германия 12
+  - 🇩🇪 Германия 13
+  - 🇩🇪 Германия 14
+  - 🇩🇪 Германия 15
+  - 🇩🇪 Германия 16
+  - 🇩🇪 Германия 17
+  - 🇩🇪 Германия 18
+  - 🇺🇸 США 18
+  - 🇺🇸 США 19
+  - 🇩🇪 Германия 19
+  - 🇺🇸 США 20
+  - 🇳🇱 Нидерланды 27
+  - 🇩🇪 Германия 20
+  - 🇨🇭 Швейцария 3
+  - 🇭🇰 Гонконг 1
+  - 🇩🇪 Германия 21
+  - 🌐 Мир 3
+  - 🌐 Мир 4
+  - 🇺🇸 США 21
+  - 🇪🇪 Эстония 1
+  - 🇵🇱 Польша 1
+  - 🇩🇪 Германия 22
+  - 🇺🇸 США 22
+  - 🇩🇪 Германия 23
+  - 🇵🇱 Польша 2
+  - 🇵🇱 Польша 3
+  - 🇩🇪 Германия 24
+  - 🇩🇪 Германия 25
+  - 🇺🇸 США 23
+  - 🇨🇦 Канада 1
+  - 🌐 Мир 5
+  - 🇺🇸 США 24
+  - 🇩🇪 Германия 26
+  - 🇳🇱 Нидерланды 28
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - 🇩🇪 Германия 1
+  - 🌐 Мир 1
+  - 🇩🇪 Германия 2
+  - 🇩🇪 Германия 3
+  - 🇩🇪 Германия 4
+  - 🇪🇺 EU 1
+  - 🇺🇸 США 1
+  - 🇺🇸 США 2
+  - 🇺🇸 США 3
+  - 🇳🇱 Нидерланды 1
+  - 🇺🇸 США 4
+  - 🇺🇸 США 5
+  - 🇺🇸 США 6
+  - 🇺🇸 США 7
+  - 🇳🇱 Нидерланды 2
+  - 🇺🇸 США 8
+  - 🇳🇱 Нидерланды 3
+  - 🇳🇱 Нидерланды 4
+  - 🇳🇱 Нидерланды 5
+  - 🇳🇱 Нидерланды 6
+  - 🇳🇱 Нидерланды 7
+  - 🇳🇱 Нидерланды 8
+  - 🇳🇱 Нидерланды 9
+  - 🇳🇱 Нидерланды 10
+  - 🇳🇱 Нидерланды 11
+  - 🇳🇱 Нидерланды 12
+  - 🇳🇱 Нидерланды 13
+  - 🇳🇱 Нидерланды 14
+  - 🇳🇱 Нидерланды 15
+  - 🇳🇱 Нидерланды 16
+  - 🇳🇱 Нидерланды 17
+  - 🇳🇱 Нидерланды 18
+  - 🇳🇱 Нидерланды 19
+  - 🇳🇱 Нидерланды 20
+  - 🇹🇷 Турция 1
+  - 🇹🇷 Турция 2
+  - 🇹🇷 Турция 3
+  - 🇺🇸 США 9
+  - 🇳🇱 Нидерланды 21
+  - 🇳🇱 Нидерланды 22
+  - 🇳🇱 Нидерланды 23
+  - 🇳🇱 Нидерланды 24
+  - 🇳🇱 Нидерланды 25
+  - 🇳🇱 Нидерланды 26
+  - 🇺🇸 США 10
+  - 🇺🇸 США 11
+  - 🇨🇭 Швейцария 1
+  - 🇺🇸 США 12
+  - 🇨🇭 Швейцария 2
+  - 🇺🇸 США 13
+  - 🇺🇸 США 14
+  - 🇧🇾 Беларусь 1
+  - 🇧🇾 Беларусь 2
+  - 🌐 Мир 2
+  - 🇹🇼 Тайвань 1
+  - 🇺🇸 США 15
+  - 🇺🇸 США 16
+  - 🇩🇪 Германия 5
+  - 🇸🇪 Швеция 1
+  - 🇩🇪 Германия 6
+  - 🇩🇪 Германия 7
+  - 🇩🇪 Германия 8
+  - 🇩🇪 Германия 9
+  - 🇺🇸 США 17
+  - 🇩🇪 Германия 10
+  - 🇩🇪 Германия 11
+  - 🇩🇪 Германия 12
+  - 🇩🇪 Германия 13
+  - 🇩🇪 Германия 14
+  - 🇩🇪 Германия 15
+  - 🇩🇪 Германия 16
+  - 🇩🇪 Германия 17
+  - 🇩🇪 Германия 18
+  - 🇺🇸 США 18
+  - 🇺🇸 США 19
+  - 🇩🇪 Германия 19
+  - 🇺🇸 США 20
+  - 🇳🇱 Нидерланды 27
+  - 🇩🇪 Германия 20
+  - 🇨🇭 Швейцария 3
+  - 🇭🇰 Гонконг 1
+  - 🇩🇪 Германия 21
+  - 🌐 Мир 3
+  - 🌐 Мир 4
+  - 🇺🇸 США 21
+  - 🇪🇪 Эстония 1
+  - 🇵🇱 Польша 1
+  - 🇩🇪 Германия 22
+  - 🇺🇸 США 22
+  - 🇩🇪 Германия 23
+  - 🇵🇱 Польша 2
+  - 🇵🇱 Польша 3
+  - 🇩🇪 Германия 24
+  - 🇩🇪 Германия 25
+  - 🇺🇸 США 23
+  - 🇨🇦 Канада 1
+  - 🌐 Мир 5
+  - 🇺🇸 США 24
+  - 🇩🇪 Германия 26
+  - 🇳🇱 Нидерланды 28
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD

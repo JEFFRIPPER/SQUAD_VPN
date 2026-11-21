@@ -1,0 +1,200 @@
+{
+  "total": 7466,
+  "alive": 1576,
+  "dead": 5890,
+  "unchecked": 0,
+  "average_latency_ms": 158.45,
+  "average_jitter_ms": 43.05,
+  "average_score": 91.69,
+  "last_checked": "2026-11-21 10:01:48",
+  "last_seen": "2026-11-21 09:54:27",
+  "protocols": {
+    "vless": {
+      "total": 5506,
+      "alive": 1003
+    },
+    "vmess": {
+      "total": 488,
+      "alive": 239
+    },
+    "ss": {
+      "total": 448,
+      "alive": 225
+    },
+    "trojan": {
+      "total": 891,
+      "alive": 72
+    },
+    "hysteria2": {
+      "total": 133,
+      "alive": 37
+    }
+  },
+  "countries": {
+    "US": {
+      "total": 667,
+      "alive": 392
+    },
+    "NL": {
+      "total": 329,
+      "alive": 254
+    },
+    "DE": {
+      "total": 228,
+      "alive": 112
+    },
+    "RU": {
+      "total": 158,
+      "alive": 98
+    },
+    "FR": {
+      "total": 77,
+      "alive": 59
+    },
+    "CA": {
+      "total": 69,
+      "alive": 43
+    },
+    "SG": {
+      "total": 44,
+      "alive": 22
+    },
+    "FI": {
+      "total": 51,
+      "alive": 20
+    },
+    "IT": {
+      "total": 38,
+      "alive": 20
+    },
+    "PL": {
+      "total": 26,
+      "alive": 18
+    },
+    "JP": {
+      "total": 37,
+      "alive": 16
+    },
+    "SE": {
+      "total": 23,
+      "alive": 16
+    },
+    "GB": {
+      "total": 29,
+      "alive": 14
+    },
+    "CH": {
+      "total": 20,
+      "alive": 12
+    },
+    "AT": {
+      "total": 14,
+      "alive": 11
+    },
+    "KR": {
+      "total": 10,
+      "alive": 10
+    },
+    "BR": {
+      "total": 10,
+      "alive": 7
+    },
+    "NZ": {
+      "total": 7,
+      "alive": 7
+    },
+    "HK": {
+      "total": 10,
+      "alive": 6
+    },
+    "ES": {
+      "total": 16,
+      "alive": 5
+    },
+    "TR": {
+      "total": 6,
+      "alive": 5
+    },
+    "LV": {
+      "total": 7,
+      "alive": 4
+    },
+    "IN": {
+      "total": 4,
+      "alive": 4
+    },
+    "KZ": {
+      "total": 4,
+      "alive": 4
+    },
+    "ZA": {
+      "total": 4,
+      "alive": 4
+    },
+    "RO": {
+      "total": 4,
+      "alive": 3
+    },
+    "TW": {
+      "total": 4,
+      "alive": 3
+    },
+    "AU": {
+      "total": 3,
+      "alive": 2
+    },
+    "CL": {
+      "total": 3,
+      "alive": 2
+    },
+    "DK": {
+      "total": 2,
+      "alive": 2
+    },
+    "PA": {
+      "total": 2,
+      "alive": 2
+    },
+    "BY": {
+      "total": 9,
+      "alive": 1
+    },
+    "LT": {
+      "total": 3,
+      "alive": 1
+    },
+    "AL": {
+      "total": 2,
+      "alive": 1
+    },
+    "BG": {
+      "total": 2,
+      "alive": 1
+    },
+    "CZ": {
+      "total": 1,
+      "alive": 1
+    },
+    "MY": {
+      "total": 1,
+      "alive": 1
+    },
+    "NO": {
+      "total": 1,
+      "alive": 1
+    },
+    "CY": {
+      "total": 2,
+      "alive": 0
+    },
+    "GR": {
+      "total": 2,
+      "alive": 0
+    },
+    "HU": {
+      "total": 2,
+      "alive": 0
+    }
+  },
+  "updated_at": "2026-11-21 10:02 UTC"
+}
