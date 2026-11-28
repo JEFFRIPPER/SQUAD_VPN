@@ -1,0 +1,200 @@
+#profile-title: SQUAD VPN
+#profile-update-interval: 1
+#announce: base64:0JHQtdGB0L/Qu9Cw0YLQvdCw0Y8g0L/QvtC00L/QuNGB0LrQsCBWUE4g0L7RgiDQodC60LLQsNC00LAu
+#profile-web-page-url: https://github.com/JEFFRIPPER/SQUAD_VPN
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+dns:
+  enable: true
+  enhanced-mode: fake-ip
+  nameserver:
+  - https://1.1.1.1/dns-query
+  - https://dns.google/dns-query
+proxies:
+- name: 🇯🇵 Япония 1
+  type: vless
+  server: 188.114.98.0
+  port: 443
+  uuid: 53bbdad4-2f4e-45db-8df4-fa491a6a7227
+  udp: true
+  encryption: none
+  tls: true
+  servername: freeceshi6.frii.site
+  alpn:
+  - http/1.1
+  network: ws
+  ws-opts:
+    path: /proxyip=ProxyIP.JP.CMLiussss.net
+    headers:
+      Host: freeceshi6.frii.site
+- name: 🇯🇵 Япония 2
+  type: vless
+  server: 172.64.154.113
+  port: 8443
+  uuid: 53bbdad4-2f4e-45db-8df4-fa491a6a7227
+  udp: true
+  encryption: ''
+  tls: true
+  servername: freeceshi6.frii.site
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: '%2Fproxyip%3DProxyIP.JP.CMLiussss.net'
+    headers:
+      Host: freeceshi6.frii.site
+- name: 🇯🇵 Япония 3
+  type: vless
+  server: 172.66.47.74
+  port: 2083
+  uuid: 53bbdad4-2f4e-45db-8df4-fa491a6a7227
+  udp: true
+  encryption: ''
+  packet-encoding: xudp
+  tls: true
+  servername: freeceshi6.frii.site
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /proxyip=ProxyIP.JP.CMLiussss.net
+    headers:
+      Host: freeceshi6.frii.site
+- name: 🇺🇸 США 1
+  type: vless
+  server: kuruish.org
+  port: 443
+  uuid: 03fcc618-b93d-6796-6aed-8a38c975d581
+  udp: true
+  encryption: none
+  tls: true
+  servername: kuruish.org
+  skip-cert-verify: false
+  network: tcp
+- name: 🇺🇸 США 2
+  type: vless
+  server: x.m-90.xyz
+  port: 443
+  uuid: eee8ae65-bc48-438f-a606-a96f10bfb3b8
+  udp: true
+  encryption: none
+  tls: true
+  servername: x.m-90.xyz
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: t.me/TEAMNETGRATISCOL
+    headers:
+      Host: x.m-90.xyz
+- name: 🇯🇵 Япония 4
+  type: vless
+  server: 50.7.159.242
+  port: 443
+  uuid: 8840fac2-5361-4cb6-b887-cd1b95092394
+  udp: true
+  encryption: ''
+  tls: true
+  servername: jp.reddotcorp.org
+  client-fingerprint: firefox
+  network: tcp
+- name: 🇩🇪 Германия 1
+  type: hysteria2
+  server: 135.126.21.106
+  port: 443
+  password: 6ac6d17d-040c-4fab-940e-8f5d72c3fed6
+  sni: de1-balance.rezproffx.ru
+- name: 🇺🇸 США 3
+  type: vless
+  server: 3.219.184.102
+  port: 443
+  uuid: a5b1d16b-719b-4bd6-9d7b-fe6d84607da9
+  udp: true
+  encryption: ''
+  tls: true
+  servername: fortuna.masynbazar.ru
+  client-fingerprint: chrome
+  network: xhttp
+  xhttp-opts:
+    path: /
+- name: 🇳🇱 Нидерланды 1
+  type: vless
+  server: ev.zoom.us
+  port: 8443
+  uuid: c9b4fb55-1634-436f-beb7-3b1db5b0131d
+  udp: true
+  encryption: ''
+  tls: true
+  servername: free-server.techsonic.dev
+  client-fingerprint: chrome
+  network: ws
+  ws-opts:
+    path: /free-server.techsonic.dev
+    headers:
+      Host: free-server.techsonic.dev
+- name: 🇺🇸 США 4
+  type: vless
+  server: 162.159.254.201
+  port: 443
+  uuid: 53bbdad4-2f4e-45db-8df4-fa491a6a7227
+  udp: true
+  encryption: none
+  tls: true
+  servername: freeceshi6.frii.site
+  alpn:
+  - http/1.1
+  skip-cert-verify: false
+  network: ws
+  ws-opts:
+    path: /?TELEGRAM---MARAMBASHI---MARAMBASHI---MARAMBASHI---MARAMBASHI
+    headers:
+      Host: freeceshi6.frii.site
+proxy-groups:
+- name: SQUAD
+  type: select
+  proxies:
+  - AUTO
+  - FAILOVER
+  - 🇯🇵 Япония 1
+  - 🇯🇵 Япония 2
+  - 🇯🇵 Япония 3
+  - 🇺🇸 США 1
+  - 🇺🇸 США 2
+  - 🇯🇵 Япония 4
+  - 🇩🇪 Германия 1
+  - 🇺🇸 США 3
+  - 🇳🇱 Нидерланды 1
+  - 🇺🇸 США 4
+- name: AUTO
+  type: url-test
+  proxies: &id001
+  - 🇯🇵 Япония 1
+  - 🇯🇵 Япония 2
+  - 🇯🇵 Япония 3
+  - 🇺🇸 США 1
+  - 🇺🇸 США 2
+  - 🇯🇵 Япония 4
+  - 🇩🇪 Германия 1
+  - 🇺🇸 США 3
+  - 🇳🇱 Нидерланды 1
+  - 🇺🇸 США 4
+  url: https://www.gstatic.com/generate_204
+  interval: 300
+  tolerance: 50
+  lazy: true
+- name: FAILOVER
+  type: fallback
+  proxies: *id001
+  url: https://www.gstatic.com/generate_204
+  interval: 120
+  lazy: true
+rules:
+- IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+- IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+- IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+- IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+- IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+- MATCH,SQUAD
